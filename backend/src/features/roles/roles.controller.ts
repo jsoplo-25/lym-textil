@@ -1,6 +1,8 @@
 import { Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
 import { prisma, RoleDefinition } from '../../config/prisma';
+import { supabaseAdmin } from '../../config/supabase';
 
 export interface SystemRoleDefinition {
   id: string;
@@ -178,6 +180,11 @@ export class RolesController {
         where: {
           OR: [{ id }, { code: id.toUpperCase() }],
         },
+        include: {
+          _count: {
+            select: { users: true },
+          },
+        },
       });
 
       if (!existing) {
@@ -185,17 +192,17 @@ export class RolesController {
         return;
       }
 
-      // No permitir eliminar el rol raíz del sistema
-      if (existing.code === 'ADMINISTRADOR') {
+      // No permitir eliminar roles nativos del sistema
+      if (existing.isSystem || existing.code === 'ADMINISTRADOR') {
         res.status(400).json({
           success: false,
-          error: 'El rol raíz [ADMINISTRADOR] es vital para el funcionamiento del sistema y no puede ser eliminado.',
+          error: `El rol [${existing.name}] es un rol nativo del sistema y no puede ser eliminado.`,
         });
         return;
       }
 
       // No permitir que el usuario elimine su propio rol activo
-      if (req.user && req.user.role === existing.code) {
+      if (req.user && (req.user.role === existing.code || req.user.role === existing.id)) {
         res.status(400).json({
           success: false,
           error: `No puedes eliminar el rol [${existing.name}] porque lo tienes asignado a tu propia cuenta actual.`,
@@ -203,10 +210,23 @@ export class RolesController {
         return;
       }
 
-      // Validar si existen usuarios asignados a este rol
-      const usersCount = await prisma.user.count({
-        where: { role: existing.code },
-      });
+      // Validar si existen usuarios asignados a este rol mediante la relación nativa de Prisma
+      let usersCount = existing._count?.users ?? 0;
+
+      // Fallback defensivo con Supabase si Prisma no detectó usuarios asignados
+      if (usersCount === 0) {
+        try {
+          const { count } = await supabaseAdmin
+            .from('users')
+            .select('*', { count: 'exact', head: true })
+            .or(`role.eq.${existing.code},role.eq.${existing.id}`);
+          if (count && count > 0) {
+            usersCount = count;
+          }
+        } catch {
+          // Continuar con usersCount = 0 si falla la consulta opcional
+        }
+      }
 
       if (usersCount > 0) {
         res.status(400).json({
