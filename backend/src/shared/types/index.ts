@@ -1,6 +1,6 @@
 import { Request } from 'express';
 
-export type UserRole = 'ADMIN' | 'MANAGER' | 'USER';
+export type UserRole = string;
 
 export interface UserPayload {
   id: string;
@@ -22,7 +22,7 @@ export interface AuthResult {
   refreshToken: string;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;

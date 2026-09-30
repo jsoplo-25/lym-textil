@@ -1,26 +1,55 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Menu,
   X,
   Home,
-  LayoutGrid,
-  Zap,
-  Bookmark,
+  Users,
+  ShieldCheck,
+  Settings2,
+  ChevronDown,
+  User,
   LogOut,
   Sparkles,
-  User,
 } from 'lucide-react';
 import { logout } from '../../entities/session/sessionSlice';
 import type { RootState } from '../../app/store';
 import { LogoutConfirmModal } from '../../shared/components/session/LogoutConfirmModal';
+import { getUserInitials } from '../../shared/lib/utils';
+
+
+const maintainerItems = [
+  { icon: Users, label: 'Usuarios', path: '/users' },
+  { icon: ShieldCheck, label: 'Roles', path: '/roles' },
+];
 
 export const SidebarNavigation: React.FC = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
   const user = useSelector((state: RootState) => state.session.user);
+  const displayName = user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const isMaintainerActive = maintainerItems.some((item) => location.pathname.startsWith(item.path));
+
+  // Desktop flyout for "Mantenedores"
+  const [isMaintainersOpen, setIsMaintainersOpen] = useState(false);
+  const maintainersRef = useRef<HTMLDivElement>(null);
+
+  // Mobile accordion for "Mantenedores"
+  const [isMobileMaintainersOpen, setIsMobileMaintainersOpen] = useState(isMaintainerActive);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (maintainersRef.current && !maintainersRef.current.contains(e.target as Node)) {
+        setIsMaintainersOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleOpenLogoutModal = () => {
     setIsMobileOpen(false);
@@ -32,13 +61,6 @@ export const SidebarNavigation: React.FC = () => {
     dispatch(logout());
     window.location.href = '/login';
   };
-
-  const navItems = [
-    { icon: Home, label: 'Inicio', path: '/dashboard' },
-    { icon: LayoutGrid, label: 'Módulos', path: '/modules' },
-    { icon: Zap, label: 'Actividad', path: '/activity' },
-    { icon: Bookmark, label: 'Guardados', path: '/saved' },
-  ];
 
   return (
     <>
@@ -53,27 +75,89 @@ export const SidebarNavigation: React.FC = () => {
 
         {/* Navigation Items (Icons with tooltip on hover) */}
         <nav className="flex flex-col items-center gap-4 my-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative ${isActive
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
-                  }`
-                }
+          {/* Inicio */}
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              `w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative ${isActive
+                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
+              }`
+            }
+          >
+            <Home className="w-5 h-5" />
+            <span className="absolute left-16 bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-xl z-50 translate-x-1 group-hover:translate-x-0">
+              Inicio
+            </span>
+          </NavLink>
+
+          {/* Mantenedores (Usuarios / Roles) - Solo visible para Administradores */}
+          {user?.role === 'ADMINISTRADOR' && (
+            <div className="relative" ref={maintainersRef}>
+              <button
+                onClick={() => setIsMaintainersOpen((v) => !v)}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative cursor-pointer ${isMaintainerActive
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
+                  }`}
+                aria-label="Mantenedores"
+                aria-expanded={isMaintainersOpen}
               >
-                <Icon className="w-5 h-5" />
-                {/* Floating Tooltip */}
-                <span className="absolute left-16 bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-xl z-50 translate-x-1 group-hover:translate-x-0">
-                  {item.label}
-                </span>
-              </NavLink>
-            );
-          })}
+                <Settings2 className="w-5 h-5" />
+                {!isMaintainersOpen && (
+                  <span className="absolute left-16 bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-xl z-50 translate-x-1 group-hover:translate-x-0">
+                    Mantenedores
+                  </span>
+                )}
+              </button>
+
+              {/* Flyout Panel */}
+              {isMaintainersOpen && (
+                <div className="absolute left-16 top-1/2 -translate-y-1/2 w-52 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-50 animate-fadeIn">
+                  <p className="px-4 pb-1.5 pt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Mantenedores
+                  </p>
+                  <div className="px-1 space-y-0.5">
+                    {maintainerItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <NavLink
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsMaintainersOpen(false)}
+                          className={({ isActive }) =>
+                            `flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${isActive
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`
+                          }
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span>{item.label}</span>
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mi Perfil */}
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative ${isActive
+                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
+              }`
+            }
+          >
+            <User className="w-5 h-5" />
+            <span className="absolute left-16 bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-xl z-50 translate-x-1 group-hover:translate-x-0">
+              Mi Perfil
+            </span>
+          </NavLink>
         </nav>
 
         {/* Bottom Exit Button */}
@@ -110,7 +194,7 @@ export const SidebarNavigation: React.FC = () => {
           {/* Drawer Drawer Container */}
           <div className="relative z-50 w-72 max-w-[80vw] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-slate-800 h-full p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-300">
             {/* Header: Logo & Close Button */}
-            <div>
+            <div className="overflow-y-auto">
               <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-md">
@@ -126,6 +210,7 @@ export const SidebarNavigation: React.FC = () => {
 
                 <button
                   onClick={() => setIsMobileOpen(false)}
+                  aria-label="Cerrar menú"
                   className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -134,25 +219,79 @@ export const SidebarNavigation: React.FC = () => {
 
               {/* Navigation Links with ICON + TEXT */}
               <nav className="mt-6 space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setIsMobileOpen(false)}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 ${isActive
-                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`
-                      }
+                <NavLink
+                  to="/dashboard"
+                  onClick={() => setIsMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 ${isActive
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`
+                  }
+                >
+                  <Home className="w-5 h-5" />
+                  <span>Inicio</span>
+                </NavLink>
+
+                {/* Mantenedores accordion - Solo visible para Administradores */}
+                {user?.role === 'ADMINISTRADOR' && (
+                  <div>
+                    <button
+                      onClick={() => setIsMobileMaintainersOpen((v) => !v)}
+                      className={`w-full flex items-center justify-between gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 cursor-pointer ${isMaintainerActive
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      aria-expanded={isMobileMaintainersOpen}
                     >
-                      <Icon className="w-5 h-5" />
-                      <span>{item.label}</span>
-                    </NavLink>
-                  );
-                })}
+                      <span className="flex items-center gap-3.5">
+                        <Settings2 className="w-5 h-5" />
+                        <span>Mantenedores</span>
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${isMobileMaintainersOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {isMobileMaintainersOpen && (
+                      <div className="mt-1 ml-5 pl-4 border-l-2 border-slate-100 dark:border-slate-800 space-y-1 animate-fadeIn">
+                        {maintainerItems.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <NavLink
+                              key={item.path}
+                              to={item.path}
+                              onClick={() => setIsMobileOpen(false)}
+                              className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${isActive
+                                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`
+                              }
+                            >
+                              <Icon className="w-4 h-4" />
+                              <span>{item.label}</span>
+                            </NavLink>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <NavLink
+                  to="/profile"
+                  onClick={() => setIsMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 ${isActive
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`
+                  }
+                >
+                  <User className="w-5 h-5" />
+                  <span>Mi Perfil</span>
+                </NavLink>
               </nav>
             </div>
 
@@ -160,14 +299,14 @@ export const SidebarNavigation: React.FC = () => {
             <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
               <div className="flex items-center gap-3 px-2">
                 <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 font-bold text-sm">
-                  {user?.name?.charAt(0) || <User className="w-4 h-4" />}
+                  {getUserInitials(displayName) || <User className="w-4 h-4" />}
                 </div>
                 <div className="flex flex-col overflow-hidden">
                   <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                    {user?.name || 'Usuario'}
+                    {displayName || 'Usuario'}
                   </span>
                   <span className="text-xs text-slate-400 truncate">
-                    {user?.email || 'mike@intellecta.io'}
+                    {user?.email || ''}
                   </span>
                 </div>
               </div>

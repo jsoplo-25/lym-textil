@@ -2,6 +2,7 @@ import React from 'react';
 import { Mail, Lock, LogIn, Sparkles } from 'lucide-react';
 import { Input } from '../../../shared/ui/Input';
 import { Button } from '../../../shared/ui/Button';
+import { Alert } from '../../../shared/ui/Alert';
 import { useLogin } from '../hooks/useLogin';
 
 export const LoginForm: React.FC = () => {
@@ -20,9 +21,9 @@ export const LoginForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="p-3.5 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-2xl text-xs font-medium animate-fadeIn">
+        <Alert variant="error" size="sm">
           {error}
-        </div>
+        </Alert>
       )}
 
       <Input
@@ -62,7 +63,7 @@ export const LoginForm: React.FC = () => {
 
       <Button
         type="submit"
-        variant="primary"
+        variant="secondary"
         size="lg"
         className="w-full font-semibold group mt-2 shadow-lg"
         isLoading={isLoading}

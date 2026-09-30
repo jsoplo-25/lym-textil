@@ -1,4 +1,5 @@
 import swaggerJSDoc from 'swagger-jsdoc';
+import { env } from './env';
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -15,8 +16,12 @@ const options: swaggerJSDoc.Options = {
     },
     servers: [
       {
-        url: 'http://localhost:4000/api/v1',
-        description: 'Servidor Local de Desarrollo',
+        url: `http://localhost:${env.PORT}/api/v1`,
+        description: `Servidor Local (${env.NODE_ENV} - Puerto ${env.PORT})`,
+      },
+      {
+        url: '/api/v1',
+        description: 'Servidor Actual (Relativo)',
       },
     ],
     components: {
@@ -65,7 +70,7 @@ const options: swaggerJSDoc.Options = {
             },
             role: {
               type: 'string',
-              enum: ['ADMIN', 'SUPERVISOR', 'OPERATOR', 'QUALITY_INSPECTOR'],
+              enum: ['ADMINISTRADOR', 'SUPERVISOR', 'OPERATOR', 'QUALITY_INSPECTOR'],
               default: 'OPERATOR',
             },
           },
@@ -79,6 +84,68 @@ const options: swaggerJSDoc.Options = {
             lastName: { type: 'string', example: 'Pérez' },
             role: { type: 'string', example: 'OPERATOR' },
             avatarUrl: { type: 'string', example: 'https://via.placeholder.com/150' },
+          },
+        },
+        RoleInput: {
+          type: 'object',
+          required: ['code', 'name'],
+          properties: {
+            code: {
+              type: 'string',
+              example: 'SUPERVISOR',
+              description: 'Código único identificador del rol (en mayúsculas)',
+            },
+            name: {
+              type: 'string',
+              example: 'Supervisor de Producción',
+              description: 'Nombre visible y descriptivo del rol',
+            },
+            description: {
+              type: 'string',
+              example: 'Supervisión de líneas de confección, corte e hilandería',
+              description: 'Descripción detallada de responsabilidades',
+            },
+            permissions: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['dashboard:view', 'profile:view', 'users:read'],
+              description: 'Lista de permisos asignados al rol',
+            },
+          },
+        },
+        RoleUpdateInput: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              example: 'Supervisor Senior de Planta',
+            },
+            description: {
+              type: 'string',
+              example: 'Supervisión integral de módulos y control de calidad',
+            },
+            permissions: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['dashboard:view', 'profile:view', 'profile:edit', 'users:read'],
+            },
+          },
+        },
+        RoleResponse: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'd3b07384-d113-40b9-873b-55448332b8ac' },
+            code: { type: 'string', example: 'ADMINISTRADOR' },
+            name: { type: 'string', example: 'Administrador General' },
+            description: { type: 'string', example: 'Acceso total y control de todos los módulos.' },
+            badgeLabel: { type: 'string', example: 'ADMINISTRADOR' },
+            permissions: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['dashboard:view', 'profile:view', 'users:read', 'roles:read'],
+            },
+            isSystem: { type: 'boolean', example: true },
+            createdAt: { type: 'string', example: '2026-03-30T12:00:00.000Z' },
           },
         },
         ApiResponse: {
@@ -176,13 +243,191 @@ const options: swaggerJSDoc.Options = {
       },
       '/users': {
         get: {
-          summary: 'Obtener lista de usuarios registrados',
+          summary: 'Obtener lista de usuarios registrados (ADMINISTRADOR y MANAGER)',
           tags: ['Usuarios'],
           security: [{ bearerAuth: [] }],
           responses: {
             200: {
-              description: 'Lista de usuarios',
+              description: 'Lista de usuarios registrados',
             },
+            401: {
+              description: 'No autorizado',
+            },
+            403: {
+              description: 'Permisos insuficientes',
+            },
+          },
+        },
+      },
+      '/roles': {
+        get: {
+          summary: 'Listar todos los roles del sistema y personalizados',
+          description: 'Obtiene la lista completa de roles almacenados en la base de datos con sus respectivos permisos (Disponible para roles ADMINISTRADOR y MANAGER).',
+          tags: ['Roles y Permisos'],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'Lista de roles obtenida exitosamente',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/RoleResponse' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Token JWT ausente o inválido' },
+            403: { description: 'Acceso denegado: requiere rol ADMINISTRADOR o MANAGER' },
+          },
+        },
+        post: {
+          summary: 'Crear un nuevo rol personalizado',
+          description: 'Permite registrar un nuevo rol en PostgreSQL con código único y conjunto de permisos (Exclusivo para ADMINISTRADOR).',
+          tags: ['Roles y Permisos'],
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/RoleInput' },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: 'Rol creado exitosamente en la base de datos',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Rol creado exitosamente en la base de datos.' },
+                      data: { $ref: '#/components/schemas/RoleResponse' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Código o nombre faltante, o código de rol ya existente' },
+            401: { description: 'No autenticado' },
+            403: { description: 'Permisos insuficientes: Requiere rol ADMINISTRADOR' },
+          },
+        },
+      },
+      '/roles/{id}': {
+        get: {
+          summary: 'Obtener detalle de un rol por ID o código',
+          description: 'Consulta los datos y permisos de un rol específico utilizando su UUID o su código identificador (ej: ADMINISTRADOR, OPERATOR).',
+          tags: ['Roles y Permisos'],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              description: 'UUID del rol o código (ej: ADMINISTRADOR)',
+              schema: { type: 'string' },
+            },
+          ],
+          responses: {
+            200: {
+              description: 'Detalle del rol',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      data: { $ref: '#/components/schemas/RoleResponse' },
+                    },
+                  },
+                },
+              },
+            },
+            404: { description: 'Rol no encontrado en la base de datos' },
+          },
+        },
+        put: {
+          summary: 'Actualizar un rol existente (Sólo ADMINISTRADOR)',
+          description: 'Actualiza nombre, descripción o la lista de permisos de un rol en la base de datos.',
+          tags: ['Roles y Permisos'],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              description: 'UUID del rol o código a modificar',
+              schema: { type: 'string' },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/RoleUpdateInput' },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Permisos del rol actualizados exitosamente',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Permisos del rol actualizados exitosamente en la base de datos.' },
+                      data: { $ref: '#/components/schemas/RoleResponse' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Error en la solicitud' },
+            404: { description: 'Rol no encontrado' },
+          },
+        },
+        delete: {
+          summary: 'Eliminar un rol personalizado (Sólo ADMINISTRADOR)',
+          description: 'Elimina un rol creado por el usuario. Los roles nativos del sistema (`isSystem: true`) están protegidos contra eliminación.',
+          tags: ['Roles y Permisos'],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              description: 'UUID del rol o código a eliminar',
+              schema: { type: 'string' },
+            },
+          ],
+          responses: {
+            200: {
+              description: 'Rol eliminado correctamente',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Rol eliminado correctamente de la base de datos.' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Los roles nativos del sistema no pueden ser eliminados' },
+            404: { description: 'Rol no encontrado' },
           },
         },
       },

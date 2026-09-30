@@ -26,10 +26,11 @@ export class AuthController {
       };
 
       res.status(200).json(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al autenticar usuario.';
       res.status(401).json({
         success: false,
-        error: error.message || 'Error al autenticar usuario.',
+        error: errorMsg,
       });
     }
   }
@@ -55,10 +56,11 @@ export class AuthController {
       };
 
       res.status(201).json(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al registrar usuario.';
       res.status(400).json({
         success: false,
-        error: error.message || 'Error al registrar usuario.',
+        error: errorMsg,
       });
     }
   }
@@ -82,10 +84,11 @@ export class AuthController {
         message: 'Sesión renovada con éxito.',
         data: result,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Token de refresco inválido o expirado.';
       res.status(401).json({
         success: false,
-        error: error.message || 'Token de refresco inválido o expirado.',
+        error: errorMsg,
       });
     }
   }
@@ -95,5 +98,73 @@ export class AuthController {
       success: true,
       data: req.user,
     });
+  }
+
+  async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ success: false, error: 'Usuario no autenticado.' });
+        return;
+      }
+
+      const { firstName, lastName, email, avatarUrl } = req.body;
+      const updatedUser = await authService.updateProfile(req.user.id, {
+        firstName,
+        lastName,
+        email,
+        avatarUrl,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Perfil actualizado exitosamente.',
+        data: updatedUser,
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al actualizar perfil.';
+      res.status(400).json({
+        success: false,
+        error: errorMsg,
+      });
+    }
+  }
+
+  async changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ success: false, error: 'Usuario no autenticado.' });
+        return;
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) {
+        res.status(400).json({
+          success: false,
+          error: 'La contraseña actual y la nueva contraseña son requeridas.',
+        });
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        res.status(400).json({
+          success: false,
+          error: 'La nueva contraseña debe tener al menos 6 caracteres.',
+        });
+        return;
+      }
+
+      await authService.changePassword(req.user.id, currentPassword, newPassword);
+
+      res.status(200).json({
+        success: true,
+        message: 'Contraseña actualizada correctamente.',
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al cambiar contraseña.';
+      res.status(400).json({
+        success: false,
+        error: errorMsg,
+      });
+    }
   }
 }

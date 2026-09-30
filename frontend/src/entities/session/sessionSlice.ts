@@ -76,6 +76,12 @@ export const sessionSlice = createSlice({
       }
       setLastActivity(Date.now());
     },
+    updateUserProfile: (state, action: PayloadAction<Partial<UserProfile>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+        setStoredUser(state.user);
+      }
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -93,5 +99,5 @@ export const sessionSlice = createSlice({
   },
 });
 
-export const { setCredentials, updateTokens, logout, setError, setLoading } = sessionSlice.actions;
+export const { setCredentials, updateTokens, updateUserProfile, logout, setError, setLoading } = sessionSlice.actions;
 export default sessionSlice.reducer;

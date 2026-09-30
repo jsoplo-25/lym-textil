@@ -4,30 +4,10 @@ import { UserPayload, UserRole, AuthResult } from '../../shared/types';
 import { supabaseAdmin } from '../../config/supabase';
 import { prisma } from '../../config/prisma';
 
-// Mock in-memory database for immediate offline execution or fallback when database is not connected
-const mockUsers = [
-  {
-    id: 'usr_01',
-    email: 'mike@intellecta.io',
-    passwordHash: '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', // 123456
-    firstName: 'Mike',
-    lastName: 'Admin',
-    role: 'ADMIN' as UserRole,
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'usr_02',
-    email: 'gerente@textil-lym.com',
-    passwordHash: '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', // 123456
-    firstName: 'Gerente',
-    lastName: 'Textil',
-    role: 'MANAGER' as UserRole,
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  },
-];
 
 export class AuthService {
   async login(email: string, password: string): Promise<AuthResult> {
+    const normalizedEmail = email.toLowerCase().trim();
     let userRow: {
       id: string;
       email: string;
@@ -38,10 +18,10 @@ export class AuthService {
       avatarUrl?: string | null;
     } | null = null;
 
-    // 1. Try Prisma ORM lookup directly
+    // 1. Try Prisma lookup
     try {
       const dbUser = await prisma.user.findUnique({
-        where: { email },
+        where: { email: normalizedEmail },
       });
       if (dbUser) {
         userRow = {
@@ -54,17 +34,15 @@ export class AuthService {
           avatarUrl: dbUser.avatarUrl,
         };
       }
-    } catch (err: any) {
-      console.log('Prisma query note: trying Supabase fallback client', err?.message);
-    }
+    } catch {}
 
-    // 2. Try Supabase Client fallback lookup if Prisma didn't find it
+    // 2. Try Supabase Client fallback lookup
     if (!userRow) {
       try {
         const { data: supaUser, error } = await supabaseAdmin
           .from('users')
           .select('*')
-          .eq('email', email)
+          .eq('email', normalizedEmail)
           .single();
 
         if (!error && supaUser) {
@@ -78,36 +56,17 @@ export class AuthService {
             avatarUrl: supaUser.avatar_url,
           };
         }
-      } catch (e) {
-        console.log('Supabase client note: trying mock fallback');
-      }
+      } catch {}
     }
 
-    // 3. Try mock users fallback
     if (!userRow) {
-      const foundMock = mockUsers.find((u) => u.email === email);
-      if (foundMock) {
-        userRow = {
-          id: foundMock.id,
-          email: foundMock.email,
-          passwordHash: foundMock.passwordHash,
-          firstName: foundMock.firstName,
-          lastName: foundMock.lastName,
-          role: foundMock.role,
-          avatarUrl: foundMock.avatarUrl,
-        };
-      }
+      throw new Error('Credenciales incorrectas. Verifica tu correo y contraseña.');
     }
 
-    // If still no user found
-    if (!userRow) {
-      throw new Error('Usuario no encontrado');
-    }
-
-    // Verify Password
+    // Verify Password against real password hash
     const isValid = await comparePassword(password, userRow.passwordHash);
-    if (!isValid && password !== '123456') {
-      throw new Error('Contraseña incorrecta');
+    if (!isValid) {
+      throw new Error('Credenciales incorrectas. Verifica tu correo y contraseña.');
     }
 
     const userPayload: UserPayload = {
@@ -121,7 +80,13 @@ export class AuthService {
 
     const token = generateToken(userPayload);
     const refreshToken = generateRefreshToken(userPayload);
-    return { user: userPayload, token, accessToken: token, refreshToken };
+
+    return {
+      user: userPayload,
+      token,
+      accessToken: token,
+      refreshToken,
+    };
   }
 
   async register(
@@ -129,79 +94,97 @@ export class AuthService {
     password: string,
     firstName: string,
     lastName: string,
-    role: UserRole = 'USER'
+    role: UserRole = 'OPERATOR'
   ): Promise<AuthResult> {
-    const passwordHash = await hashPassword(password);
+    const normalizedEmail = email.toLowerCase().trim();
 
-    try {
-      const newUser = await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          firstName,
-          lastName,
-          role: role as any,
-        },
-      });
-
-      const userPayload: UserPayload = {
-        id: newUser.id,
-        email: newUser.email,
-        role: newUser.role as UserRole,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-      };
-
-      const token = generateToken(userPayload);
-      const refreshToken = generateRefreshToken(userPayload);
-      return { user: userPayload, token, accessToken: token, refreshToken };
-    } catch (e: any) {
-      console.log('Prisma creation note: falling back to Supabase client insert', e?.message);
+    // Check if user already exists
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } }).catch(() => null);
+    if (existing) {
+      throw new Error(`El correo ${normalizedEmail} ya está registrado.`);
     }
 
-    try {
+    const passwordHash = await hashPassword(password);
+
+    const normalizedRole = role ? String(role).toUpperCase().trim() : 'OPERATOR';
+    const roleRecord = await prisma.roleDefinition.findFirst({
+      where: {
+        OR: [{ code: normalizedRole }, { id: role }],
+      },
+    }).catch(() => null);
+
+    const finalRole = roleRecord ? roleRecord.code : normalizedRole;
+
+    let newUser = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        passwordHash,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        role: finalRole,
+      },
+    }).catch(() => null);
+
+    if (!newUser) {
       const { data: supaUser, error } = await supabaseAdmin
         .from('users')
-        .insert([{ email, password_hash: passwordHash, first_name: firstName, last_name: lastName, role }])
+        .insert([{
+          email: normalizedEmail,
+          password_hash: passwordHash,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          role: finalRole,
+        }])
         .select()
         .single();
 
-      if (!error && supaUser) {
-        const userPayload: UserPayload = {
-          id: supaUser.id,
-          email: supaUser.email,
-          role: supaUser.role as UserRole,
-          firstName: supaUser.first_name,
-          lastName: supaUser.last_name,
-        };
-        const token = generateToken(userPayload);
-        const refreshToken = generateRefreshToken(userPayload);
-        return { user: userPayload, token, accessToken: token, refreshToken };
+      if (error || !supaUser) {
+        throw new Error('Error al registrar usuario en la base de datos.');
       }
-    } catch (e) {
-      console.log('Supabase insertion note: fallback local payload');
+
+      newUser = {
+        id: supaUser.id,
+        email: supaUser.email,
+        passwordHash: supaUser.password_hash,
+        firstName: supaUser.first_name,
+        lastName: supaUser.last_name,
+        role: supaUser.role,
+        avatarUrl: supaUser.avatar_url,
+        createdAt: new Date(supaUser.created_at),
+        updatedAt: new Date(supaUser.created_at),
+      };
     }
 
     const userPayload: UserPayload = {
-      id: `usr_${Date.now()}`,
-      email,
-      role,
-      firstName,
-      lastName,
+      id: newUser.id,
+      email: newUser.email,
+      role: newUser.role as UserRole,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      avatarUrl: newUser.avatarUrl || undefined,
     };
+
     const token = generateToken(userPayload);
     const refreshToken = generateRefreshToken(userPayload);
-    return { user: userPayload, token, accessToken: token, refreshToken };
+
+    return {
+      user: userPayload,
+      token,
+      accessToken: token,
+      refreshToken,
+    };
   }
 
-  async refreshSession(
-    refreshTokenStr: string
-  ): Promise<AuthResult> {
-    if (!refreshTokenStr) {
-      throw new Error('Refresh token no proporcionado');
+  async refreshSession(oldRefreshToken: string): Promise<AuthResult> {
+    return this.refreshToken(oldRefreshToken);
+  }
+
+  async refreshToken(oldRefreshToken: string): Promise<AuthResult> {
+    const decoded = verifyRefreshToken(oldRefreshToken);
+    if (!decoded || !decoded.id) {
+      throw new Error('El Refresh Token ha expirado o es inválido.');
     }
 
-    const decoded = verifyRefreshToken(refreshTokenStr);
     let userRow: {
       id: string;
       email: string;
@@ -226,9 +209,7 @@ export class AuthService {
           avatarUrl: dbUser.avatarUrl,
         };
       }
-    } catch {
-      // fallback
-    }
+    } catch {}
 
     // 2. Supabase lookup
     if (!userRow) {
@@ -249,28 +230,11 @@ export class AuthService {
             avatarUrl: supaUser.avatar_url,
           };
         }
-      } catch {
-        // fallback
-      }
-    }
-
-    // 3. Mock fallback
-    if (!userRow) {
-      const foundMock = mockUsers.find((u) => u.id === decoded.id || u.email === decoded.email);
-      if (foundMock) {
-        userRow = {
-          id: foundMock.id,
-          email: foundMock.email,
-          firstName: foundMock.firstName,
-          lastName: foundMock.lastName,
-          role: foundMock.role,
-          avatarUrl: foundMock.avatarUrl,
-        };
-      }
+      } catch {}
     }
 
     if (!userRow) {
-      throw new Error('Usuario del refresh token no encontrado');
+      throw new Error('Usuario de la sesión no encontrado.');
     }
 
     const userPayload: UserPayload = {
@@ -291,5 +255,112 @@ export class AuthService {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
     };
+  }
+
+  async updateProfile(
+    userId: string,
+    data: { firstName?: string; lastName?: string; email?: string; avatarUrl?: string }
+  ): Promise<UserPayload> {
+    // 1. Prisma update
+    try {
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(data.firstName && { firstName: data.firstName.trim() }),
+          ...(data.lastName && { lastName: data.lastName.trim() }),
+          ...(data.email && { email: data.email.toLowerCase().trim() }),
+          ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
+        },
+      });
+      return {
+        id: updated.id,
+        email: updated.email,
+        role: updated.role as UserRole,
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        avatarUrl: updated.avatarUrl || undefined,
+      };
+    } catch {}
+
+    // 2. Supabase update
+    try {
+      const { data: supaUpdated, error } = await supabaseAdmin
+        .from('users')
+        .update({
+          ...(data.firstName && { first_name: data.firstName.trim() }),
+          ...(data.lastName && { last_name: data.lastName.trim() }),
+          ...(data.email && { email: data.email.toLowerCase().trim() }),
+          ...(data.avatarUrl !== undefined && { avatar_url: data.avatarUrl }),
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (!error && supaUpdated) {
+        return {
+          id: supaUpdated.id,
+          email: supaUpdated.email,
+          role: supaUpdated.role as UserRole,
+          firstName: supaUpdated.first_name,
+          lastName: supaUpdated.last_name,
+          avatarUrl: supaUpdated.avatar_url,
+        };
+      }
+    } catch {}
+
+    throw new Error('No se pudo actualizar el perfil del usuario.');
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<boolean> {
+    let userRow: { id: string; passwordHash: string } | null = null;
+
+    try {
+      const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (dbUser) userRow = { id: dbUser.id, passwordHash: dbUser.passwordHash };
+    } catch {}
+
+    if (!userRow) {
+      try {
+        const { data: supaUser } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        if (supaUser) userRow = { id: supaUser.id, passwordHash: supaUser.password_hash };
+      } catch {}
+    }
+
+    if (!userRow) {
+      throw new Error('Usuario no encontrado.');
+    }
+
+    const isValid = await comparePassword(currentPassword, userRow.passwordHash);
+    if (!isValid) {
+      throw new Error('La contraseña actual es incorrecta.');
+    }
+
+    const newHash = await hashPassword(newPassword);
+
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: newHash },
+      });
+      return true;
+    } catch {}
+
+    try {
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update({ password_hash: newHash })
+        .eq('id', userId);
+      if (!error) return true;
+    } catch {}
+
+    throw new Error('No se pudo cambiar la contraseña en la base de datos.');
   }
 }

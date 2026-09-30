@@ -1,0 +1,292 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Plus,
+  Lock,
+  Edit2,
+  Trash2,
+  KeyRound,
+  Layers,
+  Sparkles,
+  Users,
+} from 'lucide-react';
+import { rolesService } from '../services/roles.service';
+import type { RoleDefinition, CreateRoleDTO, UpdateRoleDTO } from '../types/roles.types';
+import { RoleModal } from '../components/RoleModal';
+import { DeleteRoleConfirmModal } from '../components/DeleteRoleConfirmModal';
+import { useToast } from '../../../shared/hooks/useToast';
+import { Skeleton } from '../../../shared/ui/Skeleton';
+
+export const RolesPage: React.FC = () => {
+  const [roles, setRoles] = useState<RoleDefinition[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleDefinition | null>(null);
+
+  // Delete modal state
+  const [deletingRole, setDeletingRole] = useState<RoleDefinition | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const toast = useToast();
+
+  const loadRoles = async () => {
+    setIsLoading(true);
+    try {
+      const data = await rolesService.getRoles();
+      setRoles(data);
+    } catch (err) {
+      console.error('Error loading roles:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRoles();
+  }, []);
+
+  const handleOpenCreate = () => {
+    setEditingRole(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (role: RoleDefinition) => {
+    setEditingRole(role);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenDelete = (role: RoleDefinition) => {
+    setDeletingRole(role);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingRole) return;
+    setIsDeleting(true);
+    try {
+      const res = await rolesService.deleteRole(deletingRole.id);
+      toast.success(res.message || `Rol [${deletingRole.name}] eliminado correctamente.`);
+      setDeletingRole(null);
+      await loadRoles();
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string } } };
+      toast.error(errorObj?.response?.data?.error || 'Error al eliminar el rol.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSaveRole = async (data: CreateRoleDTO | UpdateRoleDTO, id?: string) => {
+    if (id) {
+      await rolesService.updateRole(id, data as UpdateRoleDTO);
+      toast.success('Permisos del rol actualizados exitosamente.');
+    } else {
+      await rolesService.createRole(data as CreateRoleDTO);
+      toast.success('Nuevo rol registrado en Textil L&M.');
+    }
+    await loadRoles();
+  };
+
+  // Paleta reducida a 3 niveles: primario (emerald), secundario (tinta oscura) y escala de grises.
+  const getColorClasses = (code: string) => {
+    switch (code) {
+      case 'ADMINISTRADOR':
+        // Primario — máximo privilegio
+        return {
+          badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+          iconBg: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+          ring: 'group-hover:border-emerald-500/40',
+        };
+      case 'MANAGER':
+      case 'SUPERVISOR':
+        // Secundario — mando intermedio
+        return {
+          badge: 'bg-slate-900/6 text-slate-700 dark:bg-white/10 dark:text-slate-200 border-slate-900/10 dark:border-white/15',
+          iconBg: 'bg-slate-900/10 text-slate-800 dark:bg-white/10 dark:text-slate-200',
+          ring: 'group-hover:border-slate-400 dark:group-hover:border-slate-600',
+        };
+      default:
+        // Neutro / Base — operario, calidad, auditor
+        return {
+          badge: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+          iconBg: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+          ring: 'group-hover:border-slate-300 dark:group-hover:border-slate-700',
+        };
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col space-y-6 w-full animate-fadeIn pb-12">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">
+            <KeyRound className="w-4 h-4" />
+            <span>Mantenedor de Roles • Permisos y Accesos</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            Roles y Permisos
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+            Administra los niveles de autorización y facultades asignadas a cada perfil en el sistema.
+          </p>
+        </div>
+
+        <button
+          onClick={handleOpenCreate}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-5 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 cursor-pointer self-start sm:self-auto shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Crear Nuevo Rol</span>
+        </button>
+      </div>
+
+      {/* Grid of Roles Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <Skeleton className="h-6 w-24 rounded-full" />
+                <Skeleton className="h-3.5 w-16" />
+              </div>
+
+              <Skeleton className="h-5 w-3/4 mb-3" />
+              <Skeleton className="h-3 w-full mb-1.5" />
+              <Skeleton className="h-3 w-2/3 mb-4" />
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                <Skeleton className="h-3 w-32 mb-2" />
+                <div className="flex flex-wrap gap-1.5">
+                  <Skeleton className="h-5 w-16 rounded-lg" />
+                  <Skeleton className="h-5 w-20 rounded-lg" />
+                  <Skeleton className="h-5 w-14 rounded-lg" />
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-7 w-24 rounded-xl" />
+              </div>
+            </div>
+          ))
+        ) : roles.map((role) => {
+          const colors = getColorClasses(role.code);
+
+          return (
+            <div
+              key={role.id}
+              className={`group relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl flex flex-col justify-between ${colors.ring}`}
+            >
+              <div>
+                {/* Top Badge & System Flag */}
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${colors.badge}`}
+                  >
+                    {role.code}
+                  </span>
+
+                  {role.isSystem ? (
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                      <Lock className="w-3 h-3 text-slate-400" />
+                      <span>Nativo</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <Sparkles className="w-3 h-3" />
+                      <span>Personalizado</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Role Title & Description */}
+                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
+                  {role.name}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed min-h-[3rem]">
+                  {role.description}
+                </p>
+
+                {/* Permissions Preview Chips */}
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    <span className="flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Permisos Asignados</span>
+                    </span>
+                    <span className="text-slate-400 font-semibold">{role.permissions.length}</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-hidden">
+                    {role.permissions.slice(0, 5).map((perm) => (
+                      <span
+                        key={perm}
+                        className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-mono font-medium text-slate-600 dark:text-slate-400 truncate max-w-[130px]"
+                      >
+                        {perm}
+                      </span>
+                    ))}
+                    {role.permissions.length > 5 && (
+                      <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                        +{role.permissions.length - 5} más
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Action Footer */}
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Textil L&M RBAC</span>
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => handleOpenEdit(role)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Configurar rol y permisos"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                    <span>Configurar</span>
+                  </button>
+
+                  {role.code !== 'ADMINISTRADOR' && (
+                    <button
+                      onClick={() => handleOpenDelete(role)}
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title={`Eliminar rol ${role.name}`}
+                      aria-label={`Eliminar rol ${role.name}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Role Config Modal */}
+      <RoleModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveRole}
+        editingRole={editingRole}
+      />
+
+      {/* Role Delete Confirm Modal */}
+      <DeleteRoleConfirmModal
+        isOpen={Boolean(deletingRole)}
+        onClose={() => setDeletingRole(null)}
+        onConfirm={handleConfirmDelete}
+        role={deletingRole}
+        isLoading={isDeleting}
+      />
+    </div>
+  );
+};

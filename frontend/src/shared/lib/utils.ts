@@ -91,3 +91,42 @@ export const clearStoredSession = (): void => {
   localStorage.removeItem('user_profile');
   localStorage.removeItem('last_activity_time');
 };
+
+/**
+ * Calculates user initials, e.g.:
+ * - firstName="Jhon Anderson", lastName="Soplopuco Lavado" -> "JS"
+ * - fullName="Jhon Anderson Soplopuco Lavado" -> "JS"
+ * - firstName="Carlos", lastName="Gutiérrez" -> "CG"
+ */
+export const getUserInitials = (
+  firstName?: string | null,
+  lastName?: string | null,
+  fullName?: string | null
+): string => {
+  const cleanFirst = (firstName || '').trim();
+  const cleanLast = (lastName || '').trim();
+
+  // If both firstName and lastName are provided
+  if (cleanFirst && cleanLast) {
+    return `${cleanFirst.charAt(0)}${cleanLast.charAt(0)}`.toUpperCase();
+  }
+
+  // If only one combined string is available
+  const combined = cleanFirst || cleanLast || (fullName || '').trim();
+  if (!combined) return 'U';
+
+  const parts = combined.split(/\s+/).filter(Boolean);
+  if (parts.length >= 3) {
+    // e.g. "Jhon Anderson Soplopuco Lavado" -> parts[0]='Jhon', parts[2]='Soplopuco' -> "JS"
+    return `${parts[0].charAt(0)}${parts[2].charAt(0)}`.toUpperCase();
+  }
+  if (parts.length === 2) {
+    // e.g. "Jhon Soplopuco" -> "JS"
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+  }
+  if (parts[0].length >= 2) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return parts[0].charAt(0).toUpperCase();
+};
+

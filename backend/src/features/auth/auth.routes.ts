@@ -9,5 +9,7 @@ router.post('/login', controller.login);
 router.post('/register', controller.register);
 router.post('/refresh', controller.refresh);
 router.get('/me', authenticateJwt, controller.me);
+router.put('/profile', authenticateJwt, controller.updateProfile);
+router.put('/change-password', authenticateJwt, controller.changePassword);
 
 export default router;

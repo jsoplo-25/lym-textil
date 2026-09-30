@@ -4,7 +4,7 @@ export interface UserProfile {
   firstName?: string;
   lastName?: string;
   name?: string;
-  role: 'ADMIN' | 'MANAGER' | 'USER' | 'SUPERVISOR' | 'OPERATOR' | 'QUALITY_INSPECTOR';
+  role: string;
   avatarUrl?: string;
 }
 

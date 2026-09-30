@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
+import { Tooltip } from './Tooltip';
 
 export const ThemeToggle: React.FC = () => {
   const [isDark, setIsDark] = useState<boolean>(() => {
@@ -25,17 +26,19 @@ export const ThemeToggle: React.FC = () => {
   const toggleTheme = () => setIsDark((prev) => !prev);
 
   return (
-    <button
-      onClick={toggleTheme}
-      type="button"
-      aria-label="Cambiar tema de color"
-      className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 shadow-sm cursor-pointer active:scale-95 flex items-center justify-center"
-    >
-      {isDark ? (
-        <Sun className="w-4 h-4 text-amber-400 animate-spin-once" />
-      ) : (
-        <Moon className="w-4 h-4 text-slate-700 animate-pulse" />
-      )}
-    </button>
+    <Tooltip content={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} position="bottom">
+      <button
+        onClick={toggleTheme}
+        type="button"
+        aria-label="Cambiar tema de color"
+        className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 shadow-sm cursor-pointer active:scale-95 flex items-center justify-center"
+      >
+        {isDark ? (
+          <Sun className="w-4 h-4 text-amber-400 animate-spin-once" />
+        ) : (
+          <Moon className="w-4 h-4 text-slate-700 animate-pulse" />
+        )}
+      </button>
+    </Tooltip>
   );
 };

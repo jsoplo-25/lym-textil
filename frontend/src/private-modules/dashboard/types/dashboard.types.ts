@@ -1,20 +1,17 @@
-export interface ProductionMetrics {
-  totalOrders: number;
-  completedMeters: number;
-  activeOperators: number;
-  qualityApprovalRate: number;
+import type { ManagedUser } from '../../users/types/users.types';
+
+export interface RoleBreakdown {
+  code: string;
+  name: string;
+  count: number;
+  isSystem: boolean;
 }
 
-export interface RecentActivityItem {
-  id: string;
-  type: string;
-  title: string;
-  timestamp: string;
-  status: 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO';
-}
-
-export interface DashboardData {
-  metrics: ProductionMetrics;
-  recentActivities: RecentActivityItem[];
-  systemStatus: string;
+export interface DashboardSummary {
+  totalUsers: number;
+  totalRoles: number;
+  systemRoles: number;
+  customRoles: number;
+  roleBreakdown: RoleBreakdown[];
+  recentUsers: ManagedUser[];
 }

@@ -5,13 +5,13 @@ import { setCredentials } from '../../../entities/session/sessionSlice';
 import { loginService } from '../services/login.service';
 import type { LoginFormState } from '../types/login.types';
 
-export const useLogin = (initialEmail = 'jhon.soplopuco9cibertec@gmail.com') => {
+export const useLogin = (initialEmail = '') => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const [state, setState] = useState<LoginFormState>({
     email: initialEmail,
-    password: '123456',
+    password: '',
     rememberMe: true,
     isLoading: false,
     error: null,
@@ -40,11 +40,12 @@ export const useLogin = (initialEmail = 'jhon.soplopuco9cibertec@gmail.com') => 
         })
       );
       navigate('/dashboard');
-    } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.error ||
-        err?.message ||
-        'Error al conectar con el servidor. Verifica tus credenciales.';
+    } catch (err: unknown) {
+      let errorMessage = 'Error al conectar con el servidor. Verifica tus credenciales.';
+      if (err && typeof err === 'object') {
+        const errorObj = err as { response?: { data?: { error?: string } }; message?: string };
+        errorMessage = errorObj.response?.data?.error || errorObj.message || errorMessage;
+      }
 
       setState((prev) => ({ ...prev, error: errorMessage }));
     } finally {

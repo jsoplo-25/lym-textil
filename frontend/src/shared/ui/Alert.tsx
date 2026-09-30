@@ -1,0 +1,68 @@
+import React from 'react';
+import { CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { cn } from '../lib/utils';
+
+export type AlertVariant = 'success' | 'error' | 'warning' | 'info';
+
+interface AlertVariantConfig {
+  container: string;
+  icon: string;
+  Icon: React.ElementType;
+}
+
+const VARIANTS: Record<AlertVariant, AlertVariantConfig> = {
+  success: {
+    container: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300',
+    icon: 'text-emerald-500',
+    Icon: CheckCircle2,
+  },
+  error: {
+    container: 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-300',
+    icon: 'text-red-500',
+    Icon: AlertCircle,
+  },
+  warning: {
+    container: 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300',
+    icon: 'text-amber-500',
+    Icon: AlertTriangle,
+  },
+  info: {
+    container: 'bg-slate-500/10 border-slate-500/20 text-slate-700 dark:text-slate-300',
+    icon: 'text-slate-500',
+    Icon: Info,
+  },
+};
+
+export interface AlertProps {
+  variant?: AlertVariant;
+  /** 'md' (por defecto): banner de página, p-4/text-sm. 'sm': banner compacto para
+   *  formularios y modales, p-3/text-xs. */
+  size?: 'sm' | 'md';
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * Banner de alerta inline reutilizable — reemplaza las 4 variantes de banner rojo/verde
+ * que estaban duplicadas a mano (LoginForm, UserModal, RoleModal, ProfilePage).
+ */
+export const Alert: React.FC<AlertProps> = ({ variant = 'info', size = 'md', children, className }) => {
+  const { container, icon, Icon } = VARIANTS[variant];
+
+  return (
+    <div
+      role={variant === 'error' ? 'alert' : 'status'}
+      className={cn(
+        'rounded-2xl border font-semibold flex items-center gap-2.5 animate-fadeIn',
+        size === 'sm' ? 'p-3 text-xs' : 'p-4 text-sm',
+        container,
+        className
+      )}
+    >
+      <Icon className={cn(size === 'sm' ? 'w-4 h-4' : 'w-5 h-5', 'shrink-0', icon)} />
+      <span>{children}</span>
+    </div>
+  );
+};
+
+Alert.displayName = 'Alert';
