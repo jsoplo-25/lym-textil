@@ -180,11 +180,6 @@ export class RolesController {
         where: {
           OR: [{ id }, { code: id.toUpperCase() }],
         },
-        include: {
-          _count: {
-            select: { users: true },
-          },
-        },
       });
 
       if (!existing) {
@@ -210,11 +205,19 @@ export class RolesController {
         return;
       }
 
-      // Validar si existen usuarios asignados a este rol mediante la relación nativa de Prisma
-      let usersCount = existing._count?.users ?? 0;
-
-      // Fallback defensivo con Supabase si Prisma no detectó usuarios asignados
-      if (usersCount === 0) {
+      // Validar si existen usuarios asignados a este rol antes de eliminarlo
+      let usersCount = 0;
+      try {
+        usersCount = await prisma.user.count({
+          where: {
+            OR: [
+              { role: existing.code as any },
+              { role: existing.id as any },
+            ],
+          },
+        });
+      } catch {
+        // Fallback defensivo con Supabase si Prisma en users falla
         try {
           const { count } = await supabaseAdmin
             .from('users')
