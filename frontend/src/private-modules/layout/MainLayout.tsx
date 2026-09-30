@@ -1,0 +1,44 @@
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { SidebarNavigation } from '../../widgets/sidebar/SidebarNavigation';
+import { AppHeader } from '../../widgets/header/AppHeader';
+import { AppFooter } from '../../widgets/footer/AppFooter';
+import { SessionTimeoutModal } from '../../shared/components/session/SessionTimeoutModal';
+
+interface MainLayoutProps {
+  children?: React.ReactNode;
+  showHeader?: boolean;
+  showFooter?: boolean;
+}
+
+export const MainLayout: React.FC<MainLayoutProps> = ({
+  children,
+  showHeader = true,
+  showFooter = true,
+}) => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#DFE3ED] via-[#F1F3F8] to-[#D7DBE7] dark:from-[#0B0F17] dark:via-[#131A29] dark:to-[#0A0E16] text-slate-800 dark:text-slate-100 relative overflow-hidden transition-colors duration-300">
+      {/* Soft Ambient Glows */}
+      <div className="fixed top-1/3 -right-20 w-[550px] h-[550px] bg-emerald-500/08 dark:bg-emerald-500/05 rounded-full blur-3xl pointer-events-none z-0" />
+      <div className="fixed -bottom-24 left-1/3 w-[450px] h-[450px] bg-blue-500/06 dark:bg-blue-500/04 rounded-full blur-3xl pointer-events-none z-0" />
+      <div className="fixed -top-24 -left-24 w-[500px] h-[500px] bg-purple-500/06 dark:bg-purple-500/04 rounded-full blur-3xl pointer-events-none z-0" />
+
+      {/* Sidebar Navigation */}
+      <SidebarNavigation />
+
+      {/* Main Container Viewport */}
+      <div className="md:pl-20 flex flex-col min-h-screen relative z-10">
+        <div className="max-w-7xl w-full mx-auto p-4 md:p-8 flex-1 flex flex-col space-y-6">
+          {showHeader && <AppHeader />}
+          <main className="flex-1 flex flex-col animate-fadeIn">
+            {children || <Outlet />}
+          </main>
+          {showFooter && <AppFooter />}
+        </div>
+      </div>
+
+      {/* 15-Minute Inactivity Warning Modal */}
+      <SessionTimeoutModal />
+    </div>
+  );
+};
