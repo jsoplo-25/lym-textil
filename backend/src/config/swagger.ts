@@ -186,42 +186,6 @@ const options: swaggerJSDoc.Options = {
           },
         },
       },
-      '/tasks': {
-        get: {
-          summary: 'Obtener tareas del sistema',
-          tags: ['Tareas'],
-          security: [{ bearerAuth: [] }],
-          responses: {
-            200: {
-              description: 'Lista de tareas de producción',
-            },
-          },
-        },
-        post: {
-          summary: 'Crear nueva tarea',
-          tags: ['Tareas'],
-          security: [{ bearerAuth: [] }],
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    title: { type: 'string', example: 'Inspección de Lote #402' },
-                    description: { type: 'string', example: 'Control de densidad y teñido' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            201: {
-              description: 'Tarea creada',
-            },
-          },
-        },
-      },
     },
   },
   apis: [],

@@ -1,11 +1,11 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
 
 const authService = new AuthService();
 
 export class AuthController {
-  async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
 
@@ -34,7 +34,7 @@ export class AuthController {
     }
   }
 
-  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async register(req: Request, res: Response): Promise<void> {
     try {
       const { email, password, firstName, lastName, role } = req.body;
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, Plus, LogOut, User as UserIcon } from 'lucide-react';
+import { Search, Plus, LogOut } from 'lucide-react';
 import type { RootState } from '../../app/store';
 import { logout } from '../../entities/session/sessionSlice';
 import { ThemeToggle } from '../../shared/ui/ThemeToggle';

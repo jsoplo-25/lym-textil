@@ -3,7 +3,7 @@ import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
 import { supabaseAdmin } from '../../config/supabase';
 
 export class UsersController {
-  async getUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getUsers(_req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { data: users, error } = await supabaseAdmin
         .from('users')

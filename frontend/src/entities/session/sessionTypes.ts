@@ -1,8 +1,3 @@
-export interface UserRole {
-  id: string;
-  name: 'ADMIN' | 'MANAGER' | 'USER';
-}
-
 export interface UserProfile {
   id: string;
   email: string;

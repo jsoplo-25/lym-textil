@@ -10,7 +10,6 @@ import { swaggerSpec } from './config/swagger';
 
 import authRoutes from './features/auth/auth.routes';
 import usersRoutes from './features/users/users.routes';
-import tasksRoutes from './features/tasks/tasks.routes';
 
 const app: Express = express();
 
@@ -48,7 +47,6 @@ app.get('/health', (_req: Request, res: Response) => {
 // Feature API Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', usersRoutes);
-app.use('/api/v1/tasks', tasksRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
