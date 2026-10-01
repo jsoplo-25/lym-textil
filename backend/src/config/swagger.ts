@@ -16,15 +16,15 @@ const options: swaggerJSDoc.Options = {
     },
     servers: [
       {
-        url: `${env.API_URL}/api/v1`,
+        url: `${env.API_URL}`,
         description: `Servidor Principal (${env.NODE_ENV})`,
       },
       {
-        url: '/api/v1',
+        url: '/',
         description: 'Servidor Actual (Ruta relativa)',
       },
       {
-        url: `http://localhost:${env.PORT}/api/v1`,
+        url: `http://localhost:${env.PORT}`,
         description: `Servidor Local de Desarrollo (Puerto ${env.PORT})`,
       },
     ],
