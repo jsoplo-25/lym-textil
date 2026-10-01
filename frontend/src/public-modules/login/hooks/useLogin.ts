@@ -32,6 +32,10 @@ export const useLogin = (initialEmail = '') => {
         rememberMe: state.rememberMe,
       });
 
+      if (!data || !data.user) {
+        throw new Error('La respuesta del servidor no contiene los datos del usuario.');
+      }
+
       dispatch(
         setCredentials({
           user: data.user,

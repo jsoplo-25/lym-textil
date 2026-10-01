@@ -9,6 +9,10 @@ export const loginService = {
       rememberMe: credentials.rememberMe,
     });
 
+    if (!response.data || typeof response.data !== 'object' || !response.data.data) {
+      throw new Error('Respuesta inválida del servidor. Verifica la conexión con el backend.');
+    }
+
     return response.data.data;
   },
 

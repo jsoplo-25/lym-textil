@@ -83,7 +83,6 @@ app.get('/', (_req: Request, res: Response) => {
     status: 'online',
     documentation: `${env.API_URL}/api-docs`,
     health: `${env.API_URL}/health`,
-    apiPrefix: '/api/v1',
     environment: env.NODE_ENV,
   });
 });
@@ -100,10 +99,15 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// Feature API Routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', usersRoutes);
-app.use('/api/v1/roles', rolesRoutes);
+// Feature API Routes (Rutas directas sin versionamiento)
+app.use('/auth', authRoutes);
+app.use('/users', usersRoutes);
+app.use('/roles', rolesRoutes);
+
+// Soporte opcional para prefijo /api
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/roles', rolesRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
