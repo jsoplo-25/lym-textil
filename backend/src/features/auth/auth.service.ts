@@ -3,9 +3,38 @@ import { comparePassword, hashPassword } from '../../shared/utils/password';
 import { UserPayload, UserRole, AuthResult } from '../../shared/types';
 import { supabaseAdmin } from '../../config/supabase';
 import { prisma } from '../../config/prisma';
+import { resetTokenStore } from './reset-token.store';
+import { EmailService } from '../../shared/utils/email.service';
 
 
 export class AuthService {
+  async resolveRoleInfo(roleCodeOrId: string): Promise<{ roleName?: string; permissions: string[] }> {
+    try {
+      const roleDef = await prisma.roleDefinition.findFirst({
+        where: {
+          OR: [
+            { code: String(roleCodeOrId).trim().toUpperCase() },
+            { id: roleCodeOrId },
+          ],
+        },
+      });
+
+      if (roleDef) {
+        return {
+          roleName: roleDef.name,
+          permissions: Array.isArray(roleDef.permissions) ? roleDef.permissions : [],
+        };
+      }
+    } catch (error) {
+      console.error('Error al resolver rol desde base de datos:', error);
+    }
+
+    return {
+      roleName: undefined,
+      permissions: [],
+    };
+  }
+
   async login(email: string, password: string): Promise<AuthResult> {
     const normalizedEmail = email.toLowerCase().trim();
     let userRow: {
@@ -69,10 +98,15 @@ export class AuthService {
       throw new Error('Credenciales incorrectas. Verifica tu correo y contraseña.');
     }
 
+    // Resolver nombre descriptivo y matriz de permisos del rol desde la base de datos
+    const { roleName, permissions } = await this.resolveRoleInfo(userRow.role);
+
     const userPayload: UserPayload = {
       id: userRow.id,
       email: userRow.email,
       role: userRow.role as UserRole,
+      roleName,
+      permissions,
       firstName: userRow.firstName,
       lastName: userRow.lastName,
       avatarUrl: userRow.avatarUrl || undefined,
@@ -237,10 +271,14 @@ export class AuthService {
       throw new Error('Usuario de la sesión no encontrado.');
     }
 
+    const { roleName, permissions } = await this.resolveRoleInfo(userRow.role);
+
     const userPayload: UserPayload = {
       id: userRow.id,
       email: userRow.email,
       role: userRow.role as UserRole,
+      roleName,
+      permissions,
       firstName: userRow.firstName,
       lastName: userRow.lastName,
       avatarUrl: userRow.avatarUrl || undefined,
@@ -255,6 +293,55 @@ export class AuthService {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
     };
+  }
+
+  async getProfile(userId: string): Promise<UserPayload> {
+    // 1. Prisma lookup
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (dbUser) {
+        const { roleName, permissions } = await this.resolveRoleInfo(dbUser.role);
+
+        return {
+          id: dbUser.id,
+          email: dbUser.email,
+          role: dbUser.role as UserRole,
+          roleName,
+          permissions,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          avatarUrl: dbUser.avatarUrl || undefined,
+        };
+      }
+    } catch {}
+
+    // 2. Supabase fallback
+    try {
+      const { data: supaUser } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (supaUser) {
+        const { roleName, permissions } = await this.resolveRoleInfo(supaUser.role);
+
+        return {
+          id: supaUser.id,
+          email: supaUser.email,
+          role: supaUser.role as UserRole,
+          roleName,
+          permissions,
+          firstName: supaUser.first_name || '',
+          lastName: supaUser.last_name || '',
+          avatarUrl: supaUser.avatar_url || undefined,
+        };
+      }
+    } catch {}
+
+    throw new Error('Usuario no encontrado en la base de datos.');
   }
 
   async updateProfile(
@@ -272,10 +359,14 @@ export class AuthService {
           ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
         },
       });
+      const { roleName, permissions } = await this.resolveRoleInfo(updated.role);
+
       return {
         id: updated.id,
         email: updated.email,
         role: updated.role as UserRole,
+        roleName,
+        permissions,
         firstName: updated.firstName,
         lastName: updated.lastName,
         avatarUrl: updated.avatarUrl || undefined,
@@ -297,10 +388,14 @@ export class AuthService {
         .single();
 
       if (!error && supaUpdated) {
+        const { roleName, permissions } = await this.resolveRoleInfo(supaUpdated.role);
+
         return {
           id: supaUpdated.id,
           email: supaUpdated.email,
           role: supaUpdated.role as UserRole,
+          roleName,
+          permissions,
           firstName: supaUpdated.first_name,
           lastName: supaUpdated.last_name,
           avatarUrl: supaUpdated.avatar_url,
@@ -362,5 +457,102 @@ export class AuthService {
     } catch {}
 
     throw new Error('No se pudo cambiar la contraseña en la base de datos.');
+  }
+
+  async requestPasswordReset(email: string): Promise<boolean> {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Look up user
+    let userName = '';
+    let exists = false;
+
+    try {
+      const dbUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+      if (dbUser) {
+        exists = true;
+        userName = `${dbUser.firstName} ${dbUser.lastName}`.trim();
+      }
+    } catch {}
+
+    if (!exists) {
+      try {
+        const { data: supaUser } = await supabaseAdmin
+          .from('users')
+          .select('first_name, last_name')
+          .eq('email', normalizedEmail)
+          .single();
+        if (supaUser) {
+          exists = true;
+          userName = `${supaUser.first_name || ''} ${supaUser.last_name || ''}`.trim();
+        }
+      } catch {}
+    }
+
+    // Always proceed cleanly to prevent user enumeration
+    if (!exists) {
+      return true;
+    }
+
+    // Generate 6-digit OTP code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    resetTokenStore.set(normalizedEmail, code);
+
+    // Send email with OTP code
+    await EmailService.sendPasswordResetCode(normalizedEmail, userName, code);
+
+    return true;
+  }
+
+  verifyResetCode(email: string, code: string): { valid: boolean; reason?: string } {
+    return resetTokenStore.verify(email, code);
+  }
+
+  async resetPasswordWithCode(
+    email: string,
+    code: string,
+    newPassword: string
+  ): Promise<boolean> {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Verify code
+    const verification = resetTokenStore.verify(normalizedEmail, code);
+    if (!verification.valid) {
+      throw new Error(verification.reason || 'Código de verificación inválido o expirado.');
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
+    }
+
+    const newHash = await hashPassword(newPassword);
+
+    let updated = false;
+
+    try {
+      const dbUser = await prisma.user.update({
+        where: { email: normalizedEmail },
+        data: { passwordHash: newHash },
+      });
+      if (dbUser) updated = true;
+    } catch {}
+
+    if (!updated) {
+      try {
+        const { error } = await supabaseAdmin
+          .from('users')
+          .update({ password_hash: newHash })
+          .eq('email', normalizedEmail);
+        if (!error) updated = true;
+      } catch {}
+    }
+
+    if (!updated) {
+      throw new Error('No se pudo actualizar la contraseña. El usuario no fue encontrado.');
+    }
+
+    // Clear code after successful reset
+    resetTokenStore.delete(normalizedEmail);
+
+    return true;
   }
 }

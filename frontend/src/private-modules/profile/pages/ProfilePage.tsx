@@ -11,12 +11,15 @@ import {
   Sparkles,
   Layers,
   Check,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import type { RootState } from '../../../app/store';
 import { updateUserProfile } from '../../../entities/session/sessionSlice';
 import { profileService } from '../services/profile.service';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Alert } from '../../../shared/ui/Alert';
+import { getRoleDisplayName, hasPermission } from '../../../shared/lib/roles';
 import { Tooltip } from '../../../shared/ui/Tooltip';
 
 export const ProfilePage: React.FC = () => {
@@ -35,6 +38,9 @@ export const ProfilePage: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Status Feedback
   const [isSavingInfo, setIsSavingInfo] = useState(false);
@@ -189,7 +195,7 @@ export const ProfilePage: React.FC = () => {
                     sessionUser?.role
                   )}`}
                 >
-                  {sessionUser?.role || 'ADMINISTRADOR'}
+                  {getRoleDisplayName(sessionUser)}
                 </span>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center sm:justify-start gap-1.5 mt-1 font-medium">
@@ -205,8 +211,8 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('info')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'info'
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
             <User className="w-4 h-4" />
@@ -216,8 +222,8 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('security')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'security'
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
             <Key className="w-4 h-4" />
@@ -227,8 +233,8 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('permissions')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'permissions'
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
             <Shield className="w-4 h-4" />
@@ -326,7 +332,7 @@ export const ProfilePage: React.FC = () => {
               <Shield className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  Nivel de Autorización: {sessionUser?.role || 'ADMINISTRADOR'}
+                  Nivel de Autorización: {getRoleDisplayName(sessionUser)}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Los cambios de rol de usuario son administrados en el módulo Mantenedor de Usuarios para garantizar la trazabilidad operacional.
@@ -377,16 +383,24 @@ export const ProfilePage: React.FC = () => {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 Contraseña Actual
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showCurrentPassword ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
                 />
-                <Lock className="w-4 h-4 text-slate-400 absolute right-4 top-3.5 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword((prev) => !prev)}
+                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-0.5"
+                  tabIndex={-1}
+                  aria-label={showCurrentPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -394,16 +408,24 @@ export const ProfilePage: React.FC = () => {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 Nueva Contraseña
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
                 />
-                <Key className="w-4 h-4 text-slate-400 absolute right-4 top-3.5 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-0.5"
+                  tabIndex={-1}
+                  aria-label={showNewPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -411,16 +433,24 @@ export const ProfilePage: React.FC = () => {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 Confirmar Nueva Contraseña
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   placeholder="Repite la nueva contraseña"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
                 />
-                <Key className="w-4 h-4 text-slate-400 absolute right-4 top-3.5 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-0.5"
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -446,7 +476,7 @@ export const ProfilePage: React.FC = () => {
               Permisos y Capacidades Operativas
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Visualiza las funciones autorizadas para tu rol <span className="font-bold text-slate-800 dark:text-slate-200">[{sessionUser?.role || 'ADMINISTRADOR'}]</span> en la fábrica textil.
+              Visualiza las funciones autorizadas para tu rol <span className="font-bold text-slate-800 dark:text-slate-200">[{getRoleDisplayName(sessionUser)}]</span> en la fábrica textil.
             </p>
           </div>
 
@@ -480,66 +510,91 @@ export const ProfilePage: React.FC = () => {
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   <span>Consulta de datos personales y facultades asignadas</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Actualización de información de contacto y contraseña</span>
-                </li>
+                {hasPermission(sessionUser, 'profile:edit') && (
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Actualización de información de contacto y contraseña</span>
+                  </li>
+                )}
               </ul>
             </div>
 
-            {/* Admin Only Modules */}
-            {sessionUser?.role === 'ADMINISTRADOR' ? (
-              <>
-                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-                  <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                    <Users className="w-4 h-4" />
-                    <span>Mantenedor de Usuarios</span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Consulta de colaboradores y estados de cuenta</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Creación, edición y asignación de roles a colaboradores</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Baja y eliminación de cuentas de acceso</span>
-                    </li>
-                  </ul>
+            {/* Users Capability */}
+            {hasPermission(sessionUser, 'users:read') ? (
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
+                <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                  <Users className="w-4 h-4" />
+                  <span>Mantenedor de Usuarios</span>
                 </div>
+                <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Consulta de colaboradores y estados de cuenta</span>
+                  </li>
+                  {hasPermission(sessionUser, 'users:create') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Registro y alta de nuevos colaboradores</span>
+                    </li>
+                  )}
+                  {hasPermission(sessionUser, 'users:edit') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Edición de datos y credenciales de colaboradores</span>
+                    </li>
+                  )}
+                  {hasPermission(sessionUser, 'users:delete') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Baja y eliminación de cuentas</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            ) : null}
 
-                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-                  <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                    <Key className="w-4 h-4" />
-                    <span>Mantenedor de Roles y Permisos</span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Consulta de roles de sistema y facultades asignadas</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Configuración y edición de privilegios por módulo</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Creación y eliminación de roles operacionales</span>
-                    </li>
-                  </ul>
+            {/* Roles Capability */}
+            {hasPermission(sessionUser, 'roles:read') ? (
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
+                <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                  <Key className="w-4 h-4" />
+                  <span>Mantenedor de Roles y Permisos</span>
                 </div>
-              </>
-            ) : (
+                <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Consulta de matriz de roles y facultades</span>
+                  </li>
+                  {hasPermission(sessionUser, 'roles:create') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Creación de nuevos roles de trabajo</span>
+                    </li>
+                  )}
+                  {hasPermission(sessionUser, 'roles:edit') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Configuración y edición de privilegios</span>
+                    </li>
+                  )}
+                  {hasPermission(sessionUser, 'roles:delete') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Eliminación de roles personalizados</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            ) : null}
+
+            {!hasPermission(sessionUser, 'users:read') && !hasPermission(sessionUser, 'roles:read') && (
               <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-800 space-y-2 md:col-span-2">
                 <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-wider">
                   <Shield className="w-4 h-4 text-slate-400" />
-                  <span>Módulos Administrativos Restringidos</span>
+                  <span>Módulos de Gestión Restringidos</span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Los módulos de <strong className="text-slate-700 dark:text-slate-300">Mantenedor de Usuarios</strong> y <strong className="text-slate-700 dark:text-slate-300">Mantenedor de Roles</strong> están reservados para personal con perfil de Administrador.
+                  Tu rol actual cuenta con facultades operativas enfocadas en visualización y perfil. Los módulos de gestión de usuarios y roles están reservados según las facultades asignadas.
                 </p>
               </div>
             )}

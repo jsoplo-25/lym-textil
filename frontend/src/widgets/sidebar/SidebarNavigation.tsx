@@ -18,12 +18,7 @@ import type { RootState } from '../../app/store';
 import { LogoutConfirmModal } from '../../shared/components/session/LogoutConfirmModal';
 import { getUserInitials } from '../../shared/lib/utils';
 import { loginService } from '../../public-modules/login/services/login.service';
-
-
-const maintainerItems = [
-  { icon: Users, label: 'Usuarios', path: '/users' },
-  { icon: ShieldCheck, label: 'Roles', path: '/roles' },
-];
+import { hasPermission } from '../../shared/lib/roles';
 
 export const SidebarNavigation: React.FC = () => {
   const dispatch = useDispatch();
@@ -33,7 +28,17 @@ export const SidebarNavigation: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
-  const isMaintainerActive = maintainerItems.some((item) => location.pathname.startsWith(item.path));
+  // Permisos dinámicos para mantenedores
+  const canViewUsers = hasPermission(user, 'users:read');
+  const canViewRoles = hasPermission(user, 'roles:read');
+  const canViewMaintainers = canViewUsers || canViewRoles;
+
+  const visibleMaintainerItems = [
+    ...(canViewUsers ? [{ icon: Users, label: 'Usuarios', path: '/users' }] : []),
+    ...(canViewRoles ? [{ icon: ShieldCheck, label: 'Roles', path: '/roles' }] : []),
+  ];
+
+  const isMaintainerActive = visibleMaintainerItems.some((item) => location.pathname.startsWith(item.path));
 
   // Desktop flyout for "Mantenedores"
   const [isMaintainersOpen, setIsMaintainersOpen] = useState(false);
@@ -93,8 +98,8 @@ export const SidebarNavigation: React.FC = () => {
             </span>
           </NavLink>
 
-          {/* Mantenedores (Usuarios / Roles) - Solo visible para Administradores */}
-          {user?.role === 'ADMINISTRADOR' && (
+          {/* Mantenedores (Usuarios / Roles) - Visible según matriz de permisos */}
+          {canViewMaintainers && (
             <div className="relative" ref={maintainersRef}>
               <button
                 onClick={() => setIsMaintainersOpen((v) => !v)}
@@ -120,7 +125,7 @@ export const SidebarNavigation: React.FC = () => {
                     Mantenedores
                   </p>
                   <div className="px-1 space-y-0.5">
-                    {maintainerItems.map((item) => {
+                    {visibleMaintainerItems.map((item) => {
                       const Icon = item.icon;
                       return (
                         <NavLink
@@ -235,8 +240,8 @@ export const SidebarNavigation: React.FC = () => {
                   <span>Inicio</span>
                 </NavLink>
 
-                {/* Mantenedores accordion - Solo visible para Administradores */}
-                {user?.role === 'ADMINISTRADOR' && (
+                {/* Mantenedores accordion - Visible según matriz de permisos */}
+                {canViewMaintainers && (
                   <div>
                     <button
                       onClick={() => setIsMobileMaintainersOpen((v) => !v)}
@@ -257,7 +262,7 @@ export const SidebarNavigation: React.FC = () => {
 
                     {isMobileMaintainersOpen && (
                       <div className="mt-1 ml-5 pl-4 border-l-2 border-slate-100 dark:border-slate-800 space-y-1 animate-fadeIn">
-                        {maintainerItems.map((item) => {
+                        {visibleMaintainerItems.map((item) => {
                           const Icon = item.icon;
                           return (
                             <NavLink

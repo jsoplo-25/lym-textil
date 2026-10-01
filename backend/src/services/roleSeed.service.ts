@@ -3,7 +3,7 @@ import { prisma } from '../config/prisma';
 export const INITIAL_SYSTEM_ROLES = [
   {
     code: 'ADMINISTRADOR',
-    name: 'Administrador General',
+    name: 'Administrador',
     description: 'Acceso total y control de todos los módulos de la aplicación (Dashboard, Mi Perfil, Usuarios y Roles).',
     permissions: [
       'dashboard:view',
@@ -22,7 +22,7 @@ export const INITIAL_SYSTEM_ROLES = [
   },
   {
     code: 'OPERATOR',
-    name: 'Operario Textil',
+    name: 'Operario',
     description: 'Acceso operativo restringido exclusivamente al Dashboard y a la gestión de su Perfil personal.',
     permissions: [
       'dashboard:view',
@@ -35,29 +35,30 @@ export const INITIAL_SYSTEM_ROLES = [
 
 /**
  * Ensures system default roles exist in the database upon startup.
- * Keeps business data seeding separated from controllers and HTTP routers.
+ * ONLY creates missing roles and NEVER overwrites user-customized names, descriptions, or permissions.
  */
 export async function seedDefaultRoles(): Promise<void> {
   try {
     for (const role of INITIAL_SYSTEM_ROLES) {
-      await prisma.roleDefinition.upsert({
+      const existing = await prisma.roleDefinition.findUnique({
         where: { code: role.code },
-        update: {
-          name: role.name,
-          description: role.description,
-          permissions: role.permissions,
-          isSystem: role.isSystem,
-        },
-        create: {
-          code: role.code,
-          name: role.name,
-          description: role.description,
-          permissions: role.permissions,
-          isSystem: role.isSystem,
-        },
       });
+
+      // If the role does not exist at all, create it as default
+      if (!existing) {
+        await prisma.roleDefinition.create({
+          data: {
+            code: role.code,
+            name: role.name,
+            description: role.description,
+            permissions: role.permissions,
+            isSystem: role.isSystem,
+          },
+        });
+        console.log(`✅ [ROLES] Rol inicial creado: [${role.code}] -> ${role.name}`);
+      }
+      // If role already exists in database, DO NOT overwrite the user's modifications!
     }
-    console.log('✅ [ROLES] Roles sincronizados correctamente en la base de datos PostgreSQL.');
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('⚠️ [ROLES] Error al sincronizar roles en base de datos:', msg);

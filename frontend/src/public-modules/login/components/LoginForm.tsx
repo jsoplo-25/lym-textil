@@ -6,9 +6,11 @@ import { Alert } from '../../../shared/ui/Alert';
 import { Checkbox } from '../../../shared/ui/Checkbox';
 import { useLogin } from '../hooks/useLogin';
 import { CookiesInfoModal } from './CookiesInfoModal';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 export const LoginForm: React.FC = () => {
   const [isCookiesModalOpen, setIsCookiesModalOpen] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const {
     email,
     password,
@@ -61,7 +63,8 @@ export const LoginForm: React.FC = () => {
           <Button
             type="button"
             variant="ghost"
-            className="h-auto px-0 py-0 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-transparent hover:underline hover:text-slate-900 dark:hover:text-white"
+            onClick={() => setIsForgotPasswordOpen(true)}
+            className="h-auto px-0 py-0 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-transparent hover:underline hover:text-slate-900 dark:hover:text-white cursor-pointer"
           >
             ¿Olvidaste tu contraseña?
           </Button>
@@ -104,7 +107,18 @@ export const LoginForm: React.FC = () => {
         isOpen={isCookiesModalOpen}
         onClose={() => setIsCookiesModalOpen(false)}
       />
+
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+        defaultEmail={email}
+        onPasswordResetSuccess={(resetEmail) => {
+          setEmail(resetEmail);
+          setPassword('');
+        }}
+      />
     </>
   );
 };
+
 

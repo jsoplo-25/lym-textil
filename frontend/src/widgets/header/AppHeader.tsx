@@ -9,6 +9,7 @@ import { ThemeToggle } from '../../shared/ui/ThemeToggle';
 import { Avatar } from '../../shared/ui/Avatar';
 import { Tooltip } from '../../shared/ui/Tooltip';
 import { LogoutConfirmModal } from '../../shared/components/session/LogoutConfirmModal';
+import { getRoleDisplayName } from '../../shared/lib/roles';
 
 // Rutas que comparten la pantalla de Inicio (usan el saludo completo como hero).
 const HOME_PATHS = ['/dashboard', '/modules', '/activity', '/saved'];
@@ -65,11 +66,11 @@ export const AppHeader: React.FC = () => {
   const user = useSelector((state: RootState) => state.session.user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  
+
   // Search State
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -316,7 +317,7 @@ export const AppHeader: React.FC = () => {
                   </p>
                   {user?.role && (
                     <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      {user.role}
+                      {getRoleDisplayName(user)}
                     </div>
                   )}
                 </div>

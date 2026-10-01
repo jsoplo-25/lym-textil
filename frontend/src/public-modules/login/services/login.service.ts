@@ -1,5 +1,5 @@
 import { axiosInstance } from '../../../shared/api/axiosInstance';
-import type { LoginCredentials, LoginResponseData } from '../types/login.types';
+import type { LoginCredentials, LoginResponseData, ResetPasswordPayload } from '../types/login.types';
 
 export const loginService = {
   async login(credentials: LoginCredentials): Promise<LoginResponseData> {
@@ -22,5 +22,20 @@ export const loginService = {
     } catch {
       // Ignorar error si el backend no responde, continuar con limpieza local
     }
+  },
+
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    const response = await axiosInstance.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  async verifyResetCode(email: string, code: string): Promise<{ success: boolean; message: string }> {
+    const response = await axiosInstance.post('/auth/verify-reset-code', { email, code });
+    return response.data;
+  },
+
+  async resetPassword(payload: ResetPasswordPayload): Promise<{ success: boolean; message: string }> {
+    const response = await axiosInstance.post('/auth/reset-password', payload);
+    return response.data;
   },
 };
