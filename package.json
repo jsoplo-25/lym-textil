@@ -1,4 +1,12 @@
 {
+  "name": "textil-lym-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix backend run build",
+    "render-build": "npm --prefix backend install && npm --prefix backend run render-build",
+    "start": "node backend/dist/index.js"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2"
   }

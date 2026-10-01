@@ -1,0 +1,45 @@
+services:
+  # ==============================================================================
+  # Render Web Service Blueprint - Textiles L&M Backend API
+  # ==============================================================================
+  - type: web
+    name: lym-textil
+    runtime: node
+    rootDir: backend
+    plan: free # Cambiar a 'starter' o superior según necesidad
+    region: oregon # o oregon / ohio / frankfurt / singapore
+    buildCommand: npm install && npm run render-build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Secrets (Se configuran en el Dashboard de Render o se sincronizan)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        value: "*"
+      - key: API_URL
+        fromService:
+          type: web
+          name: lym-textil
+          property: host
