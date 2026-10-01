@@ -12,6 +12,7 @@ import {
   getStoredRefreshToken,
 } from '../../lib/utils';
 import { axiosInstance } from '../../api/axiosInstance';
+import { loginService } from '../../../public-modules/login/services/login.service';
 import { Modal } from '../../ui/Modal';
 import { Tooltip } from '../../ui/Tooltip';
 
@@ -26,8 +27,9 @@ export const SessionTimeoutModal: React.FC = () => {
   const lastActivityUpdateRef = useRef<number>(Date.now());
 
   // Handle Logout (Recarga completa y purga de memoria)
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     setIsOpen(false);
+    await loginService.logout();
     dispatch(logout());
     window.location.href = '/login';
   }, [dispatch]);
