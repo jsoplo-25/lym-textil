@@ -131,132 +131,131 @@ export const RoleModal: React.FC<RoleModalProps> = ({
       title={editingRole ? `Configurar Rol: ${editingRole.name}` : 'Crear Nuevo Rol'}
       description="Define las facultades de acceso a módulos y operaciones"
     >
-        {error && (
-          <Alert variant="error" size="sm" className="mb-4">
-            {error}
-          </Alert>
-        )}
+      {error && (
+        <Alert variant="error" size="sm" className="mb-4">
+          {error}
+        </Alert>
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                Código del Rol
-              </label>
-              <input
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                disabled={!!editingRole}
-                required
-                placeholder="Ej. AUDITOR_EXTERNO"
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-60"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                Nombre Descriptivo
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="Ej. Auditor de Calidad Externo"
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              />
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
+              Código del Rol
+            </label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              disabled={!!editingRole}
+              required
+              placeholder="Ej. AUDITOR_EXTERNO"
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-60"
+            />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-              Descripción de Funciones
+              Nombre Descriptivo
             </label>
             <input
               type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe las responsabilidades del rol en la planta..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder="Ej. Auditor de Calidad Externo"
               className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
+        </div>
 
-          {/* Permissions Matrix */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
-              Matriz de Permisos Operacionales ({selectedPermissions.length} seleccionados)
-            </label>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
+            Descripción de Funciones
+          </label>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe las responsabilidades del rol en la planta..."
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          />
+        </div>
 
-            <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
-              {ALL_PERMISSIONS.map((group) => {
-                const allSelected = group.items.every((i) => selectedPermissions.includes(i.id));
+        {/* Permissions Matrix */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+            Matriz de Permisos Operacionales ({selectedPermissions.length} seleccionados)
+          </label>
 
-                return (
-                  <div
-                    key={group.category}
-                    className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60"
-                  >
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/50 dark:border-slate-700/50">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        {group.category}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => toggleAllCategory(group.items)}
-                        className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-                      >
-                        {allSelected ? 'Desmarcar todos' : 'Marcar todos'}
-                      </button>
-                    </div>
+          <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
+            {ALL_PERMISSIONS.map((group) => {
+              const allSelected = group.items.every((i) => selectedPermissions.includes(i.id));
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {group.items.map((item) => {
-                        const isChecked = selectedPermissions.includes(item.id);
-                        return (
-                          <div
-                            key={item.id}
-                            onClick={() => togglePermission(item.id)}
-                            className={`flex items-center gap-2 p-2 rounded-xl text-xs cursor-pointer transition-colors ${
-                              isChecked
-                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                            }`}
-                          >
-                            {isChecked ? (
-                              <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                            ) : (
-                              <Square className="w-4 h-4 text-slate-400 shrink-0" />
-                            )}
-                            <span className="truncate">{item.label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
+              return (
+                <div
+                  key={group.category}
+                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60"
+                >
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/50 dark:border-slate-700/50">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {group.category}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleAllCategory(group.items)}
+                      className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                    >
+                      {allSelected ? 'Desmarcar todos' : 'Marcar todos'}
+                    </button>
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              <span>{isLoading ? 'Guardando...' : editingRole ? 'Guardar Permisos' : 'Crear Rol'}</span>
-            </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {group.items.map((item) => {
+                      const isChecked = selectedPermissions.includes(item.id);
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => togglePermission(item.id)}
+                          className={`flex items-center gap-2 p-2 rounded-xl text-xs cursor-pointer transition-colors ${isChecked
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'
+                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                            }`}
+                        >
+                          {isChecked ? (
+                            <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          ) : (
+                            <Square className="w-4 h-4 text-slate-400 shrink-0" />
+                          )}
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </form>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            <span>{isLoading ? 'Guardando...' : editingRole ? 'Guardar Permisos' : 'Crear Rol'}</span>
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 };

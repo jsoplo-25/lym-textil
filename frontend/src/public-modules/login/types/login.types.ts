@@ -20,3 +20,10 @@ export interface LoginFormState {
   isLoading: boolean;
   error: string | null;
 }
+
+export interface ResetPasswordPayload {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+

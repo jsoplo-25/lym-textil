@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Save, Lock, Mail, User, Shield } from 'lucide-react';
+import { UserPlus, Save, Lock, Mail, User, Shield, Eye, EyeOff } from 'lucide-react';
 import type { ManagedUser, CreateUserDTO, UpdateUserDTO } from '../types/users.types';
 import type { UserProfile } from '../../../entities/session/sessionTypes';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
-
-const ROLE_OPTIONS: SelectOption[] = [
-  { value: 'ADMINISTRADOR', label: 'ADMINISTRADOR - Administrador General' },
-  { value: 'OPERATOR', label: 'OPERATOR - Operario' },
-];
+import { rolesService } from '../../roles/services/roles.service';
+import type { RoleDefinition } from '../../roles/types/roles.types';
+import { getRoleDisplayName } from '../../../shared/lib/roles';
 
 const STATUS_OPTIONS: SelectOption[] = [
   { value: 'ACTIVE', label: 'Activo' },
@@ -22,6 +20,7 @@ interface UserModalProps {
   onClose: () => void;
   onSave: (data: CreateUserDTO | UpdateUserDTO, id?: string) => Promise<void>;
   editingUser?: ManagedUser | null;
+  availableRoles?: RoleDefinition[];
 }
 
 export const UserModal: React.FC<UserModalProps> = ({
@@ -29,16 +28,44 @@ export const UserModal: React.FC<UserModalProps> = ({
   onClose,
   onSave,
   editingUser,
+  availableRoles,
 }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserProfile['role']>('OPERATOR');
+  const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState<UserProfile['role']>('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+  const [roleOptions, setRoleOptions] = useState<SelectOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (availableRoles && availableRoles.length > 0) {
+      setRoleOptions(
+        availableRoles.map((r) => ({
+          value: r.code,
+          label: r.name,
+        }))
+      );
+    } else if (isOpen) {
+      rolesService
+        .getRoles()
+        .then((roles) => {
+          if (roles && roles.length > 0) {
+            setRoleOptions(
+              roles.map((r) => ({
+                value: r.code,
+                label: r.name,
+              }))
+            );
+          }
+        })
+        .catch(() => {});
+    }
+  }, [availableRoles, isOpen]);
 
   useEffect(() => {
     if (editingUser) {
@@ -54,12 +81,13 @@ export const UserModal: React.FC<UserModalProps> = ({
       setLastName('');
       setEmail('');
       setPassword('');
-      setRole('OPERATOR');
+      setShowPassword(false);
+      setRole(availableRoles?.[0]?.code || roleOptions?.[0]?.value || '');
       setAvatarUrl('');
       setStatus('ACTIVE');
     }
     setError(null);
-  }, [editingUser, isOpen]);
+  }, [editingUser, isOpen, availableRoles, roleOptions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,16 +208,25 @@ export const UserModal: React.FC<UserModalProps> = ({
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
                 Contraseña Temporal
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-0.5"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           )}
@@ -203,7 +240,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                 value={role}
                 onChange={(value) => setRole(value as UserProfile['role'])}
                 leftIcon={<Shield className="w-4 h-4" />}
-                options={ROLE_OPTIONS}
+                options={roleOptions}
                 className="text-xs bg-slate-50 dark:bg-slate-800 py-2.5"
               />
             </div>
