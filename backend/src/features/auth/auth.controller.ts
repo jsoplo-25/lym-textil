@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
+import { setAuthCookies, clearAuthCookies, COOKIE_NAMES } from '../../shared/utils/cookies';
 
 const authService = new AuthService();
 
 export class AuthController {
   async login(req: Request, res: Response): Promise<void> {
     try {
-      const { email, password } = req.body;
+      const { email, password, rememberMe = true } = req.body;
 
       if (!email || !password) {
         res.status(400).json({
@@ -18,6 +19,16 @@ export class AuthController {
       }
 
       const result = await authService.login(email, password);
+
+      // Attach secure httpOnly cookies
+      setAuthCookies(
+        res,
+        {
+          accessToken: result.accessToken || result.token,
+          refreshToken: result.refreshToken,
+        },
+        Boolean(rememberMe)
+      );
 
       const response: ApiResponse = {
         success: true,
@@ -49,6 +60,16 @@ export class AuthController {
 
       const result = await authService.register(email, password, firstName, lastName, role);
 
+      // Attach secure httpOnly cookies
+      setAuthCookies(
+        res,
+        {
+          accessToken: result.accessToken || result.token,
+          refreshToken: result.refreshToken,
+        },
+        true
+      );
+
       const response: ApiResponse = {
         success: true,
         message: 'Usuario registrado exitosamente.',
@@ -67,9 +88,11 @@ export class AuthController {
 
   async refresh(req: Request, res: Response): Promise<void> {
     try {
-      const { refreshToken } = req.body;
+      // Prioritize request body or fallback to httpOnly cookie
+      const tokenToRefresh =
+        req.body?.refreshToken || req.cookies?.[COOKIE_NAMES.REFRESH_TOKEN];
 
-      if (!refreshToken) {
+      if (!tokenToRefresh) {
         res.status(400).json({
           success: false,
           error: 'El refreshToken es requerido.',
@@ -77,7 +100,17 @@ export class AuthController {
         return;
       }
 
-      const result = await authService.refreshSession(refreshToken);
+      const result = await authService.refreshSession(tokenToRefresh);
+
+      // Refresh the httpOnly cookies
+      setAuthCookies(
+        res,
+        {
+          accessToken: result.accessToken || result.token,
+          refreshToken: result.refreshToken,
+        },
+        true
+      );
 
       res.status(200).json({
         success: true,
@@ -91,6 +124,14 @@ export class AuthController {
         error: errorMsg,
       });
     }
+  }
+
+  async logout(_req: Request, res: Response): Promise<void> {
+    clearAuthCookies(res);
+    res.status(200).json({
+      success: true,
+      message: 'Sesión cerrada exitosamente.',
+    });
   }
 
   async me(req: AuthenticatedRequest, res: Response): Promise<void> {

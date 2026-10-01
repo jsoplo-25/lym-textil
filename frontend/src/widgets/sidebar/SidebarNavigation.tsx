@@ -17,6 +17,7 @@ import { logout } from '../../entities/session/sessionSlice';
 import type { RootState } from '../../app/store';
 import { LogoutConfirmModal } from '../../shared/components/session/LogoutConfirmModal';
 import { getUserInitials } from '../../shared/lib/utils';
+import { loginService } from '../../public-modules/login/services/login.service';
 
 
 const maintainerItems = [
@@ -56,8 +57,9 @@ export const SidebarNavigation: React.FC = () => {
     setIsLogoutModalOpen(true);
   };
 
-  const handleConfirmLogout = () => {
+  const handleConfirmLogout = async () => {
     setIsLogoutModalOpen(false);
+    await loginService.logout();
     dispatch(logout());
     window.location.href = '/login';
   };

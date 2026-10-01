@@ -2,34 +2,17 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { SessionState, UserProfile } from './sessionTypes';
 import {
-  getStoredToken,
-  getStoredRefreshToken,
-  getStoredUser,
-  setStoredToken,
-  setStoredRefreshToken,
-  setStoredUser,
   setLastActivity,
   clearStoredSession,
-  isSessionValidOnReload,
 } from '../../shared/lib/utils';
 
-// Verify session validity on initial load or browser refresh (F5)
-const isValidSession = isSessionValidOnReload();
-const initialToken = isValidSession ? getStoredToken() : null;
-const initialRefreshToken = isValidSession ? getStoredRefreshToken() : null;
-const initialUser = isValidSession ? getStoredUser() : null;
-
-// Clean up stale session if expired
-if (!isValidSession) {
-  clearStoredSession();
-}
-
 const initialState: SessionState = {
-  user: initialUser,
-  token: initialToken,
-  refreshToken: initialRefreshToken,
-  isAuthenticated: !!(initialToken && initialUser),
-  isLoading: false,
+  user: null,
+  token: null,
+  refreshToken: null,
+  isAuthenticated: false,
+  isLoading: true,
+  isInitialized: false,
   error: null,
 };
 
@@ -41,24 +24,37 @@ export const sessionSlice = createSlice({
       state,
       action: PayloadAction<{
         user: UserProfile;
-        token: string;
+        token?: string;
         refreshToken?: string;
       }>
     ) => {
       const { user, token, refreshToken } = action.payload;
       state.user = user;
-      state.token = token;
+      state.token = token || null;
       state.refreshToken = refreshToken || null;
       state.isAuthenticated = true;
+      state.isInitialized = true;
+      state.isLoading = false;
       state.error = null;
 
-      // Persist in localStorage
-      setStoredToken(token);
-      if (refreshToken) {
-        setStoredRefreshToken(refreshToken);
-      }
-      setStoredUser(user);
       setLastActivity(Date.now());
+    },
+    setInitialized: (
+      state,
+      action: PayloadAction<{
+        isAuthenticated: boolean;
+        user?: UserProfile | null;
+        token?: string | null;
+      }>
+    ) => {
+      state.isInitialized = true;
+      state.isLoading = false;
+      state.isAuthenticated = action.payload.isAuthenticated;
+      state.user = action.payload.user || null;
+      state.token = action.payload.token || null;
+      if (action.payload.isAuthenticated) {
+        setLastActivity(Date.now());
+      }
     },
     updateTokens: (
       state,
@@ -68,18 +64,14 @@ export const sessionSlice = createSlice({
       }>
     ) => {
       state.token = action.payload.token;
-      setStoredToken(action.payload.token);
-
       if (action.payload.refreshToken) {
         state.refreshToken = action.payload.refreshToken;
-        setStoredRefreshToken(action.payload.refreshToken);
       }
       setLastActivity(Date.now());
     },
     updateUserProfile: (state, action: PayloadAction<Partial<UserProfile>>) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
-        setStoredUser(state.user);
       }
     },
     logout: (state) => {
@@ -87,11 +79,14 @@ export const sessionSlice = createSlice({
       state.token = null;
       state.refreshToken = null;
       state.isAuthenticated = false;
+      state.isInitialized = true;
+      state.isLoading = false;
       state.error = null;
       clearStoredSession();
     },
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
+      state.isLoading = false;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
@@ -99,5 +94,14 @@ export const sessionSlice = createSlice({
   },
 });
 
-export const { setCredentials, updateTokens, updateUserProfile, logout, setError, setLoading } = sessionSlice.actions;
+export const {
+  setCredentials,
+  setInitialized,
+  updateTokens,
+  updateUserProfile,
+  logout,
+  setError,
+  setLoading,
+} = sessionSlice.actions;
+
 export default sessionSlice.reducer;
