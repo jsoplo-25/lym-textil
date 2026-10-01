@@ -10,7 +10,9 @@ const requireRole = (...allowedRoles) => {
             });
             return;
         }
-        if (!allowedRoles.includes(req.user.role)) {
+        const userRole = String(req.user.role).toUpperCase();
+        const isAllowed = allowedRoles.some((r) => String(r).toUpperCase() === userRole);
+        if (!isAllowed) {
             res.status(403).json({
                 success: false,
                 error: `Acceso denegado. Se requiere uno de los siguientes roles: [${allowedRoles.join(', ')}]`,

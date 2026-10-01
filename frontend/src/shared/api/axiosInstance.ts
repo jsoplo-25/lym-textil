@@ -3,7 +3,9 @@ import { store } from '../../app/store';
 import { updateTokens, logout } from '../../entities/session/sessionSlice';
 import { setLastActivity } from '../lib/utils';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Remove trailing slash if present
+const API_URL = rawApiUrl.replace(/\/+$/, '');
 
 export const axiosInstance = axios.create({
   baseURL: API_URL,
