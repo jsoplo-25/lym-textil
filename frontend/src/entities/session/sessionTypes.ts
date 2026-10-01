@@ -5,6 +5,8 @@ export interface UserProfile {
   lastName?: string;
   name?: string;
   role: string;
+  roleName?: string;
+  permissions?: string[];
   avatarUrl?: string;
 }
 

@@ -21,5 +21,11 @@ export const env = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'super_secret_refresh_jwt_key_textiles_lym_2026',
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  SMTP_HOST: process.env.SMTP_HOST || '',
+  SMTP_PORT: Number(process.env.SMTP_PORT) || 587,
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'Textiles L&M <no-reply@textileslym.com>',
 };
 

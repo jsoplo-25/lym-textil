@@ -134,14 +134,14 @@ export const SessionTimeoutModal: React.FC = () => {
     // Sin `onClose`: es un modal forzado — no se descarta con Escape, click afuera ni botón X.
     <Modal isOpen={isOpen} size="md" className="p-6 sm:p-8">
       {/* Ambient Top Glow */}
-      <div className="absolute -top-12 -right-12 w-40 h-40 bg-amber-500/15 dark:bg-amber-500/20 rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-teal-500/15 dark:bg-teal-500/20 rounded-full blur-2xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center text-center">
         {/* Animated Icon Badge */}
         <div className="relative mb-5">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 dark:text-amber-400">
-            <ShieldAlert className="w-8 h-8 animate-pulse" />
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <ShieldAlert className="w-8 h-8 animate-pulse text-emerald-600 dark:text-emerald-400" />
           </div>
           <Tooltip content="Sesión por expirar" position="right" className="absolute -bottom-1 -right-1">
             <span
@@ -169,14 +169,14 @@ export const SessionTimeoutModal: React.FC = () => {
           <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-400 mb-1">
             Tiempo restante para cierre automático
           </span>
-          <span className="text-4xl font-extrabold font-mono tracking-tight text-amber-600 dark:text-amber-400">
+          <span className="text-4xl font-extrabold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
             {formattedTime}
           </span>
 
           {/* Countdown Progress Bar */}
           <div className="w-full bg-slate-200 dark:bg-slate-700/80 h-1.5 rounded-full mt-3 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-1000 ease-linear rounded-full"
+              className="h-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-1000 ease-linear rounded-full"
               style={{ width: `${progressPercent}%` }}
             />
           </div>

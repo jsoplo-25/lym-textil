@@ -11,6 +11,7 @@ export interface ManagedUser {
   firstName: string;
   lastName: string;
   role: UserRole;
+  roleName?: string;
   avatarUrl?: string;
   status?: 'ACTIVE' | 'INACTIVE';
   createdAt?: string;
@@ -31,6 +32,14 @@ export class UsersController {
     const { q, role } = req.query as { q?: string; role?: string };
 
     let usersList: ManagedUser[] = [];
+
+    // Cargar mapa de nombres de roles desde la base de datos
+    const dbRoles = await prisma.roleDefinition.findMany().catch(() => []);
+    const rolesMap = new Map<string, string>();
+    dbRoles.forEach((r) => {
+      rolesMap.set(r.code.toUpperCase(), r.name);
+      rolesMap.set(r.id, r.name);
+    });
 
     // 1. Try Prisma Primary Query
     try {
@@ -60,6 +69,7 @@ export class UsersController {
           firstName: u.firstName,
           lastName: u.lastName,
           role: u.role as UserRole,
+          roleName: rolesMap.get(u.role.toUpperCase()) || rolesMap.get(u.role) || u.role,
           avatarUrl: u.avatarUrl || undefined,
           status: 'ACTIVE',
           createdAt: u.createdAt.toISOString(),

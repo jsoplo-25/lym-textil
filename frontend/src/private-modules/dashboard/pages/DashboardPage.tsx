@@ -14,15 +14,7 @@ import { Card } from '../../../shared/ui/Card';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useDashboard } from '../hooks/useDashboard';
-
-const ROLE_LABELS: Record<string, string> = {
-  ADMINISTRADOR: 'Administrador General',
-  MANAGER: 'Gerente',
-  SUPERVISOR: 'Supervisor',
-  OPERATOR: 'Operador',
-  QUALITY_INSPECTOR: 'Inspector de Calidad',
-  USER: 'Usuario',
-};
+import { getRoleDisplayName, hasPermission, hasAnyPermission } from '../../../shared/lib/roles';
 
 const formatDate = (value?: string) => {
   if (!value) return 'Sin fecha';
@@ -35,7 +27,7 @@ const formatDate = (value?: string) => {
 
 export const DashboardPage: React.FC = () => {
   const sessionUser = useSelector((state: RootState) => state.session.user);
-  const canViewSummary = sessionUser?.role === 'ADMINISTRADOR';
+  const canViewSummary = hasAnyPermission(sessionUser, 'dashboard:view', 'users:read', 'roles:read');
   const { data, isLoading, error } = useDashboard(canViewSummary);
 
   return (
@@ -142,12 +134,14 @@ export const DashboardPage: React.FC = () => {
             <Card variant="glass" padding="lg" className="lg:col-span-2">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-black text-slate-900 dark:text-white">Usuarios por Rol</h3>
-                <NavLink
-                  to="/roles"
-                  className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
-                >
-                  Ver roles <ArrowUpRight className="w-3.5 h-3.5" />
-                </NavLink>
+                {hasPermission(sessionUser, 'roles:read') && (
+                  <NavLink
+                    to="/roles"
+                    className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    Ver roles <ArrowUpRight className="w-3.5 h-3.5" />
+                  </NavLink>
+                )}
               </div>
 
               {!isLoading && (!data?.roleBreakdown.length) && (
@@ -227,7 +221,7 @@ export const DashboardPage: React.FC = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 mb-1">
-                        {ROLE_LABELS[user.role] || user.role}
+                        {getRoleDisplayName(user.role)}
                       </span>
                       <p className="flex items-center justify-end gap-1 text-[11px] text-slate-400">
                         <Clock className="w-3 h-3" />
