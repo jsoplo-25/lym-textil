@@ -66,6 +66,17 @@ app.get('/api-docs.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.json(swagger_1.swaggerSpec);
 });
+// Root Welcome Endpoint
+app.get('/', (_req, res) => {
+    res.status(200).json({
+        message: '🚀 API de Textiles L&M funcionando correctamente',
+        status: 'online',
+        documentation: `${env_1.env.API_URL}/api-docs`,
+        health: `${env_1.env.API_URL}/health`,
+        apiPrefix: '/api/v1',
+        environment: env_1.env.NODE_ENV,
+    });
+});
 // Health Check Endpoint (Render uses this for zero-downtime and liveness checks)
 app.get('/health', (_req, res) => {
     res.status(200).json({
