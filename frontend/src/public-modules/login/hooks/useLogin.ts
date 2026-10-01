@@ -5,14 +5,18 @@ import { setCredentials } from '../../../entities/session/sessionSlice';
 import { loginService } from '../services/login.service';
 import type { LoginFormState } from '../types/login.types';
 
+const REMEMBER_EMAIL_KEY = 'lym_remembered_email';
+
 export const useLogin = (initialEmail = '') => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const savedEmail = typeof window !== 'undefined' ? localStorage.getItem(REMEMBER_EMAIL_KEY) || '' : '';
+
   const [state, setState] = useState<LoginFormState>({
-    email: initialEmail,
+    email: initialEmail || savedEmail,
     password: '',
-    rememberMe: true,
+    rememberMe: false,
     isLoading: false,
     error: null,
   });
@@ -34,6 +38,13 @@ export const useLogin = (initialEmail = '') => {
 
       if (!data || !data.user) {
         throw new Error('La respuesta del servidor no contiene los datos del usuario.');
+      }
+
+      // Handle persistent email storage
+      if (state.rememberMe) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, state.email.trim());
+      } else {
+        localStorage.removeItem(REMEMBER_EMAIL_KEY);
       }
 
       dispatch(

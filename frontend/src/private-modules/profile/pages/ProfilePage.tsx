@@ -11,6 +11,8 @@ import {
   Sparkles,
   Layers,
   Check,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import type { RootState } from '../../../app/store';
 import { updateUserProfile } from '../../../entities/session/sessionSlice';
@@ -35,6 +37,9 @@ export const ProfilePage: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Status Feedback
   const [isSavingInfo, setIsSavingInfo] = useState(false);
@@ -377,16 +382,24 @@ export const ProfilePage: React.FC = () => {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 Contraseña Actual
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showCurrentPassword ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
                 />
-                <Lock className="w-4 h-4 text-slate-400 absolute right-4 top-3.5 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword((prev) => !prev)}
+                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-0.5"
+                  tabIndex={-1}
+                  aria-label={showCurrentPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -394,16 +407,24 @@ export const ProfilePage: React.FC = () => {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 Nueva Contraseña
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
                 />
-                <Key className="w-4 h-4 text-slate-400 absolute right-4 top-3.5 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-0.5"
+                  tabIndex={-1}
+                  aria-label={showNewPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -411,16 +432,24 @@ export const ProfilePage: React.FC = () => {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 Confirmar Nueva Contraseña
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   placeholder="Repite la nueva contraseña"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
                 />
-                <Key className="w-4 h-4 text-slate-400 absolute right-4 top-3.5 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-0.5"
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 

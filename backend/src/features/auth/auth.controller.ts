@@ -208,4 +208,97 @@ export class AuthController {
       });
     }
   }
+
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          error: 'El correo electrónico es requerido.',
+        });
+        return;
+      }
+
+      await authService.requestPasswordReset(email);
+
+      res.status(200).json({
+        success: true,
+        message: 'Si el correo electrónico está registrado, recibirás un código de verificación en breve.',
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al procesar la solicitud de recuperación.';
+      res.status(500).json({
+        success: false,
+        error: errorMsg,
+      });
+    }
+  }
+
+  async verifyResetCode(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, code } = req.body;
+      if (!email || !code) {
+        res.status(400).json({
+          success: false,
+          error: 'El correo y el código de verificación son requeridos.',
+        });
+        return;
+      }
+
+      const result = authService.verifyResetCode(email, code);
+      if (!result.valid) {
+        res.status(400).json({
+          success: false,
+          error: result.reason || 'El código de verificación es inválido o ha expirado.',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Código de verificación válido.',
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al verificar el código.';
+      res.status(400).json({
+        success: false,
+        error: errorMsg,
+      });
+    }
+  }
+
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, code, newPassword } = req.body;
+      if (!email || !code || !newPassword) {
+        res.status(400).json({
+          success: false,
+          error: 'El correo, el código y la nueva contraseña son requeridos.',
+        });
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        res.status(400).json({
+          success: false,
+          error: 'La nueva contraseña debe tener al menos 6 caracteres.',
+        });
+        return;
+      }
+
+      await authService.resetPasswordWithCode(email, code, newPassword);
+
+      res.status(200).json({
+        success: true,
+        message: '¡Tu contraseña ha sido restablecida exitosamente! Ya puedes iniciar sesión con tu nueva clave.',
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al restablecer la contraseña.';
+      res.status(400).json({
+        success: false,
+        error: errorMsg,
+      });
+    }
+  }
 }
