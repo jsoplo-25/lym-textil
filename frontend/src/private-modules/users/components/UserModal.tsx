@@ -8,7 +8,6 @@ import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
 import { rolesService } from '../../roles/services/roles.service';
 import type { RoleDefinition } from '../../roles/types/roles.types';
-import { getRoleDisplayName } from '../../../shared/lib/roles';
 
 const STATUS_OPTIONS: SelectOption[] = [
   { value: 'ACTIVE', label: 'Activo' },

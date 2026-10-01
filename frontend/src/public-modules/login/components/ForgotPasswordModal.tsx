@@ -48,7 +48,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   }, [isOpen, defaultEmail]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (countdown > 0) {
       timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
     }
@@ -149,7 +149,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           ? 'Restablecer Contraseña'
           : 'Recuperación de Contraseña'
       }
-      subtitle={
+      description={
         step === 'SUCCESS'
           ? 'Tu cuenta ha sido actualizada con éxito'
           : step === 'CODE_AND_PASSWORD'
