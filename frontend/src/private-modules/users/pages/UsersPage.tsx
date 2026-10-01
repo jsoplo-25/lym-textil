@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { usersService } from '../services/users.service';
 import type { ManagedUser, CreateUserDTO, UpdateUserDTO } from '../types/users.types';
+import { rolesService } from '../../roles/services/roles.service';
+import type { RoleDefinition } from '../../roles/types/roles.types';
 import { UserModal } from '../components/UserModal';
 import { DeleteUserConfirmModal } from '../components/DeleteUserConfirmModal';
 import { Avatar } from '../../../shared/ui/Avatar';
@@ -19,15 +21,18 @@ import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { Tooltip } from '../../../shared/ui/Tooltip';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useToast } from '../../../shared/hooks/useToast';
+import { getRoleDisplayName } from '../../../shared/lib/roles';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from '../../../app/store';
+import { updateUserProfile } from '../../../entities/session/sessionSlice';
 
-const ROLE_FILTER_OPTIONS: SelectOption[] = [
-  { value: 'ALL', label: 'Todos los roles' },
-  { value: 'ADMINISTRADOR', label: 'ADMINISTRADOR - Administrador General' },
-  { value: 'OPERATOR', label: 'OPERATOR - Operario' },
-];
+
 
 export const UsersPage: React.FC = () => {
+  const dispatch = useDispatch();
+  const sessionUser = useSelector((state: RootState) => state.session.user);
   const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [rolesList, setRolesList] = useState<RoleDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
@@ -41,6 +46,17 @@ export const UsersPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const toast = useToast();
+
+  const loadRoles = async () => {
+    try {
+      const data = await rolesService.getRoles();
+      if (data && data.length > 0) {
+        setRolesList(data);
+      }
+    } catch {
+      // Ignorar fallback silencioso
+    }
+  };
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -56,6 +72,10 @@ export const UsersPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadRoles();
+  }, []);
 
   useEffect(() => {
     loadUsers();
@@ -80,6 +100,22 @@ export const UsersPage: React.FC = () => {
     if (id) {
       await usersService.updateUser(id, data as UpdateUserDTO);
       toast.success('Usuario actualizado correctamente.');
+
+      // Si el usuario actualizado es el usuario logueado en la sesión activa
+      if (sessionUser && sessionUser.id === id) {
+        const newRoleName = data.role ? getRoleDisplayName(data.role, rolesList) : undefined;
+        dispatch(
+          updateUserProfile({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || undefined,
+            email: data.email,
+            role: data.role,
+            roleName: newRoleName,
+            avatarUrl: data.avatarUrl,
+          })
+        );
+      }
     } else {
       await usersService.createUser(data as CreateUserDTO);
       toast.success('Usuario creado exitosamente.');
@@ -104,17 +140,23 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const getRoleBadge = (role: ManagedUser['role']) => {
-    if (role === 'ADMINISTRADOR') {
+  const filterOptions: SelectOption[] = [
+    { value: 'ALL', label: 'Todos los roles' },
+    ...rolesList.map((r) => ({ value: r.code, label: r.name })),
+  ];
+
+  const getRoleBadge = (user: ManagedUser) => {
+    const descriptiveName = user.roleName || getRoleDisplayName(user.role, rolesList);
+    if (user.role === 'ADMINISTRADOR') {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-          ADMINISTRADOR
+          {descriptiveName}
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-        OPERARIO
+        {descriptiveName}
       </span>
     );
   };
@@ -122,7 +164,7 @@ export const UsersPage: React.FC = () => {
   // Metrics
   const totalUsers = users.length;
   const adminCount = users.filter((u) => u.role === 'ADMINISTRADOR').length;
-  const operatorCount = users.filter((u) => u.role === 'OPERATOR').length;
+  const nonAdminCount = users.filter((u) => u.role !== 'ADMINISTRADOR').length;
   const activeCount = users.filter((u) => u.status === 'ACTIVE').length;
 
   return (
@@ -162,8 +204,8 @@ export const UsersPage: React.FC = () => {
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{adminCount}</p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Operarios</span>
-          <p className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1">{operatorCount}</p>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Personal Operativo</span>
+          <p className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1">{nonAdminCount}</p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
           <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Cuentas Activas</span>
@@ -191,7 +233,7 @@ export const UsersPage: React.FC = () => {
               onChange={setSelectedRole}
               leftIcon={<Filter className="w-3.5 h-3.5" />}
               className="text-xs bg-slate-50 dark:bg-slate-800 py-2.5"
-              options={ROLE_FILTER_OPTIONS}
+              options={filterOptions}
             />
           </div>
 
@@ -280,7 +322,7 @@ export const UsersPage: React.FC = () => {
                     </td>
 
                     {/* Role */}
-                    <td className="py-4 px-6">{getRoleBadge(user.role)}</td>
+                    <td className="py-4 px-6">{getRoleBadge(user)}</td>
 
                     {/* Status */}
                     <td className="py-4 px-6">
@@ -339,6 +381,7 @@ export const UsersPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveUser}
         editingUser={editingUser}
+        availableRoles={rolesList}
       />
 
       {/* Delete Confirmation Modal */}

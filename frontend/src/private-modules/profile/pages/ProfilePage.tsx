@@ -20,6 +20,7 @@ import { profileService } from '../services/profile.service';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Alert } from '../../../shared/ui/Alert';
 import { Tooltip } from '../../../shared/ui/Tooltip';
+import { getRoleDisplayName } from '../../../shared/lib/roles';
 
 export const ProfilePage: React.FC = () => {
   const dispatch = useDispatch();
@@ -194,7 +195,7 @@ export const ProfilePage: React.FC = () => {
                     sessionUser?.role
                   )}`}
                 >
-                  {sessionUser?.role || 'ADMINISTRADOR'}
+                  {getRoleDisplayName(sessionUser)}
                 </span>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center sm:justify-start gap-1.5 mt-1 font-medium">
@@ -331,7 +332,7 @@ export const ProfilePage: React.FC = () => {
               <Shield className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  Nivel de Autorización: {sessionUser?.role || 'ADMINISTRADOR'}
+                  Nivel de Autorización: {getRoleDisplayName(sessionUser)}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Los cambios de rol de usuario son administrados en el módulo Mantenedor de Usuarios para garantizar la trazabilidad operacional.
@@ -475,7 +476,7 @@ export const ProfilePage: React.FC = () => {
               Permisos y Capacidades Operativas
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Visualiza las funciones autorizadas para tu rol <span className="font-bold text-slate-800 dark:text-slate-200">[{sessionUser?.role || 'ADMINISTRADOR'}]</span> en la fábrica textil.
+              Visualiza las funciones autorizadas para tu rol <span className="font-bold text-slate-800 dark:text-slate-200">[{getRoleDisplayName(sessionUser)}]</span> en la fábrica textil.
             </p>
           </div>
 

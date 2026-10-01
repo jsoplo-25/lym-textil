@@ -6,11 +6,9 @@ import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
-
-const ROLE_OPTIONS: SelectOption[] = [
-  { value: 'ADMINISTRADOR', label: 'ADMINISTRADOR - Administrador General' },
-  { value: 'OPERATOR', label: 'OPERATOR - Operario' },
-];
+import { rolesService } from '../../roles/services/roles.service';
+import type { RoleDefinition } from '../../roles/types/roles.types';
+import { getRoleDisplayName } from '../../../shared/lib/roles';
 
 const STATUS_OPTIONS: SelectOption[] = [
   { value: 'ACTIVE', label: 'Activo' },
@@ -22,6 +20,7 @@ interface UserModalProps {
   onClose: () => void;
   onSave: (data: CreateUserDTO | UpdateUserDTO, id?: string) => Promise<void>;
   editingUser?: ManagedUser | null;
+  availableRoles?: RoleDefinition[];
 }
 
 export const UserModal: React.FC<UserModalProps> = ({
@@ -29,17 +28,44 @@ export const UserModal: React.FC<UserModalProps> = ({
   onClose,
   onSave,
   editingUser,
+  availableRoles,
 }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<UserProfile['role']>('OPERATOR');
+  const [role, setRole] = useState<UserProfile['role']>('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+  const [roleOptions, setRoleOptions] = useState<SelectOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (availableRoles && availableRoles.length > 0) {
+      setRoleOptions(
+        availableRoles.map((r) => ({
+          value: r.code,
+          label: r.name,
+        }))
+      );
+    } else if (isOpen) {
+      rolesService
+        .getRoles()
+        .then((roles) => {
+          if (roles && roles.length > 0) {
+            setRoleOptions(
+              roles.map((r) => ({
+                value: r.code,
+                label: r.name,
+              }))
+            );
+          }
+        })
+        .catch(() => {});
+    }
+  }, [availableRoles, isOpen]);
 
   useEffect(() => {
     if (editingUser) {
@@ -56,12 +82,12 @@ export const UserModal: React.FC<UserModalProps> = ({
       setEmail('');
       setPassword('');
       setShowPassword(false);
-      setRole('OPERATOR');
+      setRole(availableRoles?.[0]?.code || roleOptions?.[0]?.value || '');
       setAvatarUrl('');
       setStatus('ACTIVE');
     }
     setError(null);
-  }, [editingUser, isOpen]);
+  }, [editingUser, isOpen, availableRoles, roleOptions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,7 +240,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                 value={role}
                 onChange={(value) => setRole(value as UserProfile['role'])}
                 leftIcon={<Shield className="w-4 h-4" />}
-                options={ROLE_OPTIONS}
+                options={roleOptions}
                 className="text-xs bg-slate-50 dark:bg-slate-800 py-2.5"
               />
             </div>

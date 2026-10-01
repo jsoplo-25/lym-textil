@@ -135,10 +135,23 @@ export class AuthController {
   }
 
   async me(req: AuthenticatedRequest, res: Response): Promise<void> {
-    res.status(200).json({
-      success: true,
-      data: req.user,
-    });
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ success: false, error: 'Usuario no autenticado.' });
+        return;
+      }
+      const freshUser = await authService.getProfile(req.user.id);
+      res.status(200).json({
+        success: true,
+        data: freshUser,
+      });
+    } catch {
+      // Fallback defensivo a la información del token si la BD tiene micro-latencia
+      res.status(200).json({
+        success: true,
+        data: req.user,
+      });
+    }
   }
 
   async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {

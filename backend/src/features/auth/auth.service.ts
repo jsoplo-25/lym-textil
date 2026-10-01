@@ -71,10 +71,22 @@ export class AuthService {
       throw new Error('Credenciales incorrectas. Verifica tu correo y contraseña.');
     }
 
+    // Resolver nombre descriptivo del rol desde la tabla de roles de la BD
+    let roleName: string | undefined = undefined;
+    try {
+      const roleDef = await prisma.roleDefinition.findFirst({
+        where: {
+          OR: [{ code: userRow.role.toUpperCase().trim() }, { id: userRow.role }],
+        },
+      });
+      if (roleDef) roleName = roleDef.name;
+    } catch {}
+
     const userPayload: UserPayload = {
       id: userRow.id,
       email: userRow.email,
       role: userRow.role as UserRole,
+      roleName,
       firstName: userRow.firstName,
       lastName: userRow.lastName,
       avatarUrl: userRow.avatarUrl || undefined,
@@ -239,10 +251,21 @@ export class AuthService {
       throw new Error('Usuario de la sesión no encontrado.');
     }
 
+    let roleName: string | undefined = undefined;
+    try {
+      const roleDef = await prisma.roleDefinition.findFirst({
+        where: {
+          OR: [{ code: userRow.role.toUpperCase().trim() }, { id: userRow.role }],
+        },
+      });
+      if (roleDef) roleName = roleDef.name;
+    } catch {}
+
     const userPayload: UserPayload = {
       id: userRow.id,
       email: userRow.email,
       role: userRow.role as UserRole,
+      roleName,
       firstName: userRow.firstName,
       lastName: userRow.lastName,
       avatarUrl: userRow.avatarUrl || undefined,
@@ -257,6 +280,69 @@ export class AuthService {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
     };
+  }
+
+  async getProfile(userId: string): Promise<UserPayload> {
+    // 1. Prisma lookup
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (dbUser) {
+        let roleName: string | undefined = undefined;
+        try {
+          const roleDef = await prisma.roleDefinition.findFirst({
+            where: {
+              OR: [{ code: dbUser.role.toUpperCase().trim() }, { id: dbUser.role }],
+            },
+          });
+          if (roleDef) roleName = roleDef.name;
+        } catch {}
+
+        return {
+          id: dbUser.id,
+          email: dbUser.email,
+          role: dbUser.role as UserRole,
+          roleName,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          avatarUrl: dbUser.avatarUrl || undefined,
+        };
+      }
+    } catch {}
+
+    // 2. Supabase fallback
+    try {
+      const { data: supaUser } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (supaUser) {
+        let roleName: string | undefined = undefined;
+        try {
+          const roleDef = await prisma.roleDefinition.findFirst({
+            where: {
+              OR: [{ code: supaUser.role.toUpperCase().trim() }, { id: supaUser.role }],
+            },
+          });
+          if (roleDef) roleName = roleDef.name;
+        } catch {}
+
+        return {
+          id: supaUser.id,
+          email: supaUser.email,
+          role: supaUser.role as UserRole,
+          roleName,
+          firstName: supaUser.first_name || '',
+          lastName: supaUser.last_name || '',
+          avatarUrl: supaUser.avatar_url || undefined,
+        };
+      }
+    } catch {}
+
+    throw new Error('Usuario no encontrado en la base de datos.');
   }
 
   async updateProfile(

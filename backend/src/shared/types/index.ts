@@ -6,6 +6,7 @@ export interface UserPayload {
   id: string;
   email: string;
   role: UserRole;
+  roleName?: string;
   firstName: string;
   lastName: string;
   avatarUrl?: string;

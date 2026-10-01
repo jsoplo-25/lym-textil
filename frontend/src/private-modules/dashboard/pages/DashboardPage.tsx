@@ -14,15 +14,7 @@ import { Card } from '../../../shared/ui/Card';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useDashboard } from '../hooks/useDashboard';
-
-const ROLE_LABELS: Record<string, string> = {
-  ADMINISTRADOR: 'Administrador General',
-  MANAGER: 'Gerente',
-  SUPERVISOR: 'Supervisor',
-  OPERATOR: 'Operador',
-  QUALITY_INSPECTOR: 'Inspector de Calidad',
-  USER: 'Usuario',
-};
+import { getRoleDisplayName } from '../../../shared/lib/roles';
 
 const formatDate = (value?: string) => {
   if (!value) return 'Sin fecha';
@@ -227,7 +219,7 @@ export const DashboardPage: React.FC = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 mb-1">
-                        {ROLE_LABELS[user.role] || user.role}
+                        {getRoleDisplayName(user.role)}
                       </span>
                       <p className="flex items-center justify-end gap-1 text-[11px] text-slate-400">
                         <Clock className="w-3 h-3" />

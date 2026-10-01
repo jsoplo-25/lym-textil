@@ -6,6 +6,7 @@ export interface ManagedUser {
   firstName: string;
   lastName: string;
   role: UserProfile['role'];
+  roleName?: string;
   avatarUrl?: string;
   status?: 'ACTIVE' | 'INACTIVE';
   createdAt?: string;

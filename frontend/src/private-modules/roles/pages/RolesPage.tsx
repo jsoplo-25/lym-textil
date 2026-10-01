@@ -15,8 +15,14 @@ import { RoleModal } from '../components/RoleModal';
 import { DeleteRoleConfirmModal } from '../components/DeleteRoleConfirmModal';
 import { useToast } from '../../../shared/hooks/useToast';
 import { Skeleton } from '../../../shared/ui/Skeleton';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from '../../../app/store';
+import { updateUserProfile } from '../../../entities/session/sessionSlice';
+import { setCachedRoles } from '../../../shared/lib/roles';
 
 export const RolesPage: React.FC = () => {
+  const dispatch = useDispatch();
+  const sessionUser = useSelector((state: RootState) => state.session.user);
   const [roles, setRoles] = useState<RoleDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,7 +38,10 @@ export const RolesPage: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await rolesService.getRoles();
-      setRoles(data);
+      if (Array.isArray(data)) {
+        setRoles(data);
+        setCachedRoles(data);
+      }
     } catch (err) {
       console.error('Error loading roles:', err);
     } finally {
@@ -76,8 +85,20 @@ export const RolesPage: React.FC = () => {
 
   const handleSaveRole = async (data: CreateRoleDTO | UpdateRoleDTO, id?: string) => {
     if (id) {
-      await rolesService.updateRole(id, data as UpdateRoleDTO);
+      const updated = await rolesService.updateRole(id, data as UpdateRoleDTO);
       toast.success('Permisos del rol actualizados exitosamente.');
+
+      // Si el rol modificado coincide con el del usuario en sesión, actualizar de forma asíncrona e inmediata en Redux
+      if (
+        sessionUser &&
+        updated &&
+        (sessionUser.role === updated.code ||
+          sessionUser.role === updated.id ||
+          sessionUser.role === editingRole?.code ||
+          sessionUser.role === editingRole?.id)
+      ) {
+        dispatch(updateUserProfile({ roleName: updated.name }));
+      }
     } else {
       await rolesService.createRole(data as CreateRoleDTO);
       toast.success('Nuevo rol registrado en Textil L&M.');
@@ -185,7 +206,7 @@ export const RolesPage: React.FC = () => {
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${colors.badge}`}
                   >
-                    {role.code}
+                    {role.name}
                   </span>
 
                   {role.isSystem ? (
@@ -202,9 +223,14 @@ export const RolesPage: React.FC = () => {
                 </div>
 
                 {/* Role Title & Description */}
-                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
-                  {role.name}
-                </h3>
+                <div className="flex items-baseline gap-2">
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
+                    {role.name}
+                  </h3>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    ({role.code})
+                  </span>
+                </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed min-h-[3rem]">
                   {role.description}
                 </p>
