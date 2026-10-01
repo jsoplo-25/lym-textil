@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, LogOut, User, Home, ChevronRight } from 'lucide-react';
 import type { RootState } from '../../app/store';
 import { logout } from '../../entities/session/sessionSlice';
+import { loginService } from '../../public-modules/login/services/login.service';
 import { ThemeToggle } from '../../shared/ui/ThemeToggle';
 import { Avatar } from '../../shared/ui/Avatar';
 import { Tooltip } from '../../shared/ui/Tooltip';
@@ -42,8 +43,9 @@ export const AppHeader: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleConfirmLogout = () => {
+  const handleConfirmLogout = async () => {
     setIsLogoutModalOpen(false);
+    await loginService.logout();
     dispatch(logout());
     window.location.href = '/login';
   };

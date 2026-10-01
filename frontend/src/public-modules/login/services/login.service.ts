@@ -6,8 +6,17 @@ export const loginService = {
     const response = await axiosInstance.post('/auth/login', {
       email: credentials.email,
       password: credentials.password,
+      rememberMe: credentials.rememberMe,
     });
 
     return response.data.data;
+  },
+
+  async logout(): Promise<void> {
+    try {
+      await axiosInstance.post('/auth/logout');
+    } catch {
+      // Ignorar error si el backend no responde, continuar con limpieza local
+    }
   },
 };

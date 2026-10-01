@@ -6,22 +6,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Token Storage
+// Token Storage (Enterprise In-Memory + httpOnly Cookie Compliance)
+// Tokens are strictly managed in Memory and via secure httpOnly Cookies.
 export const getStoredToken = (): string | null => {
-  return localStorage.getItem('access_token');
+  return null;
 };
 
-export const setStoredToken = (token: string): void => {
-  localStorage.setItem('access_token', token);
+export const setStoredToken = (_token: string): void => {
+  // Purge any legacy token from disk
+  localStorage.removeItem('access_token');
 };
 
 // Refresh Token Storage
 export const getStoredRefreshToken = (): string | null => {
-  return localStorage.getItem('refresh_token');
+  return null;
 };
 
-export const setStoredRefreshToken = (token: string): void => {
-  localStorage.setItem('refresh_token', token);
+export const setStoredRefreshToken = (_token: string): void => {
+  // Purge any legacy refresh token from disk
+  localStorage.removeItem('refresh_token');
 };
 
 // User Profile Storage
