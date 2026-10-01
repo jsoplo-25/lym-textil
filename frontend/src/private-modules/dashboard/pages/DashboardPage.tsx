@@ -14,7 +14,7 @@ import { Card } from '../../../shared/ui/Card';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useDashboard } from '../hooks/useDashboard';
-import { getRoleDisplayName } from '../../../shared/lib/roles';
+import { getRoleDisplayName, hasPermission, hasAnyPermission } from '../../../shared/lib/roles';
 
 const formatDate = (value?: string) => {
   if (!value) return 'Sin fecha';
@@ -27,7 +27,7 @@ const formatDate = (value?: string) => {
 
 export const DashboardPage: React.FC = () => {
   const sessionUser = useSelector((state: RootState) => state.session.user);
-  const canViewSummary = sessionUser?.role === 'ADMINISTRADOR';
+  const canViewSummary = hasAnyPermission(sessionUser, 'dashboard:view', 'users:read', 'roles:read');
   const { data, isLoading, error } = useDashboard(canViewSummary);
 
   return (
@@ -134,12 +134,14 @@ export const DashboardPage: React.FC = () => {
             <Card variant="glass" padding="lg" className="lg:col-span-2">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-black text-slate-900 dark:text-white">Usuarios por Rol</h3>
-                <NavLink
-                  to="/roles"
-                  className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
-                >
-                  Ver roles <ArrowUpRight className="w-3.5 h-3.5" />
-                </NavLink>
+                {hasPermission(sessionUser, 'roles:read') && (
+                  <NavLink
+                    to="/roles"
+                    className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    Ver roles <ArrowUpRight className="w-3.5 h-3.5" />
+                  </NavLink>
+                )}
               </div>
 
               {!isLoading && (!data?.roleBreakdown.length) && (

@@ -80,3 +80,43 @@ export function getRoleDisplayName(
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }
+
+/**
+ * Checks if a user has a specific operational permission.
+ * - Administrators have all permissions granted by default.
+ * - Custom and other roles check their dynamic permissions array.
+ */
+export function hasPermission(
+  user?: { role?: string; permissions?: string[] } | null,
+  permission?: string
+): boolean {
+  if (!user || !permission) return false;
+
+  const roleCode = String(user.role || '').toUpperCase().trim();
+  if (roleCode === 'ADMINISTRADOR') {
+    return true;
+  }
+
+  return Array.isArray(user.permissions) && user.permissions.includes(permission);
+}
+
+/**
+ * Checks if a user has at least one of the specified permissions.
+ */
+export function hasAnyPermission(
+  user?: { role?: string; permissions?: string[] } | null,
+  ...permissions: string[]
+): boolean {
+  if (!user) return false;
+
+  const roleCode = String(user.role || '').toUpperCase().trim();
+  if (roleCode === 'ADMINISTRADOR') {
+    return true;
+  }
+
+  if (!Array.isArray(user.permissions) || user.permissions.length === 0) {
+    return false;
+  }
+
+  return permissions.some((perm) => user.permissions?.includes(perm));
+}

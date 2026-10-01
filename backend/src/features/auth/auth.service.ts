@@ -8,6 +8,33 @@ import { EmailService } from '../../shared/utils/email.service';
 
 
 export class AuthService {
+  async resolveRoleInfo(roleCodeOrId: string): Promise<{ roleName?: string; permissions: string[] }> {
+    try {
+      const roleDef = await prisma.roleDefinition.findFirst({
+        where: {
+          OR: [
+            { code: String(roleCodeOrId).trim().toUpperCase() },
+            { id: roleCodeOrId },
+          ],
+        },
+      });
+
+      if (roleDef) {
+        return {
+          roleName: roleDef.name,
+          permissions: Array.isArray(roleDef.permissions) ? roleDef.permissions : [],
+        };
+      }
+    } catch (error) {
+      console.error('Error al resolver rol desde base de datos:', error);
+    }
+
+    return {
+      roleName: undefined,
+      permissions: [],
+    };
+  }
+
   async login(email: string, password: string): Promise<AuthResult> {
     const normalizedEmail = email.toLowerCase().trim();
     let userRow: {
@@ -71,22 +98,15 @@ export class AuthService {
       throw new Error('Credenciales incorrectas. Verifica tu correo y contraseña.');
     }
 
-    // Resolver nombre descriptivo del rol desde la tabla de roles de la BD
-    let roleName: string | undefined = undefined;
-    try {
-      const roleDef = await prisma.roleDefinition.findFirst({
-        where: {
-          OR: [{ code: userRow.role.toUpperCase().trim() }, { id: userRow.role }],
-        },
-      });
-      if (roleDef) roleName = roleDef.name;
-    } catch {}
+    // Resolver nombre descriptivo y matriz de permisos del rol desde la base de datos
+    const { roleName, permissions } = await this.resolveRoleInfo(userRow.role);
 
     const userPayload: UserPayload = {
       id: userRow.id,
       email: userRow.email,
       role: userRow.role as UserRole,
       roleName,
+      permissions,
       firstName: userRow.firstName,
       lastName: userRow.lastName,
       avatarUrl: userRow.avatarUrl || undefined,
@@ -251,21 +271,14 @@ export class AuthService {
       throw new Error('Usuario de la sesión no encontrado.');
     }
 
-    let roleName: string | undefined = undefined;
-    try {
-      const roleDef = await prisma.roleDefinition.findFirst({
-        where: {
-          OR: [{ code: userRow.role.toUpperCase().trim() }, { id: userRow.role }],
-        },
-      });
-      if (roleDef) roleName = roleDef.name;
-    } catch {}
+    const { roleName, permissions } = await this.resolveRoleInfo(userRow.role);
 
     const userPayload: UserPayload = {
       id: userRow.id,
       email: userRow.email,
       role: userRow.role as UserRole,
       roleName,
+      permissions,
       firstName: userRow.firstName,
       lastName: userRow.lastName,
       avatarUrl: userRow.avatarUrl || undefined,
@@ -289,21 +302,14 @@ export class AuthService {
         where: { id: userId },
       });
       if (dbUser) {
-        let roleName: string | undefined = undefined;
-        try {
-          const roleDef = await prisma.roleDefinition.findFirst({
-            where: {
-              OR: [{ code: dbUser.role.toUpperCase().trim() }, { id: dbUser.role }],
-            },
-          });
-          if (roleDef) roleName = roleDef.name;
-        } catch {}
+        const { roleName, permissions } = await this.resolveRoleInfo(dbUser.role);
 
         return {
           id: dbUser.id,
           email: dbUser.email,
           role: dbUser.role as UserRole,
           roleName,
+          permissions,
           firstName: dbUser.firstName,
           lastName: dbUser.lastName,
           avatarUrl: dbUser.avatarUrl || undefined,
@@ -320,21 +326,14 @@ export class AuthService {
         .single();
 
       if (supaUser) {
-        let roleName: string | undefined = undefined;
-        try {
-          const roleDef = await prisma.roleDefinition.findFirst({
-            where: {
-              OR: [{ code: supaUser.role.toUpperCase().trim() }, { id: supaUser.role }],
-            },
-          });
-          if (roleDef) roleName = roleDef.name;
-        } catch {}
+        const { roleName, permissions } = await this.resolveRoleInfo(supaUser.role);
 
         return {
           id: supaUser.id,
           email: supaUser.email,
           role: supaUser.role as UserRole,
           roleName,
+          permissions,
           firstName: supaUser.first_name || '',
           lastName: supaUser.last_name || '',
           avatarUrl: supaUser.avatar_url || undefined,
@@ -360,10 +359,14 @@ export class AuthService {
           ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
         },
       });
+      const { roleName, permissions } = await this.resolveRoleInfo(updated.role);
+
       return {
         id: updated.id,
         email: updated.email,
         role: updated.role as UserRole,
+        roleName,
+        permissions,
         firstName: updated.firstName,
         lastName: updated.lastName,
         avatarUrl: updated.avatarUrl || undefined,
@@ -385,10 +388,14 @@ export class AuthService {
         .single();
 
       if (!error && supaUpdated) {
+        const { roleName, permissions } = await this.resolveRoleInfo(supaUpdated.role);
+
         return {
           id: supaUpdated.id,
           email: supaUpdated.email,
           role: supaUpdated.role as UserRole,
+          roleName,
+          permissions,
           firstName: supaUpdated.first_name,
           lastName: supaUpdated.last_name,
           avatarUrl: supaUpdated.avatar_url,

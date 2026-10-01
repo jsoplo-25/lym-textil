@@ -11,6 +11,8 @@ import { ProfilePage } from '../../private-modules/profile';
 import { UsersPage } from '../../private-modules/users';
 import { RolesPage } from '../../private-modules/roles';
 
+import { hasPermission } from '../../shared/lib/roles';
+
 const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useSelector((state: RootState) => state.session.isAuthenticated);
 
@@ -21,10 +23,13 @@ const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   return children ? <>{children}</> : <Outlet />;
 };
 
-const AdminRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+const PermissionRoute: React.FC<{ permission: string; children?: React.ReactNode }> = ({
+  permission,
+  children,
+}) => {
   const user = useSelector((state: RootState) => state.session.user);
 
-  if (user?.role !== 'ADMINISTRADOR') {
+  if (!hasPermission(user, permission)) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -68,9 +73,11 @@ export const AppRouter: React.FC = () => {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
 
-          {/* Admin Only Modules */}
-          <Route element={<AdminRoute />}>
+          {/* Permission Protected Modules */}
+          <Route element={<PermissionRoute permission="users:read" />}>
             <Route path="/users" element={<UsersPage />} />
+          </Route>
+          <Route element={<PermissionRoute permission="roles:read" />}>
             <Route path="/roles" element={<RolesPage />} />
           </Route>
 

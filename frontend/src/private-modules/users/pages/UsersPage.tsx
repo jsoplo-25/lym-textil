@@ -21,12 +21,10 @@ import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { Tooltip } from '../../../shared/ui/Tooltip';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useToast } from '../../../shared/hooks/useToast';
-import { getRoleDisplayName } from '../../../shared/lib/roles';
+import { getRoleDisplayName, hasPermission } from '../../../shared/lib/roles';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../app/store';
 import { updateUserProfile } from '../../../entities/session/sessionSlice';
-
-
 
 export const UsersPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -36,6 +34,12 @@ export const UsersPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
+
+  // Permisos operativos para usuarios
+  const canCreate = hasPermission(sessionUser, 'users:create');
+  const canEdit = hasPermission(sessionUser, 'users:edit');
+  const canDelete = hasPermission(sessionUser, 'users:delete');
+  const hasActionPermissions = canEdit || canDelete;
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -184,13 +188,15 @@ export const UsersPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-5 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
-        >
-          <UserPlus className="w-4 h-4 stroke-[2.5]" />
-          <span>Nuevo Usuario</span>
-        </button>
+        {canCreate && (
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-5 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
+          >
+            <UserPlus className="w-4 h-4 stroke-[2.5]" />
+            <span>Nuevo Usuario</span>
+          </button>
+        )}
       </div>
 
       {/* Quick Stats Grid */}
@@ -347,24 +353,33 @@ export const UsersPage: React.FC = () => {
                     {/* Action Buttons */}
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Tooltip content="Editar usuario">
-                          <button
-                            onClick={() => handleOpenEdit(user)}
-                            aria-label="Editar usuario"
-                            className="p-2 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                        </Tooltip>
-                        <Tooltip content="Eliminar usuario">
-                          <button
-                            onClick={() => handleOpenDelete(user)}
-                            aria-label="Eliminar usuario"
-                            className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </Tooltip>
+                        {canEdit && (
+                          <Tooltip content="Editar usuario">
+                            <button
+                              onClick={() => handleOpenEdit(user)}
+                              aria-label="Editar usuario"
+                              className="p-2 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {canDelete && (
+                          <Tooltip content="Eliminar usuario">
+                            <button
+                              onClick={() => handleOpenDelete(user)}
+                              aria-label="Eliminar usuario"
+                              className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {!hasActionPermissions && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400">
+                            Solo lectura
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -19,8 +19,8 @@ import { updateUserProfile } from '../../../entities/session/sessionSlice';
 import { profileService } from '../services/profile.service';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Alert } from '../../../shared/ui/Alert';
+import { getRoleDisplayName, hasPermission } from '../../../shared/lib/roles';
 import { Tooltip } from '../../../shared/ui/Tooltip';
-import { getRoleDisplayName } from '../../../shared/lib/roles';
 
 export const ProfilePage: React.FC = () => {
   const dispatch = useDispatch();
@@ -211,8 +211,8 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('info')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'info'
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
             <User className="w-4 h-4" />
@@ -222,8 +222,8 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('security')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'security'
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
             <Key className="w-4 h-4" />
@@ -233,8 +233,8 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('permissions')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'permissions'
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
             <Shield className="w-4 h-4" />
@@ -510,66 +510,91 @@ export const ProfilePage: React.FC = () => {
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   <span>Consulta de datos personales y facultades asignadas</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Actualización de información de contacto y contraseña</span>
-                </li>
+                {hasPermission(sessionUser, 'profile:edit') && (
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Actualización de información de contacto y contraseña</span>
+                  </li>
+                )}
               </ul>
             </div>
 
-            {/* Admin Only Modules */}
-            {sessionUser?.role === 'ADMINISTRADOR' ? (
-              <>
-                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-                  <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                    <Users className="w-4 h-4" />
-                    <span>Mantenedor de Usuarios</span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Consulta de colaboradores y estados de cuenta</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Creación, edición y asignación de roles a colaboradores</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Baja y eliminación de cuentas de acceso</span>
-                    </li>
-                  </ul>
+            {/* Users Capability */}
+            {hasPermission(sessionUser, 'users:read') ? (
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
+                <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                  <Users className="w-4 h-4" />
+                  <span>Mantenedor de Usuarios</span>
                 </div>
+                <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Consulta de colaboradores y estados de cuenta</span>
+                  </li>
+                  {hasPermission(sessionUser, 'users:create') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Registro y alta de nuevos colaboradores</span>
+                    </li>
+                  )}
+                  {hasPermission(sessionUser, 'users:edit') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Edición de datos y credenciales de colaboradores</span>
+                    </li>
+                  )}
+                  {hasPermission(sessionUser, 'users:delete') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Baja y eliminación de cuentas</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            ) : null}
 
-                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-                  <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                    <Key className="w-4 h-4" />
-                    <span>Mantenedor de Roles y Permisos</span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Consulta de roles de sistema y facultades asignadas</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Configuración y edición de privilegios por módulo</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>Creación y eliminación de roles operacionales</span>
-                    </li>
-                  </ul>
+            {/* Roles Capability */}
+            {hasPermission(sessionUser, 'roles:read') ? (
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
+                <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                  <Key className="w-4 h-4" />
+                  <span>Mantenedor de Roles y Permisos</span>
                 </div>
-              </>
-            ) : (
+                <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Consulta de matriz de roles y facultades</span>
+                  </li>
+                  {hasPermission(sessionUser, 'roles:create') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Creación de nuevos roles de trabajo</span>
+                    </li>
+                  )}
+                  {hasPermission(sessionUser, 'roles:edit') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Configuración y edición de privilegios</span>
+                    </li>
+                  )}
+                  {hasPermission(sessionUser, 'roles:delete') && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Eliminación de roles personalizados</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            ) : null}
+
+            {!hasPermission(sessionUser, 'users:read') && !hasPermission(sessionUser, 'roles:read') && (
               <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-800 space-y-2 md:col-span-2">
                 <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-wider">
                   <Shield className="w-4 h-4 text-slate-400" />
-                  <span>Módulos Administrativos Restringidos</span>
+                  <span>Módulos de Gestión Restringidos</span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Los módulos de <strong className="text-slate-700 dark:text-slate-300">Mantenedor de Usuarios</strong> y <strong className="text-slate-700 dark:text-slate-300">Mantenedor de Roles</strong> están reservados para personal con perfil de Administrador.
+                  Tu rol actual cuenta con facultades operativas enfocadas en visualización y perfil. Los módulos de gestión de usuarios y roles están reservados según las facultades asignadas.
                 </p>
               </div>
             )}

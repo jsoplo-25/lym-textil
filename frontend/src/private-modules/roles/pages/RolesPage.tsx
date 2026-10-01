@@ -18,7 +18,7 @@ import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../app/store';
 import { updateUserProfile } from '../../../entities/session/sessionSlice';
-import { setCachedRoles } from '../../../shared/lib/roles';
+import { setCachedRoles, hasPermission } from '../../../shared/lib/roles';
 
 export const RolesPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -27,6 +27,11 @@ export const RolesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleDefinition | null>(null);
+
+  // Permisos dinámicos para roles
+  const canCreateRole = hasPermission(sessionUser, 'roles:create');
+  const canEditRole = hasPermission(sessionUser, 'roles:edit');
+  const canDeleteRole = hasPermission(sessionUser, 'roles:delete');
 
   // Delete modal state
   const [deletingRole, setDeletingRole] = useState<RoleDefinition | null>(null);
@@ -151,13 +156,15 @@ export const RolesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-5 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 cursor-pointer self-start sm:self-auto shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Crear Nuevo Rol</span>
-        </button>
+        {canCreateRole && (
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-5 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 cursor-pointer self-start sm:self-auto shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Crear Nuevo Rol</span>
+          </button>
+        )}
       </div>
 
       {/* Grid of Roles Cards */}
@@ -271,16 +278,18 @@ export const RolesPage: React.FC = () => {
                 </span>
 
                 <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleOpenEdit(role)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                    title="Configurar rol y permisos"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                    <span>Configurar</span>
-                  </button>
+                  {canEditRole && (
+                    <button
+                      onClick={() => handleOpenEdit(role)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="Configurar rol y permisos"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                      <span>Configurar</span>
+                    </button>
+                  )}
 
-                  {role.code !== 'ADMINISTRADOR' && (
+                  {canDeleteRole && role.code !== 'ADMINISTRADOR' && !role.isSystem && (
                     <button
                       onClick={() => handleOpenDelete(role)}
                       className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
@@ -289,6 +298,12 @@ export const RolesPage: React.FC = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                  )}
+
+                  {!canEditRole && !canDeleteRole && (
+                    <span className="text-[11px] font-semibold text-slate-400 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                      Lectura
+                    </span>
                   )}
                 </div>
               </div>
