@@ -3,7 +3,7 @@ services:
   # Render Web Service Blueprint - Textiles L&M Backend API
   # ==============================================================================
   - type: web
-    name: textil-lym-backend
+    name: lym-textil
     runtime: node
     rootDir: backend
     plan: free # Cambiar a 'starter' o superior según necesidad
@@ -41,5 +41,5 @@ services:
       - key: API_URL
         fromService:
           type: web
-          name: textil-lym-backend
+          name: lym-textil
           property: host
