@@ -2,22 +2,30 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticateJwt = void 0;
 const jwt_1 = require("../shared/utils/jwt");
+const cookies_1 = require("../shared/utils/cookies");
 const authenticateJwt = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = null;
+    // 1. Prioritize secure httpOnly cookie
+    if (req.cookies && req.cookies[cookies_1.COOKIE_NAMES.ACCESS_TOKEN]) {
+        token = req.cookies[cookies_1.COOKIE_NAMES.ACCESS_TOKEN];
+    }
+    // 2. Fallback to Authorization: Bearer header
+    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+    if (!token) {
         res.status(401).json({
             success: false,
-            error: 'Acceso no autorizado. Token JWT requerido.',
+            error: 'Acceso no autorizado. Token de sesión requerido.',
         });
         return;
     }
-    const token = authHeader.split(' ')[1];
     try {
         const decoded = (0, jwt_1.verifyToken)(token);
         req.user = decoded;
         next();
     }
-    catch (err) {
+    catch {
         res.status(401).json({
             success: false,
             error: 'Token inválido o expirado.',

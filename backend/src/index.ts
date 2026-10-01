@@ -24,13 +24,32 @@ app.use(
     crossOriginResourcePolicy: false,
   })
 );
-app.use(cors({ origin: true, credentials: true }));
+
+// Dynamic CORS configuration (supports comma-separated list of origins or wildcard)
+const allowedOrigins = env.FRONTEND_URL === '*' 
+  ? '*' 
+  : env.FRONTEND_URL.split(',').map((origin) => origin.trim());
+
+app.use(
+  cors({
+    origin: allowedOrigins === '*' ? true : (origin, callback) => {
+      if (!origin || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Permissive fallback or restrict as needed
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 if (env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
 }
 
 // Swagger API Documentation Endpoints
@@ -57,14 +76,15 @@ app.get('/api-docs.json', (_req: Request, res: Response) => {
   res.json(swaggerSpec);
 });
 
-// Health Check Endpoint
+// Health Check Endpoint (Render uses this for zero-downtime and liveness checks)
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'online',
     timestamp: new Date().toISOString(),
     service: 'Textiles L&M - Backend API (Feature-Based Architecture)',
+    environment: env.NODE_ENV,
     database: 'Supabase PostgreSQL',
-    documentation: 'http://localhost:4000/api-docs',
+    documentation: `${env.API_URL}/api-docs`,
   });
 });
 
