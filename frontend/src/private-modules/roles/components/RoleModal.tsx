@@ -43,6 +43,33 @@ const ALL_PERMISSIONS = [
       { id: 'roles:delete', label: 'Eliminar roles de trabajo personalizados' },
     ],
   },
+  {
+    category: 'Mantenedor de Máquinas',
+    items: [
+      { id: 'machines:read', label: 'Consultar inventario, conteo y estado operativo de máquinas' },
+      { id: 'machines:create', label: 'Registrar y dar de alta nuevas máquinas' },
+      { id: 'machines:edit', label: 'Modificar datos técnicos, ubicación y estado de máquinas' },
+      { id: 'machines:delete', label: 'Dar de baja y eliminar máquinas del inventario' },
+    ],
+  },
+  {
+    category: 'Mantenedor de Proveedores',
+    items: [
+      { id: 'suppliers:read', label: 'Consultar directorio de proveedores y clientes de hilado' },
+      { id: 'suppliers:create', label: 'Registrar y dar de alta nuevos proveedores o clientes' },
+      { id: 'suppliers:edit', label: 'Modificar datos de contacto, hilados y estado de proveedores' },
+      { id: 'suppliers:delete', label: 'Eliminar proveedores del directorio comercial' },
+    ],
+  },
+  {
+    category: 'Control de Producción',
+    items: [
+      { id: 'production:read', label: 'Consultar sábanas de producción, lotes y pesaje de rollos' },
+      { id: 'production:create', label: 'Crear nuevos lotes y registrar rollos producidos' },
+      { id: 'production:edit', label: 'Modificar datos de lotes, turnos, operarios y peso de rollos' },
+      { id: 'production:delete', label: 'Eliminar lotes u órdenes de rollos del historial' },
+    ],
+  },
 ];
 
 export const RoleModal: React.FC<RoleModalProps> = ({

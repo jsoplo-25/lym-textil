@@ -15,6 +15,9 @@ import { RoleModal } from '../components/RoleModal';
 import { DeleteRoleConfirmModal } from '../components/DeleteRoleConfirmModal';
 import { useToast } from '../../../shared/hooks/useToast';
 import { Skeleton } from '../../../shared/ui/Skeleton';
+import { PageHeader } from '../../../shared/ui/PageHeader';
+import { Badge } from '../../../shared/ui/Badge';
+import { Button } from '../../../shared/ui/Button';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../app/store';
 import { updateUserProfile } from '../../../entities/session/sessionSlice';
@@ -141,31 +144,20 @@ export const RolesPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col space-y-6 w-full animate-fadeIn pb-12">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">
-            <KeyRound className="w-4 h-4" />
-            <span>Mantenedor de Roles • Permisos y Accesos</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            Roles y Permisos
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-            Administra los niveles de autorización y facultades asignadas a cada perfil en el sistema.
-          </p>
-        </div>
-
-        {canCreateRole && (
-          <button
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-5 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 cursor-pointer self-start sm:self-auto shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Crear Nuevo Rol</span>
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrowIcon={<KeyRound className="w-4 h-4" />}
+        eyebrow="Mantenedor de Roles • Permisos y Accesos"
+        title="Roles y Permisos"
+        subtitle="Administra los niveles de autorización y facultades asignadas a cada perfil en el sistema."
+        action={
+          canCreateRole && (
+            <Button variant="secondary" size="cta" onClick={handleOpenCreate}>
+              <Plus className="w-4 h-4" />
+              <span>Crear Nuevo Rol</span>
+            </Button>
+          )
+        }
+      />
 
       {/* Grid of Roles Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -210,11 +202,7 @@ export const RolesPage: React.FC = () => {
               <div>
                 {/* Top Badge & System Flag */}
                 <div className="flex items-center justify-between gap-2 mb-4">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${colors.badge}`}
-                  >
-                    {role.name}
-                  </span>
+                  <Badge className={colors.badge}>{role.name}</Badge>
 
                   {role.isSystem ? (
                     <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
@@ -292,7 +280,7 @@ export const RolesPage: React.FC = () => {
                   {canDeleteRole && role.code !== 'ADMINISTRADOR' && !role.isSystem && (
                     <button
                       onClick={() => handleOpenDelete(role)}
-                      className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                       title={`Eliminar rol ${role.name}`}
                       aria-label={`Eliminar rol ${role.name}`}
                     >

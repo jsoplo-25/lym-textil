@@ -17,17 +17,32 @@ export const INITIAL_SYSTEM_ROLES = [
       'roles:create',
       'roles:edit',
       'roles:delete',
+      'machines:read',
+      'machines:create',
+      'machines:edit',
+      'machines:delete',
+      'suppliers:read',
+      'suppliers:create',
+      'suppliers:edit',
+      'suppliers:delete',
+      'production:read',
+      'production:create',
+      'production:edit',
+      'production:delete',
     ],
     isSystem: true,
   },
   {
     code: 'OPERATOR',
     name: 'Operario',
-    description: 'Acceso operativo restringido exclusivamente al Dashboard y a la gestión de su Perfil personal.',
+    description: 'Acceso operativo restringido exclusivamente al Dashboard, Mi Perfil y Registro de Producción.',
     permissions: [
       'dashboard:view',
       'profile:view',
       'profile:edit',
+      'production:read',
+      'production:create',
+      'production:edit',
     ],
     isSystem: true,
   },
@@ -56,8 +71,18 @@ export async function seedDefaultRoles(): Promise<void> {
           },
         });
         console.log(`✅ [ROLES] Rol inicial creado: [${role.code}] -> ${role.name}`);
+      } else if (role.code === 'ADMINISTRADOR') {
+        // Ensure administrator always has all available system permissions
+        const missingPermissions = role.permissions.filter(p => !existing.permissions.includes(p));
+        if (missingPermissions.length > 0) {
+          const updatedPermissions = Array.from(new Set([...existing.permissions, ...role.permissions]));
+          await prisma.roleDefinition.update({
+            where: { code: role.code },
+            data: { permissions: updatedPermissions },
+          });
+          console.log(`✅ [ROLES] Permisos de Administrador actualizados con: ${missingPermissions.join(', ')}`);
+        }
       }
-      // If role already exists in database, DO NOT overwrite the user's modifications!
     }
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);

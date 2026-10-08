@@ -20,6 +20,19 @@ import { Avatar } from '../../../shared/ui/Avatar';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { Tooltip } from '../../../shared/ui/Tooltip';
 import { Skeleton } from '../../../shared/ui/Skeleton';
+import { PageHeader } from '../../../shared/ui/PageHeader';
+import { Badge } from '../../../shared/ui/Badge';
+import { Button } from '../../../shared/ui/Button';
+import {
+  TableContainer,
+  Table,
+  TableHead,
+  Th,
+  TableBody,
+  Tr,
+  Td,
+  TableEmptyRow,
+} from '../../../shared/ui/Table';
 import { useToast } from '../../../shared/hooks/useToast';
 import { getRoleDisplayName, hasPermission } from '../../../shared/lib/roles';
 import { useDispatch, useSelector } from 'react-redux';
@@ -151,17 +164,8 @@ export const UsersPage: React.FC = () => {
 
   const getRoleBadge = (user: ManagedUser) => {
     const descriptiveName = user.roleName || getRoleDisplayName(user.role, rolesList);
-    if (user.role === 'ADMINISTRADOR') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-          {descriptiveName}
-        </span>
-      );
-    }
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-        {descriptiveName}
-      </span>
+      <Badge variant={user.role === 'ADMINISTRADOR' ? 'emerald' : 'slate'}>{descriptiveName}</Badge>
     );
   };
 
@@ -173,31 +177,20 @@ export const UsersPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col space-y-6 w-full animate-fadeIn pb-12">
-      {/* Header Bar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">
-            <Users className="w-4 h-4" />
-            <span>Mantenedor de Usuarios • Seguridad y Accesos</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            Gestión de Usuarios
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-            Control de cuentas, credenciales, estados de actividad y asignación de roles de planta.
-          </p>
-        </div>
-
-        {canCreate && (
-          <button
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-5 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
-          >
-            <UserPlus className="w-4 h-4 stroke-[2.5]" />
-            <span>Nuevo Usuario</span>
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrowIcon={<Users className="w-4 h-4" />}
+        eyebrow="Mantenedor de Usuarios • Seguridad y Accesos"
+        title="Gestión de Usuarios"
+        subtitle="Control de cuentas, credenciales, estados de actividad y asignación de roles de planta."
+        action={
+          canCreate && (
+            <Button variant="secondary" size="cta" onClick={handleOpenCreate}>
+              <UserPlus className="w-4 h-4" />
+              <span>Nuevo Usuario</span>
+            </Button>
+          )
+        }
+      />
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -256,139 +249,130 @@ export const UsersPage: React.FC = () => {
       </div>
 
       {/* Users Data Table */}
-      <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/50 dark:bg-slate-800/40">
-                <th className="py-4 px-6">Colaborador</th>
-                <th className="py-4 px-6">Rol en Planta</th>
-                <th className="py-4 px-6">Estado</th>
-                <th className="py-4 px-6">Registro</th>
-                <th className="py-4 px-6 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="w-10 h-10 rounded-full shrink-0" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-3.5 w-32" />
-                          <Skeleton className="h-3 w-40" />
-                        </div>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <Th>Colaborador</Th>
+            <Th>Rol en Planta</Th>
+            <Th>Estado</Th>
+            <Th>Registro</Th>
+            <Th align="right">Acciones</Th>
+          </TableHead>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <Tr key={i}>
+                  <Td>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-3.5 w-32" />
+                        <Skeleton className="h-3 w-40" />
                       </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <Skeleton className="h-5 w-24 rounded-full" />
-                    </td>
-                    <td className="py-4 px-6">
-                      <Skeleton className="h-3.5 w-16" />
-                    </td>
-                    <td className="py-4 px-6">
-                      <Skeleton className="h-3.5 w-20" />
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center justify-end gap-2">
-                        <Skeleton className="w-8 h-8 rounded-xl" />
-                        <Skeleton className="w-8 h-8 rounded-xl" />
+                    </div>
+                  </Td>
+                  <Td>
+                    <Skeleton className="h-5 w-24 rounded-full" />
+                  </Td>
+                  <Td>
+                    <Skeleton className="h-3.5 w-16" />
+                  </Td>
+                  <Td>
+                    <Skeleton className="h-3.5 w-20" />
+                  </Td>
+                  <Td>
+                    <div className="flex items-center justify-end gap-2">
+                      <Skeleton className="w-8 h-8 rounded-xl" />
+                      <Skeleton className="w-8 h-8 rounded-xl" />
+                    </div>
+                  </Td>
+                </Tr>
+              ))
+            ) : users.length === 0 ? (
+              <TableEmptyRow colSpan={5}>
+                No se encontraron usuarios con los filtros seleccionados.
+              </TableEmptyRow>
+            ) : (
+              users.map((user) => (
+                <Tr key={user.id}>
+                  {/* User Identity */}
+                  <Td>
+                    <div className="flex items-center gap-3">
+                      <Avatar
+                        firstName={user.firstName}
+                        lastName={user.lastName}
+                        size="md"
+                      />
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">
+                          {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-slate-400 text-xs">{user.email}</p>
                       </div>
-                    </td>
-                  </tr>
-                ))
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400 font-medium">
-                    No se encontraron usuarios con los filtros seleccionados.
-                  </td>
-                </tr>
-              ) : (
-                users.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
-                  >
-                    {/* User Identity */}
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <Avatar
-                          firstName={user.firstName}
-                          lastName={user.lastName}
-                          size="md"
-                        />
-                        <div>
-                          <p className="font-bold text-slate-900 dark:text-white text-sm">
-                            {user.firstName} {user.lastName}
-                          </p>
-                          <p className="text-slate-400 text-xs">{user.email}</p>
-                        </div>
-                      </div>
-                    </td>
+                    </div>
+                  </Td>
 
-                    {/* Role */}
-                    <td className="py-4 px-6">{getRoleBadge(user)}</td>
+                  {/* Role */}
+                  <Td>{getRoleBadge(user)}</Td>
 
-                    {/* Status */}
-                    <td className="py-4 px-6">
-                      {user.status === 'INACTIVE' ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-red-500 font-medium">
-                          <XCircle className="w-4 h-4" />
-                          <span>Inactivo</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Activo</span>
+                  {/* Status */}
+                  <Td>
+                    {user.status === 'INACTIVE' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-red-500 font-medium">
+                        <XCircle className="w-4 h-4" />
+                        <span>Inactivo</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Activo</span>
+                      </span>
+                    )}
+                  </Td>
+
+                  {/* Registered Date */}
+                  <Td className="text-slate-400">
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : 'Reciente'}
+                  </Td>
+
+                  {/* Action Buttons */}
+                  <Td align="right">
+                    <div className="flex items-center justify-end gap-2">
+                      {canEdit && (
+                        <Tooltip content="Editar usuario">
+                          <button
+                            onClick={() => handleOpenEdit(user)}
+                            aria-label="Editar usuario"
+                            className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
+                      )}
+                      {canDelete && (
+                        <Tooltip content="Eliminar usuario">
+                          <button
+                            onClick={() => handleOpenDelete(user)}
+                            aria-label="Eliminar usuario"
+                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
+                      )}
+                      {!hasActionPermissions && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400">
+                          Solo lectura
                         </span>
                       )}
-                    </td>
-
-                    {/* Registered Date */}
-                    <td className="py-4 px-6 text-slate-400">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : 'Reciente'}
-                    </td>
-
-                    {/* Action Buttons */}
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {canEdit && (
-                          <Tooltip content="Editar usuario">
-                            <button
-                              onClick={() => handleOpenEdit(user)}
-                              aria-label="Editar usuario"
-                              className="p-2 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {canDelete && (
-                          <Tooltip content="Eliminar usuario">
-                            <button
-                              onClick={() => handleOpenDelete(user)}
-                              aria-label="Eliminar usuario"
-                              className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {!hasActionPermissions && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400">
-                            Solo lectura
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    </div>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Create / Edit Modal */}
       <UserModal

@@ -5,7 +5,6 @@ import {
   Users,
   Shield,
   Key,
-  Mail,
   Save,
   Lock,
   Sparkles,
@@ -21,6 +20,9 @@ import { Avatar } from '../../../shared/ui/Avatar';
 import { Alert } from '../../../shared/ui/Alert';
 import { getRoleDisplayName, hasPermission } from '../../../shared/lib/roles';
 import { Tooltip } from '../../../shared/ui/Tooltip';
+import { PageHeader } from '../../../shared/ui/PageHeader';
+import { Button } from '../../../shared/ui/Button';
+import { Badge } from '../../../shared/ui/Badge';
 
 export const ProfilePage: React.FC = () => {
   const dispatch = useDispatch();
@@ -184,24 +186,19 @@ export const ProfilePage: React.FC = () => {
 
             {/* Name, Email & Role - sits cleanly in the white/dark card area */}
             <div className="pt-2 sm:pt-3">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                  {sessionUser?.firstName
+              <PageHeader
+                eyebrowIcon={<User className="w-4 h-4" />}
+                eyebrow="Mi Cuenta • Perfil y Preferencias"
+                title={
+                  sessionUser?.firstName
                     ? `${sessionUser.firstName} ${sessionUser?.lastName || ''}`.trim()
-                    : sessionUser?.name || 'Usuario'}
-                </h1>
-                <span
-                  className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-bold border ${getRoleBadgeColor(
-                    sessionUser?.role
-                  )}`}
-                >
-                  {getRoleDisplayName(sessionUser)}
-                </span>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center sm:justify-start gap-1.5 mt-1 font-medium">
-                <Mail className="w-3.5 h-3.5" />
-                <span>{sessionUser?.email || ''}</span>
-              </p>
+                    : sessionUser?.name || 'Usuario'
+                }
+                subtitle={sessionUser?.email || ''}
+              />
+              <Badge className={`mt-2 ${getRoleBadgeColor(sessionUser?.role)}`}>
+                {getRoleDisplayName(sessionUser)}
+              </Badge>
             </div>
           </div>
         </div>
@@ -341,14 +338,10 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <div className="flex justify-end pt-2">
-              <button
-                type="submit"
-                disabled={isSavingInfo}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-6 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
-              >
+              <Button type="submit" variant="secondary" size="cta" isLoading={isSavingInfo}>
                 <Save className="w-4 h-4" />
                 <span>{isSavingInfo ? 'Guardando...' : 'Guardar Cambios'}</span>
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -455,14 +448,10 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSavingPassword}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-6 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
-              >
+              <Button type="submit" variant="secondary" size="cta" isLoading={isSavingPassword}>
                 <Lock className="w-4 h-4" />
                 <span>{isSavingPassword ? 'Cambiando clave...' : 'Actualizar Contraseña'}</span>
-              </button>
+              </Button>
             </div>
           </form>
         </div>

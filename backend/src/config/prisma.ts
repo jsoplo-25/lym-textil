@@ -1,5 +1,7 @@
-import { PrismaClient, RoleDefinition } from '@prisma/client';
+import { PrismaClient, RoleDefinition, Machine, Supplier, ProductionBatch, ProductionRoll, BatchYarn } from '@prisma/client';
 
-export type { RoleDefinition };
+export type { RoleDefinition, Machine, Supplier, ProductionBatch, ProductionRoll, BatchYarn };
 
 export const prisma = new PrismaClient();
+
+

@@ -18,6 +18,8 @@ const SIZE_STYLES = {
   md: 'max-w-md',
   lg: 'max-w-lg',
   xl: 'max-w-2xl',
+  '2xl': 'max-w-3xl',
+  '3xl': 'max-w-4xl',
 } as const;
 
 export interface ModalProps {
@@ -28,6 +30,7 @@ export interface ModalProps {
   size?: keyof typeof SIZE_STYLES;
   title?: React.ReactNode;
   description?: React.ReactNode;
+  subtitle?: React.ReactNode;
   icon?: React.ReactNode;
   iconVariant?: ModalIconVariant;
   children?: React.ReactNode;
@@ -47,12 +50,14 @@ export const Modal: React.FC<ModalProps> = ({
   size = 'md',
   title,
   description,
+  subtitle,
   icon,
   iconVariant = 'emerald',
   children,
   className,
 }) => {
   const dismissible = Boolean(onClose);
+  const desc = description || subtitle;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -84,7 +89,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       <div
         className={cn(
-          'relative z-10 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl overflow-hidden transition-all my-8',
+          'relative z-10 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl transition-all my-8',
           SIZE_STYLES[size],
           className
         )}
@@ -104,7 +109,7 @@ export const Modal: React.FC<ModalProps> = ({
               )}
               <div>
                 {title && <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>}
-                {description && <p className="text-xs text-slate-400">{description}</p>}
+                {desc && <p className="text-xs text-slate-400">{desc}</p>}
               </div>
             </div>
 

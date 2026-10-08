@@ -38,6 +38,7 @@ export interface AlertProps {
   /** 'md' (por defecto): banner de página, p-4/text-sm. 'sm': banner compacto para
    *  formularios y modales, p-3/text-xs. */
   size?: 'sm' | 'md';
+  title?: string;
   children: React.ReactNode;
   className?: string;
 }
@@ -46,21 +47,24 @@ export interface AlertProps {
  * Banner de alerta inline reutilizable — reemplaza las 4 variantes de banner rojo/verde
  * que estaban duplicadas a mano (LoginForm, UserModal, RoleModal, ProfilePage).
  */
-export const Alert: React.FC<AlertProps> = ({ variant = 'info', size = 'md', children, className }) => {
+export const Alert: React.FC<AlertProps> = ({ variant = 'info', size = 'md', title, children, className }) => {
   const { container, icon, Icon } = VARIANTS[variant];
 
   return (
     <div
       role={variant === 'error' ? 'alert' : 'status'}
       className={cn(
-        'rounded-2xl border font-semibold flex items-center gap-2.5 animate-fadeIn',
+        'rounded-2xl border font-semibold flex items-start gap-2.5 animate-fadeIn',
         size === 'sm' ? 'p-3 text-xs' : 'p-4 text-sm',
         container,
         className
       )}
     >
-      <Icon className={cn(size === 'sm' ? 'w-4 h-4' : 'w-5 h-5', 'shrink-0', icon)} />
-      <span>{children}</span>
+      <Icon className={cn(size === 'sm' ? 'w-4 h-4' : 'w-5 h-5', 'shrink-0 mt-0.5', icon)} />
+      <div className="flex-1 min-w-0">
+        {title && <p className="font-bold mb-0.5">{title}</p>}
+        <span>{children}</span>
+      </div>
     </div>
   );
 };

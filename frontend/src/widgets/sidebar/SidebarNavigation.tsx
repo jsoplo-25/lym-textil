@@ -12,6 +12,9 @@ import {
   User,
   LogOut,
   Sparkles,
+  Cog,
+  Factory,
+  Truck,
 } from 'lucide-react';
 import { logout } from '../../entities/session/sessionSlice';
 import type { RootState } from '../../app/store';
@@ -28,14 +31,19 @@ export const SidebarNavigation: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
-  // Permisos dinámicos para mantenedores
+  // Permisos dinámicos
+  const canViewProduction = hasPermission(user, 'production:read');
   const canViewUsers = hasPermission(user, 'users:read');
   const canViewRoles = hasPermission(user, 'roles:read');
-  const canViewMaintainers = canViewUsers || canViewRoles;
+  const canViewMachines = hasPermission(user, 'machines:read');
+  const canViewSuppliers = hasPermission(user, 'suppliers:read');
+  const canViewMaintainers = canViewUsers || canViewRoles || canViewMachines || canViewSuppliers;
 
   const visibleMaintainerItems = [
     ...(canViewUsers ? [{ icon: Users, label: 'Usuarios', path: '/users' }] : []),
     ...(canViewRoles ? [{ icon: ShieldCheck, label: 'Roles', path: '/roles' }] : []),
+    ...(canViewMachines ? [{ icon: Cog, label: 'Máquinas', path: '/machines' }] : []),
+    ...(canViewSuppliers ? [{ icon: Truck, label: 'Proveedores', path: '/suppliers' }] : []),
   ];
 
   const isMaintainerActive = visibleMaintainerItems.some((item) => location.pathname.startsWith(item.path));
@@ -97,6 +105,24 @@ export const SidebarNavigation: React.FC = () => {
               Inicio
             </span>
           </NavLink>
+
+          {/* Producción */}
+          {canViewProduction && (
+            <NavLink
+              to="/production"
+              className={({ isActive }) =>
+                `w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative ${isActive || location.pathname.startsWith('/production')
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
+                }`
+              }
+            >
+              <Factory className="w-5 h-5" />
+              <span className="absolute left-16 bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-xl z-50 translate-x-1 group-hover:translate-x-0">
+                Producción
+              </span>
+            </NavLink>
+          )}
 
           {/* Mantenedores (Usuarios / Roles) - Visible según matriz de permisos */}
           {canViewMaintainers && (
@@ -239,6 +265,23 @@ export const SidebarNavigation: React.FC = () => {
                   <Home className="w-5 h-5" />
                   <span>Inicio</span>
                 </NavLink>
+
+                {/* Producción */}
+                {canViewProduction && (
+                  <NavLink
+                    to="/production"
+                    onClick={() => setIsMobileOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 ${isActive || location.pathname.startsWith('/production')
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`
+                    }
+                  >
+                    <Factory className="w-5 h-5" />
+                    <span>Producción</span>
+                  </NavLink>
+                )}
 
                 {/* Mantenedores accordion - Visible según matriz de permisos */}
                 {canViewMaintainers && (

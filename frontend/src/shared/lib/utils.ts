@@ -133,3 +133,47 @@ export const getUserInitials = (
   return parts[0].charAt(0).toUpperCase();
 };
 
+/**
+ * Retorna la fecha local en formato YYYY-MM-DD sin desfase UTC.
+ */
+export const getTodayLocalDate = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
+ * Formatea una fecha ISO o YYYY-MM-DD a formato visible DD/MM/YYYY
+ * evitando el desfase de zona horaria que resta un día.
+ */
+export const formatLocalDate = (dateVal?: string | Date | null): string => {
+  if (!dateVal) return '-';
+  const str = typeof dateVal === 'string' ? dateVal : dateVal.toISOString();
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+  return new Date(dateVal).toLocaleDateString('es-PE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+};
+
+/**
+ * Convierte cualquier valor de fecha recibido a YYYY-MM-DD para inicializar DatePickers
+ */
+export const toDatePickerValue = (dateVal?: string | Date | null): string => {
+  if (!dateVal) return getTodayLocalDate();
+  const str = typeof dateVal === 'string' ? dateVal : dateVal.toISOString();
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+  return getTodayLocalDate();
+};
+

@@ -12,6 +12,8 @@ router.post('/logout', controller.logout);
 router.post('/forgot-password', controller.forgotPassword);
 router.post('/verify-reset-code', controller.verifyResetCode);
 router.post('/reset-password', controller.resetPassword);
+router.get('/session-check', authenticateJwt, controller.checkSession);
+router.get('/session-stream', controller.sessionStream);
 router.get('/me', authenticateJwt, controller.me);
 router.put('/profile', authenticateJwt, controller.updateProfile);
 router.put('/change-password', authenticateJwt, controller.changePassword);

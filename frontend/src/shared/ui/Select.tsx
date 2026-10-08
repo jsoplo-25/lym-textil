@@ -1,4 +1,5 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -58,12 +59,37 @@ export const Select: React.FC<SelectProps> = (props) => {
 
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+
+  // El menú se renderiza en un portal a <body> (posición `fixed`) en vez de
+  // `absolute` dentro del flujo normal: así no queda recortado por ancestros
+  // con overflow-hidden/auto (p. ej. el contenedor de una tabla con scroll).
+  const updatePosition = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setCoords({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen, updatePosition]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setIsOpen(false);
     };
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsOpen(false);
@@ -86,7 +112,7 @@ export const Select: React.FC<SelectProps> = (props) => {
         : [...props.value, optionValue];
       props.onChange(next);
     } else {
-      props.onChange(optionValue);
+      (props as SingleSelectProps).onChange(optionValue);
       setIsOpen(false);
     }
   };
@@ -101,11 +127,11 @@ export const Select: React.FC<SelectProps> = (props) => {
       }
       return `${props.value.length} seleccionados`;
     }
-    return options.find((o) => o.value === props.value)?.label ?? placeholder;
+    return options.find((o) => o.value === (props as SingleSelectProps).value)?.label ?? placeholder;
   })();
 
   return (
-    <div className="w-full flex flex-col gap-1.5" ref={containerRef}>
+    <div className="w-full flex flex-col gap-1.5 relative" ref={containerRef}>
       {label && (
         <label
           htmlFor={selectId}
@@ -125,6 +151,7 @@ export const Select: React.FC<SelectProps> = (props) => {
         <button
           type="button"
           id={selectId}
+          ref={triggerRef}
           disabled={disabled}
           onClick={() => setIsOpen((v) => !v)}
           aria-haspopup="listbox"
@@ -150,11 +177,13 @@ export const Select: React.FC<SelectProps> = (props) => {
           />
         </button>
 
-        {isOpen && !disabled && (
+        {isOpen && !disabled && createPortal(
           <div
+            ref={dropdownRef}
             role="listbox"
             aria-multiselectable={props.multiple}
-            className="absolute left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-1 z-50 animate-fadeIn"
+            style={{ position: 'fixed', top: coords.top, left: coords.left, width: coords.width }}
+            className="min-w-[160px] max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-1 z-9999 animate-fadeIn"
           >
             {options.length === 0 ? (
               <p className="px-4 py-2.5 text-xs text-slate-400 text-center">Sin opciones disponibles.</p>
@@ -195,7 +224,8 @@ export const Select: React.FC<SelectProps> = (props) => {
                 );
               })
             )}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 

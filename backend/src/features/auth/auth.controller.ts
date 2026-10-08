@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
 import { setAuthCookies, clearAuthCookies, COOKIE_NAMES } from '../../shared/utils/cookies';
+import { verifyToken } from '../../shared/utils/jwt';
+import { sessionManager } from './session.manager';
 
 const authService = new AuthService();
 
@@ -126,12 +128,97 @@ export class AuthController {
     }
   }
 
-  async logout(_req: Request, res: Response): Promise<void> {
+  async logout(req: Request, res: Response): Promise<void> {
+    try {
+      let token: string | null = req.cookies?.[COOKIE_NAMES.ACCESS_TOKEN];
+      if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+      }
+      if (token) {
+        const decoded = verifyToken(token);
+        if (decoded?.id) {
+          sessionManager.endSession(decoded.id, decoded.sessionId);
+        }
+      }
+    } catch {}
+
     clearAuthCookies(res);
     res.status(200).json({
       success: true,
       message: 'Sesión cerrada exitosamente.',
     });
+  }
+
+  /**
+   * Chequeo rápido de sesión activa (usado por el frontend para detección de sesión única)
+   */
+  async checkSession(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'No autenticado.' });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      data: {
+        active: true,
+        userId: req.user.id,
+        sessionId: req.user.sessionId,
+      },
+    });
+  }
+
+  /**
+   * Stream Server-Sent Events (SSE) para desconexión en tiempo real ante concurrencia
+   */
+  async sessionStream(req: Request, res: Response): Promise<void> {
+    let token: string | null = null;
+    if (req.cookies && req.cookies[COOKIE_NAMES.ACCESS_TOKEN]) {
+      token = req.cookies[COOKIE_NAMES.ACCESS_TOKEN];
+    }
+    if (!token && typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
+    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      res.status(401).end();
+      return;
+    }
+
+    try {
+      const decoded = verifyToken(token);
+      if (!decoded.sessionId) {
+        res.status(400).end();
+        return;
+      }
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders?.();
+
+      res.write(`: connected\n\n`);
+
+      const unsubscribe = sessionManager.subscribe(decoded.id, decoded.sessionId, res);
+
+      const pingInterval = setInterval(() => {
+        try {
+          res.write(`: ping\n\n`);
+        } catch {
+          clearInterval(pingInterval);
+        }
+      }, 25000);
+
+      req.on('close', () => {
+        clearInterval(pingInterval);
+        unsubscribe();
+      });
+    } catch {
+      res.status(401).end();
+    }
   }
 
   async me(req: AuthenticatedRequest, res: Response): Promise<void> {

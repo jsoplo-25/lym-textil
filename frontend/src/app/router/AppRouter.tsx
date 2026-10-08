@@ -4,12 +4,17 @@ import { useSelector } from 'react-redux';
 import { Sparkles } from 'lucide-react';
 import type { RootState } from '../store';
 import { useInitSession } from '../../entities/session/useInitSession';
+import { SessionSyncWatcher } from '../../entities/session/useSessionSync';
 import { LoginPage } from '../../public-modules/login';
 import { MainLayout } from '../../private-modules/layout/MainLayout';
 import { DashboardPage } from '../../private-modules/dashboard';
 import { ProfilePage } from '../../private-modules/profile';
 import { UsersPage } from '../../private-modules/users';
 import { RolesPage } from '../../private-modules/roles';
+import { MachinesPage } from '../../private-modules/machines';
+import { SuppliersPage } from '../../private-modules/suppliers/pages/SuppliersPage';
+import { ProductionBatchesPage, ProductionDetailPage } from '../../private-modules/production';
+import { WelcomePortalPage } from '../../public-modules/welcome/pages/WelcomePortalPage';
 
 import { hasPermission } from '../../shared/lib/roles';
 
@@ -58,9 +63,15 @@ export const AppRouter: React.FC = () => {
 
   return (
     <BrowserRouter>
+      <SessionSyncWatcher />
       <Routes>
         {/* Public Modules */}
+        <Route path="/" element={<WelcomePortalPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/tracking" element={<WelcomePortalPage />} />
+        <Route path="/tracking/:code" element={<WelcomePortalPage />} />
+        <Route path="/seguimiento" element={<WelcomePortalPage />} />
+        <Route path="/seguimiento/:code" element={<WelcomePortalPage />} />
 
         {/* Private Protected Modules with MainLayout */}
         <Route
@@ -74,11 +85,22 @@ export const AppRouter: React.FC = () => {
           <Route path="/profile" element={<ProfilePage />} />
 
           {/* Permission Protected Modules */}
+          <Route element={<PermissionRoute permission="production:read" />}>
+            <Route path="/production" element={<ProductionBatchesPage />} />
+            <Route path="/production/:id" element={<ProductionDetailPage />} />
+          </Route>
+
           <Route element={<PermissionRoute permission="users:read" />}>
             <Route path="/users" element={<UsersPage />} />
           </Route>
           <Route element={<PermissionRoute permission="roles:read" />}>
             <Route path="/roles" element={<RolesPage />} />
+          </Route>
+          <Route element={<PermissionRoute permission="machines:read" />}>
+            <Route path="/machines" element={<MachinesPage />} />
+          </Route>
+          <Route element={<PermissionRoute permission="suppliers:read" />}>
+            <Route path="/suppliers" element={<SuppliersPage />} />
           </Route>
 
           <Route path="/modules" element={<DashboardPage />} />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import type { RootState } from '../../../app/store';
 import { Sparkles } from 'lucide-react';
 import { Card } from '../../../shared/ui/Card';
@@ -67,6 +67,15 @@ export const LoginPage: React.FC = () => {
           <Card variant="solid" padding="lg" className="shadow-xl shadow-slate-200/50 dark:shadow-none">
             <LoginForm />
           </Card>
+
+          {/* Enlaces de pie de login */}
+          <div className="mt-6 text-center space-y-2 text-xs">
+            <p>
+              <Link to="/" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                &larr; Volver a la portada principal
+              </Link>
+            </p>
+          </div>
 
           <p className="lg:hidden mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
             © {new Date().getFullYear()} Textil L&amp;M

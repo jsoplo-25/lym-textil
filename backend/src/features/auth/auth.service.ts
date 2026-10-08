@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { generateToken, generateRefreshToken, verifyRefreshToken } from '../../shared/utils/jwt';
 import { comparePassword, hashPassword } from '../../shared/utils/password';
 import { UserPayload, UserRole, AuthResult } from '../../shared/types';
@@ -5,6 +6,7 @@ import { supabaseAdmin } from '../../config/supabase';
 import { prisma } from '../../config/prisma';
 import { resetTokenStore } from './reset-token.store';
 import { EmailService } from '../../shared/utils/email.service';
+import { sessionManager } from './session.manager';
 
 
 export class AuthService {
@@ -101,6 +103,10 @@ export class AuthService {
     // Resolver nombre descriptivo y matriz de permisos del rol desde la base de datos
     const { roleName, permissions } = await this.resolveRoleInfo(userRow.role);
 
+    // Iniciar sesión única para el usuario y notificar si había otra sesión previa
+    const sessionId = randomUUID();
+    sessionManager.startSession(userRow.id, sessionId);
+
     const userPayload: UserPayload = {
       id: userRow.id,
       email: userRow.email,
@@ -110,6 +116,7 @@ export class AuthService {
       firstName: userRow.firstName,
       lastName: userRow.lastName,
       avatarUrl: userRow.avatarUrl || undefined,
+      sessionId,
     };
 
     const token = generateToken(userPayload);
@@ -189,6 +196,9 @@ export class AuthService {
       };
     }
 
+    const sessionId = randomUUID();
+    sessionManager.startSession(newUser.id, sessionId);
+
     const userPayload: UserPayload = {
       id: newUser.id,
       email: newUser.email,
@@ -196,6 +206,7 @@ export class AuthService {
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       avatarUrl: newUser.avatarUrl || undefined,
+      sessionId,
     };
 
     const token = generateToken(userPayload);
@@ -217,6 +228,10 @@ export class AuthService {
     const decoded = verifyRefreshToken(oldRefreshToken);
     if (!decoded || !decoded.id) {
       throw new Error('El Refresh Token ha expirado o es inválido.');
+    }
+
+    if (decoded.sessionId && !sessionManager.isValidSession(decoded.id, decoded.sessionId)) {
+      throw new Error('Tu sesión ha sido iniciada en otro dispositivo o pestaña.');
     }
 
     let userRow: {
@@ -282,6 +297,7 @@ export class AuthService {
       firstName: userRow.firstName,
       lastName: userRow.lastName,
       avatarUrl: userRow.avatarUrl || undefined,
+      sessionId: decoded.sessionId,
     };
 
     const newAccessToken = generateToken(userPayload);

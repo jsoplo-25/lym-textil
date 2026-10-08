@@ -8,6 +8,7 @@ export interface UserProfile {
   roleName?: string;
   permissions?: string[];
   avatarUrl?: string;
+  sessionId?: string;
 }
 
 export interface SessionState {

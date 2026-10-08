@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../shared/types';
 import { verifyToken } from '../shared/utils/jwt';
 import { COOKIE_NAMES } from '../shared/utils/cookies';
+import { sessionManager } from '../features/auth/session.manager';
 
 export const authenticateJwt = (
   req: AuthenticatedRequest,
@@ -30,6 +31,18 @@ export const authenticateJwt = (
 
   try {
     const decoded = verifyToken(token);
+
+    // Validar que la sesión no haya sido reemplazada por otro login (en otra pestaña o en otra PC)
+    if (decoded.sessionId && !sessionManager.isValidSession(decoded.id, decoded.sessionId)) {
+      res.status(401).json({
+        success: false,
+        code: 'SESSION_SUPERSEDED',
+        error: 'Tu sesión ha sido iniciada en otro dispositivo o pestaña. La sesión actual se ha cerrado automáticamente.',
+      });
+      return;
+    }
+
+    sessionManager.touchSession(decoded.id);
     req.user = decoded;
     next();
   } catch {

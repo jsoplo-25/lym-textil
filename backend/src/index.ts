@@ -12,6 +12,9 @@ import { swaggerSpec } from './config/swagger';
 import authRoutes from './features/auth/auth.routes';
 import usersRoutes from './features/users/users.routes';
 import rolesRoutes from './features/roles/roles.routes';
+import machinesRoutes from './features/machines/machines.routes';
+import suppliersRoutes from './features/suppliers/suppliers.routes';
+import productionRoutes from './features/production/production.routes';
 import { seedDefaultRoles } from './services/roleSeed.service';
 
 const app: Express = express();
@@ -103,17 +106,23 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/auth', authRoutes);
 app.use('/users', usersRoutes);
 app.use('/roles', rolesRoutes);
+app.use('/machines', machinesRoutes);
+app.use('/suppliers', suppliersRoutes);
+app.use('/production', productionRoutes);
 
 // Soporte opcional para prefijo /api
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/roles', rolesRoutes);
+app.use('/api/machines', machinesRoutes);
+app.use('/api/suppliers', suppliersRoutes);
+app.use('/api/production', productionRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
 
 // Start Server
-const server = app.listen(env.PORT, async () => {
+app.listen(env.PORT, async () => {
   console.log(`
   🚀 Server Textiles L&M API is running!
   📡 URL: http://localhost:${env.PORT}

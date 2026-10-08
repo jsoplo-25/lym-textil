@@ -58,6 +58,21 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Si la sesión fue superada en otro dispositivo/pestaña, cerrar inmediatamente sin reintentar refresh
+    if (error.response?.status === 401 && error.response?.data?.code === 'SESSION_SUPERSEDED') {
+      store.dispatch(logout());
+      window.dispatchEvent(
+        new CustomEvent('session_superseded', {
+          detail: {
+            message:
+              error.response?.data?.error ||
+              'Tu sesión ha sido iniciada en otro dispositivo o pestaña. Se ha cerrado esta sesión automáticamente.',
+          },
+        })
+      );
+      return Promise.reject(error);
+    }
+
     // Do not attempt refresh on login, logout, or refresh endpoint failures
     if (
       error.response?.status === 401 &&

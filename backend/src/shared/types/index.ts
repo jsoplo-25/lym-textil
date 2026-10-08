@@ -11,6 +11,7 @@ export interface UserPayload {
   firstName: string;
   lastName: string;
   avatarUrl?: string;
+  sessionId?: string;
 }
 
 export interface AuthenticatedRequest extends Request {

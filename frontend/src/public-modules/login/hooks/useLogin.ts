@@ -59,6 +59,20 @@ export const useLogin = (initialEmail = '') => {
         localStorage.removeItem(REMEMBER_PREF_KEY);
       }
 
+      // 1. Notificar inmediatamente a otras pestañas en el mismo navegador para cerrar su sesión previa
+      if (typeof window !== 'undefined') {
+        const sessionId = data.user.sessionId || String(Date.now());
+        try {
+          const channel = new BroadcastChannel('textil_lym_session_channel');
+          channel.postMessage({ type: 'LOGIN', userId: data.user.id, sessionId });
+          channel.close();
+        } catch {}
+        localStorage.setItem(
+          'lym_session_event',
+          JSON.stringify({ type: 'LOGIN', userId: data.user.id, sessionId, timestamp: Date.now() })
+        );
+      }
+
       dispatch(
         setCredentials({
           user: data.user,

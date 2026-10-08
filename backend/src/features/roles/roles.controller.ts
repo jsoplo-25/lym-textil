@@ -1,5 +1,4 @@
 import { Response } from 'express';
-import { Prisma } from '@prisma/client';
 import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
 import { prisma, RoleDefinition } from '../../config/prisma';
 import { supabaseAdmin } from '../../config/supabase';
