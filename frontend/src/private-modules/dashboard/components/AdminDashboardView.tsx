@@ -6,14 +6,12 @@ import {
   Cog,
   Users,
   ArrowUpRight,
-  Clock,
   CheckCircle2,
   AlertTriangle,
-  Sparkles,
   ExternalLink,
   ShieldCheck,
-  Check,
   Loader2,
+  Check,
 } from 'lucide-react';
 import type { DashboardMetrics } from '../types/dashboard.types';
 import { DashboardStatCard } from './DashboardStatCard';

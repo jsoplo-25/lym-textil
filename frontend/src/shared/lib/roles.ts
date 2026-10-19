@@ -102,27 +102,3 @@ export function hasPermission(
 
   return Array.isArray(user.permissions) && user.permissions.includes(permission);
 }
-
-/**
- * Checks if a user has at least one of the specified permissions.
- */
-export function hasAnyPermission(
-  user?: { role?: string; permissions?: string[] } | null,
-  ...permissions: string[]
-): boolean {
-  if (!user) return false;
-
-  const roleCode = String(user.role || '').toUpperCase().trim();
-  if (roleCode === 'ADMINISTRADOR') {
-    return true;
-  }
-  if (roleCode === 'ASISTENTE_ADMINISTRATIVO' && permissions.includes('production:approve')) {
-    return true;
-  }
-
-  if (!Array.isArray(user.permissions) || user.permissions.length === 0) {
-    return false;
-  }
-
-  return permissions.some((perm) => user.permissions?.includes(perm));
-}

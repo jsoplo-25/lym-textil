@@ -11,7 +11,6 @@ import {
   ChevronDown,
   User,
   LogOut,
-  Sparkles,
   Cog,
   Factory,
   Truck,

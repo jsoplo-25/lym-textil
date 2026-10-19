@@ -9,11 +9,10 @@ import {
   Clock,
   Search,
   ExternalLink,
-  Check,
   Loader2,
-  AlertCircle,
   Building2,
   Sparkles,
+  Check,
 } from 'lucide-react';
 import type { DashboardMetrics } from '../types/dashboard.types';
 import { DashboardStatCard } from './DashboardStatCard';
