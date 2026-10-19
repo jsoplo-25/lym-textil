@@ -7,12 +7,14 @@ const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 // Remove trailing slash if present
 const API_URL = rawApiUrl.replace(/\/+$/, '');
 
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT) || 60000;
+
 export const axiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: API_TIMEOUT_MS,
   withCredentials: true,
 });
 
@@ -130,6 +132,11 @@ axiosInstance.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
+    }
+
+    // Mejorar mensaje si ocurre timeout o fallo de red
+    if (error.code === 'ECONNABORTED' || (error.message && error.message.toLowerCase().includes('timeout'))) {
+      error.message = 'El servidor tardó en responder (tiempo de espera agotado). Si estuvo inactivo, puede estar iniciando. Por favor, intenta de nuevo.';
     }
 
     return Promise.reject(error);

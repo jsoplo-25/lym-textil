@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { productionService } from '../../../private-modules/production/services/production.service';
 import type { BatchTrackingData, RollStatus } from '../../../private-modules/production/types/production.types';
+import { Logo } from '../../../shared/ui/Logo';
 
 export const PublicTrackingPage: React.FC = () => {
   const { code: urlCode } = useParams<{ code?: string }>();
@@ -83,9 +84,16 @@ export const PublicTrackingPage: React.FC = () => {
             Entregado
           </span>
         );
+      case 'READY_FOR_APPROVAL':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+            <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            En control de calidad
+          </span>
+        );
       case 'IN_PREPARATION':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
             <Clock className="w-3.5 h-3.5" />
             En preparación
           </span>
@@ -107,9 +115,7 @@ export const PublicTrackingPage: React.FC = () => {
       <header className="border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-black text-lg shadow-md shadow-emerald-500/20">
-              L&M
-            </div>
+            <Logo size="sm" className="shrink-0" />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold tracking-tight text-base sm:text-lg text-slate-900 dark:text-white">

@@ -11,6 +11,7 @@ import { ForgotPasswordModal } from './ForgotPasswordModal';
 export const LoginForm: React.FC = () => {
   const [isCookiesModalOpen, setIsCookiesModalOpen] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [slowNotice, setSlowNotice] = useState(false);
   const {
     email,
     password,
@@ -22,6 +23,16 @@ export const LoginForm: React.FC = () => {
     setRememberMe,
     handleSubmit,
   } = useLogin();
+
+  React.useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (isLoading) {
+      timer = setTimeout(() => setSlowNotice(true), 4000);
+    } else {
+      setSlowNotice(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   return (
     <>
@@ -80,6 +91,12 @@ export const LoginForm: React.FC = () => {
           <span>Iniciar Sesión</span>
           <LogIn className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
         </Button>
+
+        {slowNotice && isLoading && (
+          <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs text-center animate-pulse">
+            El servidor se está reactivando tras un periodo de inactividad. Esto puede tomar unos segundos...
+          </div>
+        )}
 
         <div className="pt-2 flex flex-col items-center justify-center gap-2.5 text-center text-xs text-slate-400 dark:text-slate-500">
           <div className="flex items-center justify-center gap-1.5">

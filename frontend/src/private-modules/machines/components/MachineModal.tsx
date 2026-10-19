@@ -8,6 +8,7 @@ import {
   MapPin,
   FileText,
   Activity,
+  Loader2,
 } from 'lucide-react';
 import type { Machine, CreateMachineDTO, UpdateMachineDTO, MachineStatus } from '../types/machines.types';
 import { Modal } from '../../../shared/ui/Modal';
@@ -112,6 +113,17 @@ export const MachineModal: React.FC<MachineModalProps> = ({
       };
 
       await onSave(payload, editingMachine?.id);
+      if (!editingMachine) {
+        setCode('');
+        setName('');
+        setType('Costura');
+        setBrand('');
+        setModel('');
+        setSerialNumber('');
+        setStatus('OPERATIVE');
+        setLocation('');
+        setNotes('');
+      }
       onClose();
     } catch (err: unknown) {
       console.error('Error al guardar máquina:', err);
@@ -129,7 +141,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingMachine ? 'Editar Máquina' : 'Registrar Nueva Máquina'}
+      title={editingMachine ? 'Editar Máquina' : 'Nueva Máquina'}
       description={
         editingMachine
           ? `Modifica la información y estado de la máquina [${editingMachine.code}]`
@@ -137,6 +149,8 @@ export const MachineModal: React.FC<MachineModalProps> = ({
       }
       icon={<Cog className="w-6 h-6 text-emerald-500" />}
       size="lg"
+      isLoading={isLoading}
+      loadingMessage={editingMachine ? 'Actualizando datos de la máquina...' : 'Registrando nueva máquina...'}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
@@ -302,8 +316,8 @@ export const MachineModal: React.FC<MachineModalProps> = ({
             disabled={isLoading}
             className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Guardando...' : editingMachine ? 'Guardar Cambios' : 'Registrar Máquina'}</span>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>{isLoading ? (editingMachine ? 'Actualizando...' : 'Creando...') : editingMachine ? 'Guardar Cambios' : 'Crear Máquina'}</span>
           </button>
         </div>
       </form>

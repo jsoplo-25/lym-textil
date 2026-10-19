@@ -129,10 +129,10 @@ export const MachinesPage: React.FC = () => {
   const handleSaveMachine = async (data: CreateMachineDTO | UpdateMachineDTO, id?: string) => {
     if (id) {
       await machinesService.updateMachine(id, data);
-      toast.success('Máquina actualizada correctamente.');
+      toast.success('Máquina actualizada exitosamente.');
     } else {
       await machinesService.createMachine(data as CreateMachineDTO);
-      toast.success('Máquina registrada exitosamente en el inventario.');
+      toast.success('Máquina creada exitosamente.');
     }
     await loadMachines();
   };
@@ -142,7 +142,7 @@ export const MachinesPage: React.FC = () => {
     setIsDeleting(true);
     try {
       await machinesService.deleteMachine(machineToDelete.id);
-      toast.success(`Máquina [${machineToDelete.code}] eliminada correctamente.`);
+      toast.success(`Máquina [${machineToDelete.code}] eliminada exitosamente.`);
       setIsDeleteModalOpen(false);
       setMachineToDelete(null);
       await loadMachines();
@@ -188,11 +188,18 @@ export const MachinesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Top indeterminate loader when refreshing/updating data */}
+      {isLoading && (
+        <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+        </div>
+      )}
+
       {/* 1. Header & Actions */}
       <PageHeader
         eyebrowIcon={<Cog className="w-4 h-4" />}
         eyebrow="Mantenedor de Máquinas • Inventario y Estado Operativo"
-        title="Mantenedor de Máquinas"
+        title="Gestión de Máquinas"
         subtitle="Inventario de maquinaria, conteo general y control del estado operativo en planta."
         action={
           canCreate && (

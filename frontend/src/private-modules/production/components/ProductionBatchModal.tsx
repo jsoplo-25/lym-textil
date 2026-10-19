@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Factory, Save, Hash, Cog, FileText, Activity, Truck } from 'lucide-react';
+import { Factory, Save, Hash, Cog, FileText, Activity, Truck, Loader2 } from 'lucide-react';
 import type { ProductionBatch, CreateBatchDTO, UpdateBatchDTO, BatchStatus } from '../types/production.types';
 import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
@@ -99,6 +99,10 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
     setError(null);
   }, [editingBatch, isOpen]);
 
+  const statusOptions: SelectOption[] = editingBatch
+    ? STATUS_OPTIONS
+    : [{ value: 'REQUESTED', label: '1. Solicitud registrada' }];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -106,6 +110,28 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
     if (!batchNumber.trim()) {
       setError('El número o código de lote es obligatorio (ej. LOTE 12).');
       return;
+    }
+
+    if (status === 'COMPLETED') {
+      if (!editingBatch) {
+        setError('Un lote nuevo no puede crearse en estado Terminado porque aún no tiene rollos.');
+        return;
+      }
+      if (editingBatch.rolls) {
+        if (editingBatch.rolls.length === 0) {
+          setError('No se puede marcar el lote como Terminado porque aún no tiene rollos registrados.');
+          return;
+        }
+        const pendingRolls = editingBatch.rolls.filter((r) => r.status !== 'DELIVERED').length;
+        if (pendingRolls > 0) {
+          setError(
+            `No se puede marcar el lote como Terminado porque tiene ${pendingRolls} ${
+              pendingRolls === 1 ? 'rollo pendiente' : 'rollos pendientes'
+            } de entrega (todos los rollos deben estar en estado "Entregado").`
+          );
+          return;
+        }
+      }
     }
 
     try {
@@ -121,6 +147,14 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
       };
 
       await onSave(payload, editingBatch?.id);
+      if (!editingBatch) {
+        setBatchNumber('');
+        setMachineId('');
+        setSupplierId('');
+        setStartDate(getTodayLocalDate());
+        setStatus('REQUESTED');
+        setNotes('');
+      }
       onClose();
     } catch (err: unknown) {
       console.error('Error al guardar lote:', err);
@@ -138,7 +172,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingBatch ? 'Editar Lote de Producción' : 'Nuevo Lote de Producción'}
+      title={editingBatch ? 'Editar Lote' : 'Nuevo Lote'}
       description={
         editingBatch
           ? `Actualiza la cabecera, proveedor y máquina del lote [${editingBatch.batchNumber}]`
@@ -146,6 +180,8 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
       }
       icon={<Factory className="w-6 h-6 text-emerald-500" />}
       size="lg"
+      isLoading={isLoading}
+      loadingMessage={editingBatch ? 'Actualizando lote de producción...' : 'Creando lote de producción...'}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -218,7 +254,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
             <Select
               label="Estado del Producto / Lote *"
               leftIcon={<Activity className="w-4 h-4 text-slate-400" />}
-              options={STATUS_OPTIONS}
+              options={statusOptions}
               value={status}
               onChange={(val) => setStatus(val as BatchStatus)}
               placeholder="Selecciona estado..."
@@ -256,8 +292,8 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
             disabled={isLoading}
             className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Guardando...' : editingBatch ? 'Guardar Cambios' : 'Crear Lote'}</span>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>{isLoading ? (editingBatch ? 'Actualizando...' : 'Creando...') : editingBatch ? 'Guardar Cambios' : 'Crear Lote'}</span>
           </button>
         </div>
       </form>

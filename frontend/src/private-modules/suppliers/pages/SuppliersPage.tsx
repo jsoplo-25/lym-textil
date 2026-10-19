@@ -29,8 +29,10 @@ import { DeleteSupplierConfirmModal } from '../components/DeleteSupplierConfirmM
 import { Tooltip } from '../../../shared/ui/Tooltip';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useToast } from '../../../shared/hooks/useToast';
-import { hasPermission } from '../../../shared/lib/roles';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
+import { PageHeader } from '../../../shared/ui/PageHeader';
+import { Button } from '../../../shared/ui/Button';
+import { hasPermission } from '../../../shared/lib/roles';
 
 const STATUS_FILTERS: SelectOption[] = [
   { value: 'ALL', label: 'Todos los estados' },
@@ -109,10 +111,10 @@ export const SuppliersPage: React.FC = () => {
   const handleSaveSupplier = async (data: CreateSupplierDTO | UpdateSupplierDTO, id?: string) => {
     if (id) {
       await suppliersService.updateSupplier(id, data as UpdateSupplierDTO);
-      toast.success('Proveedor actualizado correctamente.');
+      toast.success('Proveedor actualizado exitosamente.');
     } else {
       await suppliersService.createSupplier(data as CreateSupplierDTO);
-      toast.success('Proveedor registrado exitosamente.');
+      toast.success('Proveedor creado exitosamente.');
     }
     await loadSuppliers();
   };
@@ -122,7 +124,7 @@ export const SuppliersPage: React.FC = () => {
     setIsDeleting(true);
     try {
       const res = await suppliersService.deleteSupplier(supplierToDelete.id);
-      toast.success(res.message || 'Proveedor eliminado correctamente.');
+      toast.success(res.message || 'Proveedor eliminado exitosamente.');
       setIsDeleteModalOpen(false);
       setSupplierToDelete(null);
       await loadSuppliers();
@@ -153,36 +155,33 @@ export const SuppliersPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col space-y-6 w-full animate-fadeIn pb-12">
-      {/* 1. Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">
-            <Truck className="w-4 h-4" />
-            <span>MANTENEDORES</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            Proveedores / Clientes de Hilado
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Gestión de clientes y suministradores de hilo para tejeduría y producción textil
-          </p>
+      {/* Top indeterminate loader when refreshing/updating data */}
+      {isLoading && (
+        <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
         </div>
+      )}
 
-        {canCreate && (
-          <button
-            onClick={handleOpenCreate}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo Proveedor</span>
-          </button>
-        )}
-      </div>
+      {/* 1. Header Bar */}
+      <PageHeader
+        eyebrowIcon={<Truck className="w-4 h-4" />}
+        eyebrow="Mantenedor de Proveedores • Clientes y Suministros de Hilo"
+        title="Gestión de Proveedores"
+        subtitle="Administración de proveedores y clientes de hilado para tejeduría y producción textil."
+        action={
+          canCreate && (
+            <Button variant="secondary" size="cta" onClick={handleOpenCreate}>
+              <Plus className="w-4 h-4" />
+              <span>Nuevo Proveedor</span>
+            </Button>
+          )
+        }
+      />
 
       {/* 2. KPI Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Total */}
-        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-xl shadow-xs flex items-center gap-4">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 flex items-center justify-center font-bold shrink-0">
             <Building2 className="w-6 h-6" />
           </div>
@@ -194,12 +193,12 @@ export const SuppliersPage: React.FC = () => {
                 {stats.total}
               </p>
             )}
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Proveedores</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Proveedores</p>
           </div>
         </div>
 
         {/* Activos */}
-        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-xl shadow-xs flex items-center gap-4">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
             <CheckCircle2 className="w-6 h-6" />
           </div>
@@ -211,12 +210,12 @@ export const SuppliersPage: React.FC = () => {
                 {stats.active}
               </p>
             )}
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Activos / Operativos</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Activos / Operativos</p>
           </div>
         </div>
 
         {/* Inactivos */}
-        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-xl shadow-xs flex items-center gap-4">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-slate-500/10 text-slate-600 dark:text-slate-400 flex items-center justify-center font-bold shrink-0">
             <XCircle className="w-6 h-6" />
           </div>
@@ -228,13 +227,13 @@ export const SuppliersPage: React.FC = () => {
                 {stats.inactive}
               </p>
             )}
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Inactivos / Suspendidos</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Inactivos / Suspendidos</p>
           </div>
         </div>
       </div>
 
       {/* 3. Search & Filters Bar */}
-      <div className="p-4 rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-xl shadow-xs flex flex-col md:flex-row items-center gap-3">
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 w-full">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -245,7 +244,7 @@ export const SuppliersPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar por RUC, razón social, tipo de hilo o contacto..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
           />
         </div>
 
@@ -260,17 +259,19 @@ export const SuppliersPage: React.FC = () => {
         </div>
 
         {/* Refresh button */}
-        <button
-          onClick={loadSuppliers}
-          className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-          title="Recargar lista"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
+        <Tooltip content="Recargar proveedores">
+          <button
+            onClick={loadSuppliers}
+            aria-label="Recargar proveedores"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* 4. Suppliers Table Card */}
-      <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-6 space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -316,9 +317,8 @@ export const SuppliersPage: React.FC = () => {
                 {suppliers.map((supplier, idx) => (
                   <tr
                     key={supplier.id}
-                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${
-                      idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/40 dark:bg-slate-900/40'
-                    }`}
+                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/40 dark:bg-slate-900/40'
+                      }`}
                   >
                     {/* Document */}
                     <td className="py-3 px-4">

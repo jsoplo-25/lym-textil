@@ -15,6 +15,7 @@ import rolesRoutes from './features/roles/roles.routes';
 import machinesRoutes from './features/machines/machines.routes';
 import suppliersRoutes from './features/suppliers/suppliers.routes';
 import productionRoutes from './features/production/production.routes';
+import dashboardRoutes from './features/dashboard/dashboard.routes';
 import { seedDefaultRoles } from './services/roleSeed.service';
 
 const app: Express = express();
@@ -109,6 +110,7 @@ app.use('/roles', rolesRoutes);
 app.use('/machines', machinesRoutes);
 app.use('/suppliers', suppliersRoutes);
 app.use('/production', productionRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 // Soporte opcional para prefijo /api
 app.use('/api/auth', authRoutes);
@@ -117,6 +119,7 @@ app.use('/api/roles', rolesRoutes);
 app.use('/api/machines', machinesRoutes);
 app.use('/api/suppliers', suppliersRoutes);
 app.use('/api/production', productionRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

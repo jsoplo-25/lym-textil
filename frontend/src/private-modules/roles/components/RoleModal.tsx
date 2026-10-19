@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Save, CheckSquare, Square } from 'lucide-react';
+import { Shield, Save, CheckSquare, Square, Loader2 } from 'lucide-react';
 import type { RoleDefinition, CreateRoleDTO, UpdateRoleDTO } from '../types/roles.types';
 import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
@@ -68,6 +68,7 @@ const ALL_PERMISSIONS = [
       { id: 'production:create', label: 'Crear nuevos lotes y registrar rollos producidos' },
       { id: 'production:edit', label: 'Modificar datos de lotes, turnos, operarios y peso de rollos' },
       { id: 'production:delete', label: 'Eliminar lotes u órdenes de rollos del historial' },
+      { id: 'production:approve', label: 'Aprobar rollos de producción y pasarlos a Listo para Recojo' },
     ],
   },
 ];
@@ -140,6 +141,12 @@ export const RoleModal: React.FC<RoleModalProps> = ({
           permissions: selectedPermissions,
         });
       }
+      if (!editingRole) {
+        setCode('');
+        setName('');
+        setDescription('');
+        setSelectedPermissions([]);
+      }
       onClose();
     } catch (err: unknown) {
       const errorObj = err && typeof err === 'object' ? (err as { response?: { data?: { error?: string } }; message?: string }) : null;
@@ -155,8 +162,14 @@ export const RoleModal: React.FC<RoleModalProps> = ({
       onClose={onClose}
       size="xl"
       icon={<Shield className="w-5 h-5" />}
-      title={editingRole ? `Configurar Rol: ${editingRole.name}` : 'Crear Nuevo Rol'}
-      description="Define las facultades de acceso a módulos y operaciones"
+      title={editingRole ? 'Editar Rol' : 'Nuevo Rol'}
+      description={
+        editingRole
+          ? `Modifica los accesos y facultades del rol [${editingRole.name}]`
+          : 'Define el código y la matriz de permisos para el nuevo perfil'
+      }
+      isLoading={isLoading}
+      loadingMessage={editingRole ? 'Actualizando facultades del rol...' : 'Creando nuevo rol...'}
     >
       {error && (
         <Alert variant="error" size="sm" className="mb-4">
@@ -278,8 +291,8 @@ export const RoleModal: React.FC<RoleModalProps> = ({
             disabled={isLoading}
             className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Guardando...' : editingRole ? 'Guardar Permisos' : 'Crear Rol'}</span>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>{isLoading ? (editingRole ? 'Actualizando...' : 'Creando...') : editingRole ? 'Guardar Cambios' : 'Crear Rol'}</span>
           </button>
         </div>
       </form>

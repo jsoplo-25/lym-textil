@@ -1,44 +1,13 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import type { UserProfile } from '../../entities/session/sessionTypes';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Token Storage (Enterprise In-Memory + httpOnly Cookie Compliance)
-// Tokens are strictly managed in Memory and via secure httpOnly Cookies.
-export const getStoredToken = (): string | null => {
-  return null;
-};
-
-export const setStoredToken = (_token: string): void => {
-  // Purge any legacy token from disk
-  localStorage.removeItem('access_token');
-};
-
-// Refresh Token Storage
+// Refresh Token Storage (Compatibility check)
 export const getStoredRefreshToken = (): string | null => {
   return null;
-};
-
-export const setStoredRefreshToken = (_token: string): void => {
-  // Purge any legacy refresh token from disk
-  localStorage.removeItem('refresh_token');
-};
-
-// User Profile Storage
-export const getStoredUser = (): UserProfile | null => {
-  try {
-    const raw = localStorage.getItem('user_profile');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-export const setStoredUser = (user: UserProfile): void => {
-  localStorage.setItem('user_profile', JSON.stringify(user));
 };
 
 // Last Activity Timestamp Storage
@@ -53,7 +22,7 @@ export const setLastActivity = (time = Date.now()): void => {
 };
 
 // Configuración de tiempos de sesión
-export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 1 minuto de inactividad
+export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos de inactividad
 export const WARNING_TIMEOUT_MS = 2 * 60 * 1000;    // 2 minutos de gracia en modal
 export const TOTAL_SESSION_TIMEOUT_MS = INACTIVITY_TIMEOUT_MS + WARNING_TIMEOUT_MS;
 
@@ -67,24 +36,6 @@ export const getWarningTimeoutMs = (): number => {
 
 export const getTotalSessionTimeoutMs = (): number => {
   return TOTAL_SESSION_TIMEOUT_MS;
-};
-
-// Validate if session is still alive upon browser refresh (F5)
-export const isSessionValidOnReload = (): boolean => {
-  const token = getStoredToken();
-  const user = getStoredUser();
-  const lastActivity = getLastActivity();
-
-  if (!token || !user || !lastActivity) {
-    return false;
-  }
-
-  const elapsed = Date.now() - lastActivity;
-  if (elapsed >= getTotalSessionTimeoutMs()) {
-    return false;
-  }
-
-  return true;
 };
 
 // Full Session Clear

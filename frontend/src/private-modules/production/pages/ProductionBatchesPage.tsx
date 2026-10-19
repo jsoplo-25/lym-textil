@@ -173,7 +173,7 @@ export const ProductionBatchesPage: React.FC = () => {
   const handleSaveBatch = async (data: CreateBatchDTO | UpdateBatchDTO, id?: string) => {
     if (id) {
       await productionService.updateBatch(id, data);
-      toast.success('Lote de producción actualizado correctamente.');
+      toast.success('Lote de producción actualizado exitosamente.');
     } else {
       const created = await productionService.createBatch(data as CreateBatchDTO);
       toast.success('Lote de producción creado exitosamente.');
@@ -188,7 +188,7 @@ export const ProductionBatchesPage: React.FC = () => {
     setIsDeleting(true);
     try {
       await productionService.deleteBatch(batchToDelete.id);
-      toast.success(`Lote [${batchToDelete.batchNumber}] eliminado correctamente.`);
+      toast.success(`Lote [${batchToDelete.batchNumber}] eliminado exitosamente.`);
       setIsDeleteModalOpen(false);
       setBatchToDelete(null);
       await loadBatches();
@@ -234,17 +234,24 @@ export const ProductionBatchesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Top indeterminate loader when refreshing/updating data */}
+      {isLoading && (
+        <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+        </div>
+      )}
+
       {/* 1. Header */}
       <PageHeader
         eyebrowIcon={<Factory className="w-4 h-4" />}
-        eyebrow="Gestión de Producción • Lotes e Hilos"
-        title="Control de Producción"
+        eyebrow="Control de Producción • Lotes e Hilos"
+        title="Gestión de Producción"
         subtitle="Sábanas de producción por máquina y lote. Avance semanal de hilos por proveedor, pesaje y control de entrega."
         action={
           canCreate && (
             <Button variant="secondary" size="cta" onClick={handleOpenCreate}>
               <Plus className="w-4 h-4" />
-              <span>Nuevo Lote de Producción</span>
+              <span>Nuevo Lote</span>
             </Button>
           )
         }

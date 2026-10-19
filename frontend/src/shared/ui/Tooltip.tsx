@@ -28,6 +28,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
 
+  const hasContent = Boolean(content && content.trim());
+
   // Se posiciona con `fixed` vía portal en <body> en vez de `absolute` dentro del
   // propio flujo: así no queda recortado por ancestros con overflow-hidden/auto
   // (p. ej. la tabla de UsersPage) ni limitado al stacking context de un padre.
@@ -53,9 +55,10 @@ export const Tooltip: React.FC<TooltipProps> = ({
   }, [position]);
 
   const show = useCallback(() => {
+    if (!hasContent) return;
     updatePosition();
     setIsVisible(true);
-  }, [updatePosition]);
+  }, [hasContent, updatePosition]);
 
   const hide = useCallback(() => setIsVisible(false), []);
 
@@ -69,6 +72,10 @@ export const Tooltip: React.FC<TooltipProps> = ({
     };
   }, [isVisible, updatePosition]);
 
+  if (!hasContent) {
+    return <>{children}</>;
+  }
+
   return (
     <span
       ref={triggerRef}
@@ -77,6 +84,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
+      onMouseDown={hide}
+      onClick={hide}
     >
       {children}
       {isVisible &&
@@ -85,7 +94,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
             role="tooltip"
             style={{ position: 'fixed', top: coords.top, left: coords.left }}
             className={cn(
-              'z-9999 whitespace-nowrap rounded-xl bg-slate-900 dark:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-xl pointer-events-none',
+              'z-9999 whitespace-nowrap rounded-xl bg-slate-900 dark:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-xl pointer-events-none animate-fadeIn',
               translateStyles[position]
             )}
           >

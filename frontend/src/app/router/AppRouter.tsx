@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Sparkles } from 'lucide-react';
 import type { RootState } from '../store';
+import { Logo } from '../../shared/ui/Logo';
 import { useInitSession } from '../../entities/session/useInitSession';
 import { SessionSyncWatcher } from '../../entities/session/useSessionSync';
 import { LoginPage } from '../../public-modules/login';
@@ -47,14 +47,27 @@ export const AppRouter: React.FC = () => {
   // Loading Screen while verifying session via httpOnly cookie on initial load/F5
   if (!isInitialized) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#F3F4F8] dark:bg-[#0B0F17] transition-colors">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-xl shadow-emerald-500/10 animate-pulse">
-            <Sparkles className="w-7 h-7 text-emerald-400 dark:text-emerald-500" />
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#F3F4F8] dark:bg-[#0B0F17] transition-colors relative overflow-hidden">
+        {/* Soft Ambient Glow */}
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-emerald-500/10 dark:bg-emerald-500/08 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col items-center gap-5 relative z-10 animate-fadeIn">
+          <div className="relative">
+            <Logo
+              size="xl"
+              badgeClassName="w-20 h-20 rounded-3xl shadow-2xl shadow-emerald-600/20 dark:shadow-emerald-500/15 border-2 border-white dark:border-slate-800"
+            />
+            <div className="absolute -inset-1.5 rounded-3xl bg-emerald-500/20 blur-md -z-10 animate-pulse" />
           </div>
-          <div className="text-center space-y-1">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Textil L&amp;M</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Verificando sesión segura...</p>
+
+          <div className="text-center space-y-1.5">
+            <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+              Textil L&amp;M
+            </h2>
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>Verificando sesión segura...</span>
+            </div>
           </div>
         </div>
       </div>

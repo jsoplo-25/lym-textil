@@ -80,7 +80,7 @@ export const RolesPage: React.FC = () => {
     setIsDeleting(true);
     try {
       const res = await rolesService.deleteRole(deletingRole.id);
-      toast.success(res.message || `Rol [${deletingRole.name}] eliminado correctamente.`);
+      toast.success(res.message || `Rol [${deletingRole.name}] eliminado exitosamente.`);
       setDeletingRole(null);
       await loadRoles();
     } catch (err: unknown) {
@@ -94,7 +94,7 @@ export const RolesPage: React.FC = () => {
   const handleSaveRole = async (data: CreateRoleDTO | UpdateRoleDTO, id?: string) => {
     if (id) {
       const updated = await rolesService.updateRole(id, data as UpdateRoleDTO);
-      toast.success('Permisos del rol actualizados exitosamente.');
+      toast.success('Rol actualizado exitosamente.');
 
       // Si el rol modificado coincide con el del usuario en sesión, actualizar de forma asíncrona e inmediata en Redux
       if (
@@ -109,7 +109,7 @@ export const RolesPage: React.FC = () => {
       }
     } else {
       await rolesService.createRole(data as CreateRoleDTO);
-      toast.success('Nuevo rol registrado en Textil L&M.');
+      toast.success('Rol creado exitosamente.');
     }
     await loadRoles();
   };
@@ -144,16 +144,23 @@ export const RolesPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col space-y-6 w-full animate-fadeIn pb-12">
+      {/* Top indeterminate loader when refreshing/updating data */}
+      {isLoading && (
+        <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+        </div>
+      )}
+
       <PageHeader
         eyebrowIcon={<KeyRound className="w-4 h-4" />}
         eyebrow="Mantenedor de Roles • Permisos y Accesos"
-        title="Roles y Permisos"
+        title="Gestión de Roles"
         subtitle="Administra los niveles de autorización y facultades asignadas a cada perfil en el sistema."
         action={
           canCreateRole && (
             <Button variant="secondary" size="cta" onClick={handleOpenCreate}>
               <Plus className="w-4 h-4" />
-              <span>Crear Nuevo Rol</span>
+              <span>Nuevo Rol</span>
             </Button>
           )
         }

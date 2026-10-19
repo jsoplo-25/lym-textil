@@ -4,8 +4,8 @@ import process from 'node:process';
 export const DEFAULT_ROLES = [
   {
     code: 'ADMINISTRADOR',
-    name: 'Administrador General',
-    description: 'Acceso total y control de todos los módulos de la aplicación (Dashboard, Mi Perfil, Usuarios y Roles).',
+    name: 'Administrador del Sistema',
+    description: 'Acceso total y control de todos los módulos de la aplicación (Dashboard, Mi Perfil, Usuarios, Roles, Maquinarias, Proveedores y Producción).',
     permissions: [
       'dashboard:view',
       'profile:view',
@@ -22,27 +22,18 @@ export const DEFAULT_ROLES = [
       'machines:create',
       'machines:edit',
       'machines:delete',
+      'suppliers:read',
+      'suppliers:create',
+      'suppliers:edit',
+      'suppliers:delete',
       'production:read',
       'production:create',
       'production:edit',
       'production:delete',
+      'production:approve',
     ],
     isSystem: true,
-  },
-  {
-    code: 'OPERATOR',
-    name: 'Operario Textil',
-    description: 'Acceso operativo restringido al Dashboard, Mi Perfil y Registro de Producción.',
-    permissions: [
-      'dashboard:view',
-      'profile:view',
-      'profile:edit',
-      'production:read',
-      'production:create',
-      'production:edit',
-    ],
-    isSystem: true,
-  },
+  }
 ];
 
 export async function seedRoles() {

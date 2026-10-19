@@ -116,7 +116,7 @@ export const UsersPage: React.FC = () => {
   const handleSaveUser = async (data: CreateUserDTO | UpdateUserDTO, id?: string) => {
     if (id) {
       await usersService.updateUser(id, data as UpdateUserDTO);
-      toast.success('Usuario actualizado correctamente.');
+      toast.success('Usuario actualizado exitosamente.');
 
       // Si el usuario actualizado es el usuario logueado en la sesión activa
       if (sessionUser && sessionUser.id === id) {
@@ -145,7 +145,7 @@ export const UsersPage: React.FC = () => {
     setIsDeleting(true);
     try {
       await usersService.deleteUser(userToDelete.id);
-      toast.success('Usuario eliminado del sistema.');
+      toast.success('Usuario eliminado exitosamente.');
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
       await loadUsers();
@@ -177,6 +177,13 @@ export const UsersPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col space-y-6 w-full animate-fadeIn pb-12">
+      {/* Top indeterminate loader when refreshing/updating data */}
+      {isLoading && (
+        <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+        </div>
+      )}
+
       <PageHeader
         eyebrowIcon={<Users className="w-4 h-4" />}
         eyebrow="Mantenedor de Usuarios • Seguridad y Accesos"

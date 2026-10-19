@@ -1,21 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dashboardService } from '../services/dashboard.service';
-import type { DashboardSummary } from '../types/dashboard.types';
+import type { DashboardMetrics } from '../types/dashboard.types';
 
 export const useDashboard = (enabled: boolean = true) => {
-  const [data, setData] = useState<DashboardSummary | null>(null);
+  const [data, setData] = useState<DashboardMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
-  const loadSummary = useCallback(async () => {
+  const loadMetrics = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const summary = await dashboardService.getSummary();
-      setData(summary);
-    } catch (err) {
-      console.error('Error loading dashboard summary:', err);
-      setError('No se pudo cargar el resumen del panel.');
+      const metrics = await dashboardService.getMetrics();
+      setData(metrics);
+    } catch (err: unknown) {
+      console.error('Error loading dashboard metrics:', err);
+      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(apiError || 'No se pudo cargar el resumen del panel.');
     } finally {
       setIsLoading(false);
     }
@@ -23,11 +24,25 @@ export const useDashboard = (enabled: boolean = true) => {
 
   useEffect(() => {
     if (enabled) {
-      loadSummary();
+      loadMetrics();
     } else {
       setIsLoading(false);
     }
-  }, [enabled, loadSummary]);
+  }, [enabled, loadMetrics]);
 
-  return { data, isLoading, error, reload: loadSummary };
+  // Auto-refresh when rolls are approved, updated or delivered elsewhere
+  useEffect(() => {
+    const handleUpdate = () => {
+      if (enabled) {
+        loadMetrics();
+      }
+    };
+
+    window.addEventListener('production:rolls-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('production:rolls-updated', handleUpdate);
+    };
+  }, [enabled, loadMetrics]);
+
+  return { data, isLoading, error, reload: loadMetrics };
 };

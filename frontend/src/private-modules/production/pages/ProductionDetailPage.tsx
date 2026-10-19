@@ -17,6 +17,7 @@ import {
   Bell,
   PackageCheck,
   Copy,
+  Loader2,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../app/store';
@@ -57,6 +58,7 @@ export const ProductionDetailPage: React.FC = () => {
   const canCreate = hasPermission(sessionUser, 'production:create');
   const canEdit = hasPermission(sessionUser, 'production:edit');
   const canDelete = hasPermission(sessionUser, 'production:delete');
+  const canApprove = hasPermission(sessionUser, 'production:approve');
 
   // Modal Rollo
   const [isRollModalOpen, setIsRollModalOpen] = useState(false);
@@ -76,6 +78,12 @@ export const ProductionDetailPage: React.FC = () => {
   const [quickWeight, setQuickWeight] = useState('');
   const [quickObservations, setQuickObservations] = useState('');
   const [isQuickAdding, setIsQuickAdding] = useState(false);
+
+  // Row and action loaders
+  const [updatingRollId, setUpdatingRollId] = useState<string | null>(null);
+  const [approvingRollId, setApprovingRollId] = useState<string | null>(null);
+  const [deletingRollId, setDeletingRollId] = useState<string | null>(null);
+  const [isUpdatingBatchStatus, setIsUpdatingBatchStatus] = useState(false);
 
   const toast = useToast();
 
@@ -115,6 +123,12 @@ export const ProductionDetailPage: React.FC = () => {
     loadBatch();
     setQuickStartDate(getTodayLocalDate());
     setQuickEndDate(getTodayLocalDate());
+
+    const handleRollsUpdated = () => {
+      loadBatch();
+    };
+    window.addEventListener('production:rolls-updated', handleRollsUpdated);
+    return () => window.removeEventListener('production:rolls-updated', handleRollsUpdated);
   }, [id]);
 
   const handleOpenAddRoll = () => {
@@ -137,6 +151,7 @@ export const ProductionDetailPage: React.FC = () => {
       toast.success('Rollo añadido a la sábana de producción.');
     }
     await loadBatch();
+    window.dispatchEvent(new CustomEvent('production:rolls-updated'));
   };
 
   const handleDeleteRoll = async (roll: ProductionRoll) => {
@@ -144,12 +159,16 @@ export const ProductionDetailPage: React.FC = () => {
       return;
     }
     try {
+      setDeletingRollId(roll.id);
       await productionService.deleteRoll(roll.id);
       toast.success(`Rollo N° ${roll.rollNumber} eliminado.`);
       await loadBatch();
+      window.dispatchEvent(new CustomEvent('production:rolls-updated'));
     } catch (err) {
       console.error('Error eliminando rollo:', err);
       toast.error('Error al eliminar el rollo.');
+    } finally {
+      setDeletingRollId(null);
     }
   };
 
@@ -180,7 +199,7 @@ export const ProductionDetailPage: React.FC = () => {
       await productionService.addRoll(id, payload);
       toast.success(`Rollo N° ${quickRollNumber} registrado.`);
 
-      // Siguiente sugerencia de rollo
+      // Limpiar campos del formulario tras registro exitoso
       const parsedNum = parseInt(quickRollNumber, 10);
       if (!isNaN(parsedNum)) {
         setQuickRollNumber(String(parsedNum + 1));
@@ -189,6 +208,12 @@ export const ProductionDetailPage: React.FC = () => {
       }
       setQuickWeight('');
       setQuickObservations('');
+      setQuickStartTime('');
+      setQuickEndTime('');
+      setQuickStartOperator('');
+      setQuickEndOperator('');
+      setQuickStartDate(getTodayLocalDate());
+      setQuickEndDate(getTodayLocalDate());
 
       await loadBatch();
     } catch (err: unknown) {
@@ -245,13 +270,32 @@ export const ProductionDetailPage: React.FC = () => {
   const avgWeight = totalRolls > 0 ? totalWeight / totalRolls : 0;
   const registeredRollsCount = rolls.filter((r) => !r.status || r.status === 'REGISTERED').length;
   const prepRollsCount = rolls.filter((r) => r.status === 'IN_PREPARATION').length;
+  const readyApprovalRollsCount = rolls.filter((r) => r.status === 'READY_FOR_APPROVAL').length;
   const readyRollsCount = rolls.filter((r) => r.status === 'READY_FOR_PICKUP').length;
   const deliveredRollsCount = rolls.filter((r) => r.status === 'DELIVERED').length;
 
   const handleQuickUpdateStatus = async (newStatus: BatchStatus) => {
     if (!id || !canEdit || !batch) return;
     if (batch.status === newStatus) return;
+
+    if (newStatus === 'COMPLETED') {
+      if (totalRolls === 0) {
+        toast.error('No se puede marcar el lote como Terminado porque aún no tiene rollos registrados.');
+        return;
+      }
+      const pendingCount = totalRolls - deliveredRollsCount;
+      if (pendingCount > 0) {
+        toast.error(
+          `No se puede marcar el lote como Terminado: faltan ${pendingCount} ${
+            pendingCount === 1 ? 'rollo' : 'rollos'
+          } por entregar. Todos los rollos deben estar en estado "Entregado".`
+        );
+        return;
+      }
+    }
+
     try {
+      setIsUpdatingBatchStatus(true);
       await productionService.updateBatch(id, { status: newStatus });
       toast.success(
         newStatus === 'COMPLETED'
@@ -259,20 +303,83 @@ export const ProductionDetailPage: React.FC = () => {
           : 'Lote marcado como Solicitud registrada.'
       );
       await loadBatch();
-    } catch (err) {
+      window.dispatchEvent(new CustomEvent('production:rolls-updated'));
+    } catch (err: unknown) {
       console.error('Error actualizando estado:', err);
-      toast.error('Error al actualizar el estado del lote.');
+      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(apiError || 'Error al actualizar el estado del lote.');
+    } finally {
+      setIsUpdatingBatchStatus(false);
     }
   };
 
-  // Cambio rápido del estado de un rollo
+  // Aprobación directa por parte del Asistente o Administrador
+  const handleApproveRollDirectly = async (roll: ProductionRoll) => {
+    try {
+      setApprovingRollId(roll.id);
+      const res = await productionService.approveRoll(roll.id);
+      toast.success(res.message || `Rollo N° ${roll.rollNumber} aprobado y listo para recojo.`);
+      await loadBatch();
+      window.dispatchEvent(new CustomEvent('production:rolls-updated'));
+    } catch (err: unknown) {
+      console.error('Error al aprobar rollo:', err);
+      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(apiError || 'Error al aprobar el rollo.');
+    } finally {
+      setApprovingRollId(null);
+    }
+  };
+
+  // Cambio rápido del estado de un rollo con avance progresivo
   const handleUpdateRollStatus = async (roll: ProductionRoll, newStatus: RollStatus) => {
     if (!id || !canEdit) return;
     if (roll.status === newStatus) return;
+
+    // 1. Validaciones para el Tejedor (no aprobador):
+    if (!canApprove) {
+      if (roll.status === 'DELIVERED') {
+        toast.error('Este rollo ya fue entregado y no puede ser modificado por el tejedor.');
+        return;
+      }
+      if (roll.status === 'READY_FOR_APPROVAL') {
+        toast.error('El rollo ya está en espera de visto bueno y no puede modificarse hasta que administración lo apruebe.');
+        return;
+      }
+      if (roll.status === 'READY_FOR_PICKUP') {
+        // En Listo para recojo, el tejedor solo puede pasarlo a Entregado al recoger el proveedor
+        if (newStatus !== 'READY_FOR_PICKUP' && newStatus !== 'DELIVERED') {
+          toast.error('El rollo listo para recojo solo puede ser marcado como "Entregado".');
+          return;
+        }
+      } else {
+        if (newStatus === 'READY_FOR_PICKUP') {
+          toast.error('El rollo debe ser aprobado por el Asistente o Administrador antes de pasar a "Listo para recojo".');
+          return;
+        }
+        if (newStatus === 'DELIVERED') {
+          toast.error('El rollo debe estar aprobado y en "Listo para recojo" antes de poder ser entregado.');
+          return;
+        }
+      }
+      if (roll.status === 'IN_PREPARATION' && newStatus === 'REGISTERED') {
+        toast.error('No se puede retroceder un rollo en preparación a estado registrado.');
+        return;
+      }
+    } else {
+      // 2. Validaciones para Asistente / Administrador:
+      if (newStatus === 'READY_FOR_PICKUP' && roll.status !== 'READY_FOR_PICKUP') {
+        toast.error('Para pasar el rollo a "Listo para recojo", haz clic en el botón "Aprobar".');
+        return;
+      }
+    }
+
     try {
+      setUpdatingRollId(roll.id);
       await productionService.updateRoll(roll.id, { status: newStatus });
-      if (newStatus === 'READY_FOR_PICKUP') {
-        toast.success(`¡Rollo N° ${roll.rollNumber} listo para recojo! Se puede notificar al proveedor.`);
+      if (newStatus === 'READY_FOR_APPROVAL') {
+        toast.success(`Rollo N° ${roll.rollNumber} listo para aprobar. Se notificó al Asistente y Administrador.`);
+      } else if (newStatus === 'READY_FOR_PICKUP') {
+        toast.success(`¡Rollo N° ${roll.rollNumber} aprobado y listo para recojo!`);
       } else if (newStatus === 'DELIVERED') {
         toast.success(`Rollo N° ${roll.rollNumber} marcado como entregado.`);
       } else if (newStatus === 'IN_PREPARATION') {
@@ -281,20 +388,99 @@ export const ProductionDetailPage: React.FC = () => {
         toast.success(`Rollo N° ${roll.rollNumber} marcado como registrado.`);
       }
       await loadBatch();
-    } catch (err) {
+      window.dispatchEvent(new CustomEvent('production:rolls-updated'));
+    } catch (err: unknown) {
       console.error('Error al actualizar estado del rollo:', err);
-      toast.error('Error al actualizar el estado del rollo.');
+      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(apiError || 'Error al actualizar el estado del rollo.');
+    } finally {
+      setUpdatingRollId(null);
     }
+  };
+
+  // Opciones disponibles según rol y avance progresivo
+  const getRollAvailableOptions = (roll: ProductionRoll) => {
+    const current = roll.status || 'REGISTERED';
+
+    // Para Asistente Administrativo o Administrador:
+    if (canApprove) {
+      return ROLL_STATUS_OPTIONS.filter((opt) => {
+        if (opt.value === 'READY_FOR_APPROVAL') return false;
+        // "Listo para recojo" solo se ve si ya fue aprobado
+        if (opt.value === 'READY_FOR_PICKUP') {
+          return current === 'READY_FOR_PICKUP';
+        }
+        return true; // REGISTERED, IN_PREPARATION, DELIVERED
+      });
+    }
+
+    // Para el rol Tejedor (avance progresivo hacia entrega):
+    if (current === 'DELIVERED') {
+      return ROLL_STATUS_OPTIONS.filter((opt) => opt.value === 'DELIVERED');
+    }
+    if (current === 'READY_FOR_PICKUP') {
+      // El tejedor ve "Listo para recojo" y puede pasarlo a "Entregado" cuando el proveedor recoge los rollos
+      return ROLL_STATUS_OPTIONS.filter(
+        (opt) => opt.value === 'READY_FOR_PICKUP' || opt.value === 'DELIVERED'
+      );
+    }
+    if (current === 'READY_FOR_APPROVAL') {
+      return ROLL_STATUS_OPTIONS.filter((opt) => opt.value === 'READY_FOR_APPROVAL');
+    }
+    if (current === 'IN_PREPARATION') {
+      return ROLL_STATUS_OPTIONS.filter(
+        (opt) => opt.value === 'IN_PREPARATION' || opt.value === 'READY_FOR_APPROVAL'
+      );
+    }
+    return ROLL_STATUS_OPTIONS.filter(
+      (opt) =>
+        opt.value === 'REGISTERED' ||
+        opt.value === 'IN_PREPARATION' ||
+        opt.value === 'READY_FOR_APPROVAL'
+    );
+  };
+
+  const isRollSelectDisabled = (roll: ProductionRoll) => {
+    if (!canEdit) return true;
+    if (!canApprove) {
+      // Bloqueado si ya fue entregado (finalizado) o si está esperando visto bueno
+      // Pero si está en READY_FOR_PICKUP (Listo para recojo), NO está bloqueado:
+      // el tejedor puede cambiarlo a DELIVERED cuando el proveedor viene a recoger
+      if (roll.status === 'DELIVERED' || roll.status === 'READY_FOR_APPROVAL') {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const getRollSelectTooltip = (roll: ProductionRoll) => {
+    if (updatingRollId === roll.id) {
+      return 'Actualizando estado del rollo...';
+    }
+    if (!canEdit) {
+      return 'No tienes permisos para modificar el estado del rollo.';
+    }
+    if (!canApprove) {
+      if (roll.status === 'DELIVERED') {
+        return 'Este rollo ya fue entregado y no puede ser modificado por el tejedor.';
+      }
+      if (roll.status === 'READY_FOR_APPROVAL') {
+        return 'Rollo enviado a visto bueno. Esperando aprobación de administración.';
+      }
+    }
+    return '';
   };
 
   const getRollStatusSelectClass = (status?: RollStatus) => {
     switch (status) {
+      case 'READY_FOR_APPROVAL':
+        return '!bg-amber-100/90 dark:!bg-amber-950/60 !border-amber-400 dark:!border-amber-600 !text-amber-800 dark:!text-amber-300 font-extrabold';
       case 'READY_FOR_PICKUP':
         return '!bg-emerald-50/90 dark:!bg-emerald-950/50 !border-emerald-300 dark:!border-emerald-700 !text-emerald-700 dark:!text-emerald-300';
       case 'DELIVERED':
         return '!bg-purple-50/90 dark:!bg-purple-950/50 !border-purple-300 dark:!border-purple-700 !text-purple-700 dark:!text-purple-300';
       case 'IN_PREPARATION':
-        return '!bg-amber-50/90 dark:!bg-amber-950/50 !border-amber-300 dark:!border-amber-700 !text-amber-700 dark:!text-amber-300';
+        return '!bg-blue-50/90 dark:!bg-blue-950/50 !border-blue-300 dark:!border-blue-700 !text-blue-700 dark:!text-blue-300';
       case 'REGISTERED':
       default:
         return '!bg-slate-50 dark:!bg-slate-800/90 !border-slate-300 dark:!border-slate-700 !text-slate-700 dark:!text-slate-300';
@@ -303,6 +489,13 @@ export const ProductionDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Top indeterminate loader when refreshing/updating data */}
+      {isLoading && (
+        <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+        </div>
+      )}
+
       {/* 1. Top Navigation & Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <button
@@ -453,33 +646,57 @@ export const ProductionDetailPage: React.FC = () => {
             <div className="inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 self-start sm:self-auto">
               <button
                 type="button"
-                disabled={!canEdit}
+                disabled={!canEdit || isUpdatingBatchStatus}
                 onClick={() => handleQuickUpdateStatus('REQUESTED')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   batch.status !== 'COMPLETED'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                } ${!canEdit ? 'cursor-default' : ''}`}
+                } ${!canEdit || isUpdatingBatchStatus ? 'cursor-default opacity-60' : ''}`}
                 title="Lote registrado"
               >
-                <Clock className="w-3.5 h-3.5" />
+                {isUpdatingBatchStatus && batch.status !== 'COMPLETED' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5" />
+                )}
                 <span>Solicitud registrada</span>
               </button>
 
-              <button
-                type="button"
-                disabled={!canEdit}
-                onClick={() => handleQuickUpdateStatus('COMPLETED')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              <Tooltip
+                content={
                   batch.status === 'COMPLETED'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                } ${!canEdit ? 'cursor-default' : ''}`}
-                title="Lote entregado y terminado"
+                    ? 'Lote terminado (todos los rollos entregados).'
+                    : totalRolls === 0
+                    ? 'No se puede terminar: registra rollos antes de finalizar el lote.'
+                    : deliveredRollsCount < totalRolls
+                    ? `No se puede terminar: faltan ${totalRolls - deliveredRollsCount} ${
+                        totalRolls - deliveredRollsCount === 1 ? 'rollo' : 'rollos'
+                      } por entregar.`
+                    : 'Marcar lote como terminado'
+                }
+                position="top"
               >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Terminado</span>
-              </button>
+                <button
+                  type="button"
+                  disabled={!canEdit || isUpdatingBatchStatus}
+                  onClick={() => handleQuickUpdateStatus('COMPLETED')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    batch.status === 'COMPLETED'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : deliveredRollsCount < totalRolls || totalRolls === 0
+                      ? 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                      : 'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                  } ${!canEdit || isUpdatingBatchStatus ? 'cursor-default opacity-60' : ''}`}
+                >
+                  {isUpdatingBatchStatus && batch.status === 'COMPLETED' ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>Terminado</span>
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -497,7 +714,7 @@ export const ProductionDetailPage: React.FC = () => {
       </div>
 
       {/* 2.5 Resumen de Avances y Notificaciones por Rollo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 print:hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 print:hidden">
         <div className="p-4 rounded-3xl bg-slate-500/[0.06] border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold shadow-xs">
@@ -514,13 +731,13 @@ export const ProductionDetailPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-4 rounded-3xl bg-amber-500/[0.07] border border-amber-500/20 flex items-center justify-between shadow-xs">
+        <div className="p-4 rounded-3xl bg-blue-500/[0.07] border border-blue-500/20 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center font-bold shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/20 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold shadow-xs">
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider block">
                 En Preparación
               </span>
               <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
@@ -528,6 +745,30 @@ export const ProductionDetailPage: React.FC = () => {
               </span>
             </div>
           </div>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-amber-500/[0.08] border border-amber-500/30 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center font-bold shadow-xs">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider block">
+                Por Aprobar
+              </span>
+              <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
+                {readyApprovalRollsCount}{' '}
+                <span className="text-xs font-sans text-slate-400 font-semibold">
+                  {readyApprovalRollsCount === 1 ? 'rollo' : 'rollos'}
+                </span>
+              </span>
+            </div>
+          </div>
+          {readyApprovalRollsCount > 0 && (
+            <span className="px-2 py-0.5 rounded-xl bg-amber-600 text-white text-[10px] font-extrabold shadow-xs animate-pulse">
+              ¡Revisar!
+            </span>
+          )}
         </div>
 
         <div className="p-4 rounded-3xl bg-emerald-500/[0.08] border border-emerald-500/30 flex items-center justify-between shadow-xs">
@@ -693,8 +934,8 @@ export const ProductionDetailPage: React.FC = () => {
 
               <div className="md:col-span-1">
                 <Button type="submit" variant="secondary" size="md" isLoading={isQuickAdding} className="w-full">
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>Añadir</span>
+                  {!isQuickAdding && <Plus className="w-3.5 h-3.5 stroke-[3]" />}
+                  <span>{isQuickAdding ? 'Guardando...' : 'Añadir'}</span>
                 </Button>
               </div>
             </div>
@@ -762,17 +1003,43 @@ export const ProductionDetailPage: React.FC = () => {
                   </Td>
 
                   {/* Estado del Rollo con componente Select */}
-                  <Td className="min-w-[190px]">
-                    <div className="w-44">
-                      <Select
-                        options={ROLL_STATUS_OPTIONS}
-                        value={roll.status || 'REGISTERED'}
-                        onChange={(val) => handleUpdateRollStatus(roll, val as RollStatus)}
-                        disabled={!canEdit}
-                        className={`!py-1.5 !px-3 !text-xs !rounded-xl font-bold shadow-xs ${getRollStatusSelectClass(
-                          roll.status
-                        )}`}
-                      />
+                  <Td className="min-w-[220px]">
+                    <div className="flex items-center gap-2">
+                      <Tooltip content={getRollSelectTooltip(roll)}>
+                        <div className="w-44 relative">
+                          <Select
+                            options={getRollAvailableOptions(roll)}
+                            value={roll.status || 'REGISTERED'}
+                            onChange={(val) => handleUpdateRollStatus(roll, val as RollStatus)}
+                            disabled={isRollSelectDisabled(roll) || updatingRollId === roll.id}
+                            className={`!py-1.5 !px-3 !text-xs !rounded-xl font-bold shadow-xs ${getRollStatusSelectClass(
+                              roll.status
+                            )} ${updatingRollId === roll.id ? 'opacity-60' : ''}`}
+                          />
+                          {updatingRollId === roll.id && (
+                            <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                          )}
+                        </div>
+                      </Tooltip>
+                      {canApprove && roll.status === 'READY_FOR_APPROVAL' && (
+                        <Tooltip content="Aprobar rollo y pasar a Listo para recojo">
+                          <button
+                            type="button"
+                            disabled={approvingRollId === roll.id}
+                            onClick={() => handleApproveRollDirectly(roll)}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-sm shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1 shrink-0 animate-pulse hover:animate-none disabled:opacity-50"
+                          >
+                            {approvingRollId === roll.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            )}
+                            <span>{approvingRollId === roll.id ? 'Aprobando...' : 'Aprobar'}</span>
+                          </button>
+                        </Tooltip>
+                      )}
                     </div>
                   </Td>
 
@@ -835,13 +1102,18 @@ export const ProductionDetailPage: React.FC = () => {
                           </button>
                         </Tooltip>
                       )}
-                      {canDelete && (
+                      {canDelete && (canApprove || (roll.status !== 'READY_FOR_PICKUP' && roll.status !== 'DELIVERED')) && (
                         <Tooltip content="Eliminar rollo">
                           <button
                             onClick={() => handleDeleteRoll(roll)}
-                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            disabled={deletingRollId === roll.id}
+                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer disabled:opacity-50"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            {deletingRollId === roll.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
                           </button>
                         </Tooltip>
                       )}
