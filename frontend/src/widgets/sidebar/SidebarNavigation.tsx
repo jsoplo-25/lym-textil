@@ -22,6 +22,7 @@ import { LogoutConfirmModal } from '../../shared/components/session/LogoutConfir
 import { getUserInitials } from '../../shared/lib/utils';
 import { loginService } from '../../public-modules/login/services/login.service';
 import { hasPermission } from '../../shared/lib/roles';
+import { Logo } from '../../shared/ui/Logo';
 
 export const SidebarNavigation: React.FC = () => {
   const dispatch = useDispatch();
@@ -83,9 +84,13 @@ export const SidebarNavigation: React.FC = () => {
       <aside className="hidden md:flex fixed top-0 left-0 bottom-0 z-40 w-20 flex-col items-center justify-between py-6 bg-transparent border-none shadow-none transition-all duration-300">
         {/* Top Brand Logo - NO HAMBURGER ICON IN DESKTOP */}
         <div className="flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-lg shadow-slate-900/10 hover:scale-105 transition-transform cursor-pointer">
-            <Sparkles className="w-6 h-6 text-emerald-400" />
-          </div>
+          <NavLink
+            to="/dashboard"
+            className="group cursor-pointer focus:outline-none"
+            title="Textil L&M • Inicio"
+          >
+            <Logo size="md" className="group-hover:scale-105 transition-transform" />
+          </NavLink>
         </div>
 
         {/* Navigation Items (Icons with tooltip on hover) */}
@@ -229,17 +234,7 @@ export const SidebarNavigation: React.FC = () => {
             {/* Header: Logo & Close Button */}
             <div className="overflow-y-auto">
               <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-md">
-                    <Sparkles className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">
-                      Textil L&M
-                    </h3>
-                    <p className="text-[11px] text-slate-400 font-medium">Plataforma de Control</p>
-                  </div>
-                </div>
+                <Logo size="sm" showText subtitle="Plataforma de Control" />
 
                 <button
                   onClick={() => setIsMobileOpen(false)}

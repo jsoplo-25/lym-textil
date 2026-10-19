@@ -11,6 +11,7 @@ import type {
   CreateYarnDTO,
   UpdateYarnDTO,
   BatchTrackingData,
+  PendingApprovalRoll,
 } from '../types/production.types';
 
 export const productionService = {
@@ -84,5 +85,16 @@ export const productionService = {
   async getOperators(): Promise<Array<{ id: string; name: string; role?: string }>> {
     const res = await axiosInstance.get('/production/operators/list');
     return res.data.data;
+  },
+
+  // Notificaciones y aprobación de rollos
+  async getPendingApprovals(): Promise<PendingApprovalRoll[]> {
+    const res = await axiosInstance.get('/production/pending-approvals');
+    return res.data.data;
+  },
+
+  async approveRoll(rollId: string): Promise<{ success: boolean; message: string; data: ProductionRoll }> {
+    const res = await axiosInstance.post(`/production/rolls/${rollId}/approve`);
+    return res.data;
   },
 };

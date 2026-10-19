@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Save, Building2, Phone, Mail, MapPin, Layers, FileText, Activity } from 'lucide-react';
+import { Truck, Save, Building2, Phone, Mail, MapPin, Layers, FileText, Activity, Loader2 } from 'lucide-react';
 import type { Supplier, CreateSupplierDTO, UpdateSupplierDTO, SupplierStatus } from '../types/suppliers.types';
 import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
@@ -86,6 +86,16 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       };
 
       await onSave(payload, editingSupplier?.id);
+      if (!editingSupplier) {
+        setDocument('');
+        setName('');
+        setPhone('');
+        setEmail('');
+        setAddress('');
+        setYarnTypes('');
+        setStatus('ACTIVE');
+        setNotes('');
+      }
       onClose();
     } catch (err: unknown) {
       console.error('Error al guardar proveedor:', err);
@@ -103,14 +113,16 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingSupplier ? 'Editar Proveedor / Cliente de Hilado' : 'Registrar Nuevo Proveedor'}
-      subtitle={
+      title={editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+      description={
         editingSupplier
           ? `Modifica los datos del proveedor [${editingSupplier.document} - ${editingSupplier.name}]`
           : 'Ingresa la información comercial y tipos de hilado que provee a la empresa'
       }
       icon={<Truck className="w-6 h-6 text-emerald-500" />}
       size="lg"
+      isLoading={isLoading}
+      loadingMessage={editingSupplier ? 'Actualizando datos del proveedor...' : 'Creando nuevo proveedor...'}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -250,17 +262,17 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Guardando...' : editingSupplier ? 'Guardar Cambios' : 'Registrar Proveedor'}</span>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>{isLoading ? (editingSupplier ? 'Actualizando...' : 'Creando...') : editingSupplier ? 'Guardar Cambios' : 'Crear Proveedor'}</span>
           </button>
         </div>
       </form>

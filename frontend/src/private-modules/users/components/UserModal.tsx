@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Save, Lock, Mail, User, Shield, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Save, Lock, Mail, User, Shield, Eye, EyeOff, Loader2 } from 'lucide-react';
 import type { ManagedUser, CreateUserDTO, UpdateUserDTO } from '../types/users.types';
 import type { UserProfile } from '../../../entities/session/sessionTypes';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
@@ -127,6 +127,15 @@ export const UserModal: React.FC<UserModalProps> = ({
           avatarUrl: avatarUrl || undefined,
         });
       }
+      if (!editingUser) {
+        setFirstName('');
+        setLastName('');
+        setEmail('');
+        setPassword('');
+        setShowPassword(false);
+        setAvatarUrl('');
+        setStatus('ACTIVE');
+      }
       onClose();
     } catch (err: unknown) {
       const errorObj = err && typeof err === 'object' ? (err as { response?: { data?: { error?: string } }; message?: string }) : null;
@@ -144,6 +153,8 @@ export const UserModal: React.FC<UserModalProps> = ({
       icon={editingUser ? <Save className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
       title={editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
       description={editingUser ? 'Modifica los accesos del colaborador' : 'Registra un nuevo usuario en Textil L&M'}
+      isLoading={isLoading}
+      loadingMessage={editingUser ? 'Actualizando datos del usuario...' : 'Creando nuevo usuario...'}
     >
         {error && (
           <Alert variant="error" size="sm" className="mb-4">
@@ -283,8 +294,8 @@ export const UserModal: React.FC<UserModalProps> = ({
               disabled={isLoading}
               className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
             >
-              <Save className="w-4 h-4" />
-              <span>{isLoading ? 'Guardando...' : editingUser ? 'Actualizar' : 'Crear Usuario'}</span>
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>{isLoading ? (editingUser ? 'Actualizando...' : 'Creando...') : editingUser ? 'Guardar Cambios' : 'Crear Usuario'}</span>
             </button>
           </div>
         </form>

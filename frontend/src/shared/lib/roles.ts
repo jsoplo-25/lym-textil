@@ -96,6 +96,9 @@ export function hasPermission(
   if (roleCode === 'ADMINISTRADOR') {
     return true;
   }
+  if (roleCode === 'ASISTENTE_ADMINISTRATIVO' && permission === 'production:approve') {
+    return true;
+  }
 
   return Array.isArray(user.permissions) && user.permissions.includes(permission);
 }
@@ -111,6 +114,9 @@ export function hasAnyPermission(
 
   const roleCode = String(user.role || '').toUpperCase().trim();
   if (roleCode === 'ADMINISTRADOR') {
+    return true;
+  }
+  if (roleCode === 'ASISTENTE_ADMINISTRATIVO' && permissions.includes('production:approve')) {
     return true;
   }
 

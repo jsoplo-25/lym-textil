@@ -28,7 +28,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
       {/* Main Container Viewport */}
       <div className="md:pl-20 flex flex-col min-h-screen relative z-10">
-        <div className="max-w-7xl w-full mx-auto p-4 md:p-8 flex-1 flex flex-col space-y-6">
+        <div className="max-w-[1400px] 2xl:max-w-[1600px] w-full mx-auto p-4 md:p-8 flex-1 flex flex-col space-y-6">
           {showHeader && <AppHeader />}
           <main className="flex-1 flex flex-col animate-fadeIn">
             {children || <Outlet />}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Save, User, Clock, Scale, FileText, Hash, Activity } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { Layers, Save, User, Clock, Scale, FileText, Hash, Activity, Loader2 } from 'lucide-react';
+import type { RootState } from '../../../app/store';
 import type { ProductionRoll, CreateRollDTO, UpdateRollDTO, RollStatus } from '../types/production.types';
 import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
@@ -8,6 +10,7 @@ import { TimePicker } from '../../../shared/ui/TimePicker';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { productionService } from '../services/production.service';
 import { getTodayLocalDate, toDatePickerValue } from '../../../shared/lib/utils';
+import { hasPermission } from '../../../shared/lib/roles';
 
 interface RollModalProps {
   isOpen: boolean;
@@ -20,6 +23,7 @@ interface RollModalProps {
 export const ROLL_STATUS_OPTIONS: SelectOption[] = [
   { value: 'REGISTERED', label: 'Registrado' },
   { value: 'IN_PREPARATION', label: 'En preparación' },
+  { value: 'READY_FOR_APPROVAL', label: 'Listo para aprobar' },
   { value: 'READY_FOR_PICKUP', label: 'Listo para recojo' },
   { value: 'DELIVERED', label: 'Entregado' },
 ];
@@ -31,6 +35,8 @@ export const RollModal: React.FC<RollModalProps> = ({
   editingRoll,
   suggestedRollNumber,
 }) => {
+  const currentUser = useSelector((state: RootState) => state.session.user);
+  const canApprove = hasPermission(currentUser, 'production:approve');
   const [rollNumber, setRollNumber] = useState('');
   const [startOperator, setStartOperator] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -102,6 +108,18 @@ export const RollModal: React.FC<RollModalProps> = ({
       return;
     }
 
+    if (status === 'READY_FOR_PICKUP' && !canApprove && editingRoll?.status !== 'READY_FOR_PICKUP') {
+      setError(
+        'Solo el Asistente Administrativo o Administrador del sistema pueden aprobar el rollo y pasarlo a "Listo para recojo". Selecciona "Listo para aprobar".'
+      );
+      return;
+    }
+
+    if (!canApprove && editingRoll?.status === 'IN_PREPARATION' && status === 'REGISTERED') {
+      setError('No se puede retroceder un rollo en preparación a estado registrado.');
+      return;
+    }
+
     try {
       setIsLoading(true);
 
@@ -119,6 +137,18 @@ export const RollModal: React.FC<RollModalProps> = ({
       };
 
       await onSave(payload, editingRoll?.id);
+      if (!editingRoll) {
+        setRollNumber('');
+        setStartOperator('');
+        setStartDate(getTodayLocalDate());
+        setStartTime('');
+        setEndOperator('');
+        setEndDate(getTodayLocalDate());
+        setEndTime('');
+        setWeight('');
+        setStatus('REGISTERED');
+        setObservations('');
+      }
       onClose();
     } catch (err: unknown) {
       console.error('Error al guardar rollo:', err);
@@ -132,6 +162,45 @@ export const RollModal: React.FC<RollModalProps> = ({
     }
   };
 
+  const isRollLockedForTejedor =
+    !canApprove &&
+    (editingRoll?.status === 'DELIVERED' ||
+      editingRoll?.status === 'READY_FOR_APPROVAL');
+
+  const availableStatusOptions = ROLL_STATUS_OPTIONS.filter((opt) => {
+    // 1. Asistente Administrativo o Administrador:
+    if (canApprove) {
+      if (opt.value === 'READY_FOR_APPROVAL') return false;
+      // "Listo para recojo" NO debe estar en el select si no ha sido aprobado;
+      // recién se ve cuando ya fue aprobado (status === 'READY_FOR_PICKUP')
+      if (opt.value === 'READY_FOR_PICKUP') {
+        return editingRoll?.status === 'READY_FOR_PICKUP';
+      }
+      return true; // REGISTERED, IN_PREPARATION, DELIVERED
+    }
+
+    // 2. Rol Tejedor / Operario (avance progresivo hacia entrega):
+    const current = editingRoll?.status || 'REGISTERED';
+    if (current === 'DELIVERED') {
+      return opt.value === 'DELIVERED';
+    }
+    if (current === 'READY_FOR_PICKUP') {
+      // Cuando el rollo ya fue aprobado, el tejedor ve "Listo para recojo" y puede pasarlo a "Entregado"
+      return opt.value === 'READY_FOR_PICKUP' || opt.value === 'DELIVERED';
+    }
+    if (current === 'READY_FOR_APPROVAL') {
+      return opt.value === 'READY_FOR_APPROVAL';
+    }
+    if (current === 'IN_PREPARATION') {
+      return opt.value === 'IN_PREPARATION' || opt.value === 'READY_FOR_APPROVAL';
+    }
+    return (
+      opt.value === 'REGISTERED' ||
+      opt.value === 'IN_PREPARATION' ||
+      opt.value === 'READY_FOR_APPROVAL'
+    );
+  });
+
   return (
     <Modal
       isOpen={isOpen}
@@ -140,11 +209,21 @@ export const RollModal: React.FC<RollModalProps> = ({
       description="Detalle de turno, horarios, operarios y peso del rollo de tela"
       icon={<Layers className="w-6 h-6 text-emerald-500" />}
       size="2xl"
+      isLoading={isLoading}
+      loadingMessage={editingRoll ? 'Actualizando datos del rollo...' : 'Registrando rollo en producción...'}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <Alert variant="error" title="Error de validación">
             {error}
+          </Alert>
+        )}
+
+        {isRollLockedForTejedor && editingRoll && (
+          <Alert variant="info" title="Rollo en proceso o aprobado">
+            {editingRoll.status === 'READY_FOR_APPROVAL'
+              ? 'El rollo fue enviado a visto bueno y está a la espera de aprobación del Asistente o Administrador.'
+              : 'Este rollo ya fue aprobado por administración. Se encuentra bloqueado para cambios de estado por parte del tejedor.'}
           </Alert>
         )}
 
@@ -161,10 +240,11 @@ export const RollModal: React.FC<RollModalProps> = ({
               <input
                 type="text"
                 required
+                disabled={isRollLockedForTejedor}
                 value={rollNumber}
                 onChange={(e) => setRollNumber(e.target.value)}
                 placeholder="Ej. 718"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono disabled:opacity-60"
               />
             </div>
           </div>
@@ -181,10 +261,11 @@ export const RollModal: React.FC<RollModalProps> = ({
                 type="number"
                 step="0.01"
                 min="0"
+                disabled={isRollLockedForTejedor}
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder="Ej. 21.65"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono disabled:opacity-60"
               />
             </div>
           </div>
@@ -194,8 +275,9 @@ export const RollModal: React.FC<RollModalProps> = ({
               <Select
                 label="Estado del Rollo"
                 leftIcon={<Activity className="w-4 h-4 text-slate-400" />}
-                options={ROLL_STATUS_OPTIONS}
+                options={availableStatusOptions}
                 value={status}
+                disabled={isRollLockedForTejedor}
                 onChange={(val) => setStatus(val as RollStatus)}
                 placeholder="Estado..."
               />
@@ -317,8 +399,8 @@ export const RollModal: React.FC<RollModalProps> = ({
             disabled={isLoading}
             className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Guardando...' : editingRoll ? 'Guardar Cambios' : 'Registrar Rollo'}</span>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>{isLoading ? (editingRoll ? 'Actualizando...' : 'Guardando...') : editingRoll ? 'Guardar Cambios' : 'Registrar Rollo'}</span>
           </button>
         </div>
       </form>

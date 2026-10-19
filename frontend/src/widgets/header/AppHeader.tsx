@@ -1,7 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, LogOut, User, Home, ChevronRight, X, Users, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import {
+  Search,
+  LogOut,
+  User,
+  Home,
+  ChevronRight,
+  X,
+  Users,
+  ShieldCheck,
+  LayoutDashboard,
+  Cog,
+  Truck,
+  Factory,
+  Bell,
+  CheckCircle2,
+  RefreshCw,
+  Clock,
+} from 'lucide-react';
 import type { RootState } from '../../app/store';
 import { logout } from '../../entities/session/sessionSlice';
 import { loginService } from '../../public-modules/login/services/login.service';
@@ -9,17 +26,45 @@ import { ThemeToggle } from '../../shared/ui/ThemeToggle';
 import { Avatar } from '../../shared/ui/Avatar';
 import { Tooltip } from '../../shared/ui/Tooltip';
 import { LogoutConfirmModal } from '../../shared/components/session/LogoutConfirmModal';
-import { getRoleDisplayName } from '../../shared/lib/roles';
+import { getRoleDisplayName, hasPermission } from '../../shared/lib/roles';
+import { productionService } from '../../private-modules/production/services/production.service';
+import type { PendingApprovalRoll } from '../../private-modules/production/types/production.types';
+import { useToast } from '../../shared/hooks/useToast';
+import { Badge } from '../../shared/ui/Badge';
 
 // Rutas que comparten la pantalla de Inicio (usan el saludo completo como hero).
 const HOME_PATHS = ['/dashboard', '/modules', '/activity', '/saved'];
 
-// Rótulo breve para la migaja de pan en el resto de módulos, que ya traen su propio
-// título de página — evita repetir el mismo bloque "hero" dos veces en la pantalla.
-const PAGE_LABELS: Record<string, string> = {
-  '/users': 'Gestión de Usuarios',
-  '/roles': 'Roles y Permisos',
-  '/profile': 'Mi Perfil',
+export interface BreadcrumbItem {
+  label: string;
+  path?: string;
+}
+
+// Resuelve las migajas de pan alineadas exactamente con los títulos de los módulos
+export const getBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
+  // Manejo de detalle de lote de producción (/production/:id)
+  if (pathname.startsWith('/production/') && pathname !== '/production') {
+    return [
+      { label: 'Gestión de Producción', path: '/production' },
+      { label: 'Detalle de Lote' },
+    ];
+  }
+
+  const baseLabels: Record<string, string> = {
+    '/users': 'Gestión de Usuarios',
+    '/roles': 'Gestión de Roles',
+    '/machines': 'Gestión de Máquinas',
+    '/suppliers': 'Gestión de Proveedores',
+    '/production': 'Gestión de Producción',
+    '/profile': 'Mi Perfil',
+  };
+
+  const label = baseLabels[pathname];
+  if (label) {
+    return [{ label }];
+  }
+
+  return [{ label: 'Módulo' }];
 };
 
 interface SearchableItem {
@@ -27,6 +72,7 @@ interface SearchableItem {
   path: string;
   description: string;
   icon: React.ElementType;
+  permission?: string;
   adminOnly?: boolean;
 }
 
@@ -38,23 +84,44 @@ const SEARCHABLE_ITEMS: SearchableItem[] = [
     icon: LayoutDashboard,
   },
   {
+    title: 'Gestión de Producción',
+    path: '/production',
+    description: 'Control de lotes, pesaje de rollos y órdenes de producción',
+    icon: Factory,
+    permission: 'production:read',
+  },
+  {
     title: 'Gestión de Usuarios',
     path: '/users',
     description: 'Administración de personal, operarios y supervisores',
     icon: Users,
-    adminOnly: true,
+    permission: 'users:read',
   },
   {
-    title: 'Roles y Permisos',
+    title: 'Gestión de Roles',
     path: '/roles',
-    description: 'Configuración de roles y niveles de acceso RBAC',
+    description: 'Configuración de perfiles y matriz de permisos RBAC',
     icon: ShieldCheck,
-    adminOnly: true,
+    permission: 'roles:read',
+  },
+  {
+    title: 'Gestión de Máquinas',
+    path: '/machines',
+    description: 'Inventario de maquinaria, estado operativo y mantenimiento',
+    icon: Cog,
+    permission: 'machines:read',
+  },
+  {
+    title: 'Gestión de Proveedores',
+    path: '/suppliers',
+    description: 'Administración de proveedores y clientes de hilado',
+    icon: Truck,
+    permission: 'suppliers:read',
   },
   {
     title: 'Mi Perfil',
     path: '/profile',
-    description: 'Configuración personal de cuenta y cambio de contraseña',
+    description: 'Configuración personal de cuenta y credenciales',
     icon: User,
   },
 ];
@@ -67,6 +134,17 @@ export const AppHeader: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
+  const toast = useToast();
+  const canApprove = hasPermission(user, 'production:approve');
+
+  // Notifications State for Approvers (Administrador / Asistente Administrativo)
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [pendingRolls, setPendingRolls] = useState<PendingApprovalRoll[]>([]);
+  const [isLoadingNotifs, setIsLoadingNotifs] = useState(false);
+  const [approvingRollId, setApprovingRollId] = useState<string | null>(null);
+
+  const notifRef = useRef<HTMLDivElement>(null);
+
   // Search State
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,9 +156,65 @@ export const AppHeader: React.FC = () => {
   const isHome = HOME_PATHS.includes(location.pathname);
   const isAdmin = user?.role === 'ADMINISTRADOR';
 
-  // Filter searchable items based on user role and query
+  // Cargar notificaciones de rollos pendientes de aprobación
+  const fetchPendingApprovals = async () => {
+    if (!canApprove) return;
+    try {
+      setIsLoadingNotifs(true);
+      const data = await productionService.getPendingApprovals();
+      setPendingRolls(data || []);
+    } catch (err) {
+      console.error('Error al cargar notificaciones de aprobación:', err);
+    } finally {
+      setIsLoadingNotifs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!canApprove) return;
+    fetchPendingApprovals();
+
+    // Sincronización periódica cada 20 segundos
+    const interval = setInterval(fetchPendingApprovals, 20000);
+
+    // Escuchar cambios de rollos en tiempo real mediante evento personalizado
+    const handleRollsUpdated = () => {
+      fetchPendingApprovals();
+    };
+    window.addEventListener('production:rolls-updated', handleRollsUpdated);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('production:rolls-updated', handleRollsUpdated);
+    };
+  }, [canApprove]);
+
+  // Aprobar un rollo directamente desde la notificación
+  const handleApproveFromNotif = async (roll: PendingApprovalRoll) => {
+    try {
+      setApprovingRollId(roll.rollId);
+      const res = await productionService.approveRoll(roll.rollId);
+      toast.success(res.message || `Rollo N° ${roll.rollNumber} aprobado y listo para recojo.`);
+      setPendingRolls((prev) => prev.filter((r) => r.rollId !== roll.rollId));
+      window.dispatchEvent(new CustomEvent('production:rolls-updated'));
+    } catch (err: unknown) {
+      console.error('Error al aprobar rollo desde notificación:', err);
+      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(apiError || 'Error al aprobar el rollo.');
+    } finally {
+      setApprovingRollId(null);
+    }
+  };
+
+  const handleNavigateToBatch = (batchId: string) => {
+    setIsNotifOpen(false);
+    navigate(`/production/${batchId}`);
+  };
+
+  // Filter searchable items based on user role, permissions and query
   const filteredSearchItems = SEARCHABLE_ITEMS.filter((item) => {
     if (item.adminOnly && !isAdmin) return false;
+    if (item.permission && !hasPermission(user, item.permission)) return false;
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -109,6 +243,7 @@ export const AppHeader: React.FC = () => {
       } else if (e.key === 'Escape') {
         setIsSearchOpen(false);
         setIsDropdownOpen(false);
+        setIsNotifOpen(false);
       }
     };
 
@@ -116,11 +251,14 @@ export const AppHeader: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Close dropdown and search on outside click
+  // Close dropdown, notifications, and search on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setIsNotifOpen(false);
       }
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setIsSearchOpen(false);
@@ -156,6 +294,8 @@ export const AppHeader: React.FC = () => {
       ? user.name.trim().split(' ')[0]
       : 'Administrador';
 
+  const breadcrumbs = getBreadcrumbs(location.pathname);
+
   return (
     <>
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 py-4">
@@ -163,16 +303,32 @@ export const AppHeader: React.FC = () => {
         <div>
           {isHome ? (
             <>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
                   Textil L&M • Sistema Integral
                 </span>
+                <Badge
+                  variant={
+                    user?.role === 'ADMINISTRADOR'
+                      ? 'emerald'
+                      : user?.role === 'ASISTENTE_ADMINISTRATIVO'
+                      ? 'blue'
+                      : 'purple'
+                  }
+                  size="sm"
+                >
+                  {getRoleDisplayName(user)}
+                </Badge>
               </div>
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 ¡Hola, {firstName}!
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Control de producción, hilos, corte y confección en tiempo real.
+                {user?.role === 'ADMINISTRADOR'
+                  ? 'Panel de control gerencial y estado global de la planta textil.'
+                  : user?.role === 'ASISTENTE_ADMINISTRATIVO'
+                  ? 'Coordinación de despacho, proveedores y mesa de aprobaciones.'
+                  : 'Turno de producción textil y control de rollos en máquina.'}
               </p>
             </>
           ) : (
@@ -184,10 +340,26 @@ export const AppHeader: React.FC = () => {
                 <Home className="w-3.5 h-3.5" />
                 <span>Inicio</span>
               </button>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
-              <span aria-current="page" className="text-slate-600 dark:text-slate-300">
-                {PAGE_LABELS[location.pathname] ?? 'Módulo'}
-              </span>
+              {breadcrumbs.map((crumb, idx) => {
+                const isLast = idx === breadcrumbs.length - 1;
+                return (
+                  <React.Fragment key={idx}>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 shrink-0" />
+                    {crumb.path && !isLast ? (
+                      <button
+                        onClick={() => navigate(crumb.path!)}
+                        className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+                      >
+                        {crumb.label}
+                      </button>
+                    ) : (
+                      <span aria-current="page" className="text-slate-700 dark:text-slate-200 font-bold">
+                        {crumb.label}
+                      </span>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </nav>
           )}
         </div>
@@ -286,6 +458,124 @@ export const AppHeader: React.FC = () => {
               </Tooltip>
             )}
           </div>
+
+          {/* Notifications Bell for Approvers */}
+          {canApprove && (
+            <div className="relative" ref={notifRef}>
+              <Tooltip content="Notificaciones de aprobación" position="bottom">
+                <button
+                  type="button"
+                  onClick={() => setIsNotifOpen((prev) => !prev)}
+                  aria-label="Notificaciones de aprobación"
+                  className="relative p-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all shadow-sm cursor-pointer"
+                >
+                  <Bell className="w-4 h-4" />
+                  {pendingRolls.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white ring-2 ring-white dark:ring-slate-900 animate-pulse">
+                      {pendingRolls.length > 9 ? '9+' : pendingRolls.length}
+                    </span>
+                  )}
+                </button>
+              </Tooltip>
+
+              {/* Notification Popover Dropdown */}
+              {isNotifOpen && (
+                <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-3 z-50 animate-fadeIn">
+                  {/* Header */}
+                  <div className="px-4 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        <Bell className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                          Notificaciones de Aprobación
+                        </h4>
+                        <p className="text-[10px] text-slate-400">
+                          Rollos listos para visto bueno
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        {pendingRolls.length} {pendingRolls.length === 1 ? 'pendiente' : 'pendientes'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={fetchPendingApprovals}
+                        disabled={isLoadingNotifs}
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                        title="Actualizar notificaciones"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isLoadingNotifs ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Body List */}
+                  <div className="max-h-80 overflow-y-auto px-2 py-2 space-y-2">
+                    {pendingRolls.length > 0 ? (
+                      pendingRolls.map((roll) => (
+                        <div
+                          key={roll.rollId}
+                          className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 hover:border-amber-500/40 transition-all space-y-2"
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <div className="mt-0.5 p-1 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                              <Clock className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-slate-800 dark:text-slate-200 leading-snug">
+                                El Lote <strong className="font-mono text-emerald-600 dark:text-emerald-400">{roll.batchNumber}</strong> del proveedor <strong>{roll.supplierName}</strong> tiene el Rollo N° <strong className="font-mono text-slate-900 dark:text-white">{roll.rollNumber}</strong> listo para aprobar.
+                              </p>
+                              <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
+                                {roll.weight !== null && roll.weight !== undefined && (
+                                  <span>Peso: <strong>{roll.weight} Kg</strong></span>
+                                )}
+                                {roll.machineName && <span>Máq: {roll.machineName}</span>}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/40">
+                            <button
+                              type="button"
+                              onClick={() => handleNavigateToBatch(roll.batchId)}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+                            >
+                              Ver Lote
+                            </button>
+                            <button
+                              type="button"
+                              disabled={approvingRollId === roll.rollId}
+                              onClick={() => handleApproveFromNotif(roll)}
+                              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>{approvingRollId === roll.rollId ? 'Aprobando...' : 'Aprobar'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-8 text-center space-y-2">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                          <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                          No hay rollos pendientes
+                        </p>
+                        <p className="text-[11px] text-slate-400 max-w-[200px] mx-auto">
+                          Todos los rollos registrados cuentan con visto bueno.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* User Profile Avatar with Dropdown */}
           <div className="relative" ref={dropdownRef}>

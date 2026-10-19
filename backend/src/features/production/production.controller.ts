@@ -308,13 +308,20 @@ export class ProductionController {
         }
       }
 
+      if (status === 'COMPLETED') {
+        res.status(400).json({
+          success: false,
+          error: 'Un lote nuevo no puede crearse en estado Terminado porque aún no tiene rollos registrados ni entregados.',
+        });
+        return;
+      }
+
       const validStatuses = [
         'REQUESTED',
         'IN_PREPARATION',
         'READY_FOR_PICKUP',
         'DELIVERED',
         'IN_PROGRESS',
-        'COMPLETED',
         'DISPATCHED',
         'PAUSED',
       ];
@@ -410,6 +417,34 @@ export class ProductionController {
       }
 
       if (status !== undefined) {
+        if (status === 'COMPLETED') {
+          const totalRolls = await prisma.productionRoll.count({
+            where: { batchId: id },
+          });
+          if (totalRolls === 0) {
+            res.status(400).json({
+              success: false,
+              error: 'No se puede marcar el lote como Terminado porque aún no tiene rollos registrados.',
+            });
+            return;
+          }
+          const pendingRolls = await prisma.productionRoll.count({
+            where: {
+              batchId: id,
+              status: { not: 'DELIVERED' },
+            },
+          });
+          if (pendingRolls > 0) {
+            res.status(400).json({
+              success: false,
+              error: `No se puede marcar el lote como Terminado porque tiene ${pendingRolls} ${
+                pendingRolls === 1 ? 'rollo pendiente' : 'rollos pendientes'
+              } de entrega (todos los rollos deben estar en estado "Entregado").`,
+            });
+            return;
+          }
+        }
+
         const validStatuses = [
           'REQUESTED',
           'IN_PREPARATION',
@@ -530,6 +565,14 @@ export class ProductionController {
         },
       });
 
+      // Si el lote estaba en COMPLETED, al añadir un nuevo rollo (no entregado) revierte a REQUESTED
+      if (batch.status === 'COMPLETED') {
+        await prisma.productionBatch.update({
+          where: { id: batchId },
+          data: { status: 'REQUESTED' },
+        });
+      }
+
       res.status(201).json({
         success: true,
         message: `Rollo N° ${newRoll.rollNumber} registrado correctamente.`,
@@ -596,6 +639,94 @@ export class ProductionController {
         }
       }
 
+      const userRole = String(req.user?.role || '').toUpperCase();
+      let hasApprovePerm =
+        userRole === 'ADMINISTRADOR' ||
+        userRole === 'ASISTENTE_ADMINISTRATIVO' ||
+        (Array.isArray(req.user?.permissions) && req.user?.permissions.includes('production:approve'));
+
+      if (!hasApprovePerm && req.user?.role) {
+        try {
+          const roleDef = await prisma.roleDefinition.findFirst({
+            where: { OR: [{ code: userRole }, { id: req.user.role }] },
+          });
+          if (roleDef && Array.isArray(roleDef.permissions) && roleDef.permissions.includes('production:approve')) {
+            hasApprovePerm = true;
+          }
+        } catch {}
+      }
+
+      // 1. Validaciones para el rol Tejedor (avance progresivo hacia entrega):
+      if (!hasApprovePerm) {
+        // Un rollo ya entregado finalizó su ciclo y no puede ser alterado por el tejedor
+        if (existingRoll.status === 'DELIVERED') {
+          res.status(403).json({
+            success: false,
+            error: 'Este rollo ya fue entregado y no puede ser modificado por el rol tejedor.',
+          });
+          return;
+        }
+
+        // Si el rollo está en "Listo para recojo", el tejedor SÍ puede pasarlo a "Entregado" cuando el proveedor recoge los rollos
+        if (existingRoll.status === 'READY_FOR_PICKUP') {
+          if (status !== 'READY_FOR_PICKUP' && status !== 'DELIVERED') {
+            res.status(403).json({
+              success: false,
+              error: 'El rollo ya está listo para recojo; el tejedor solo puede marcarlo como "Entregado".',
+            });
+            return;
+          }
+        }
+
+        // Un rollo ya enviado a visto bueno (READY_FOR_APPROVAL) no puede retroceder
+        if (existingRoll.status === 'READY_FOR_APPROVAL' && status && status !== 'READY_FOR_APPROVAL') {
+          res.status(403).json({
+            success: false,
+            error: 'El rollo ya está en espera de visto bueno y no puede modificarse hasta que administración lo apruebe.',
+          });
+          return;
+        }
+
+        // El tejedor no puede marcar por sí mismo como "Listo para recojo" (requiere visto bueno)
+        if (existingRoll.status !== 'READY_FOR_PICKUP' && status === 'READY_FOR_PICKUP') {
+          res.status(403).json({
+            success: false,
+            error: 'El rollo debe ser aprobado por el Asistente o Administrador antes de pasar a "Listo para recojo".',
+          });
+          return;
+        }
+
+        // El tejedor no puede saltarse a "Entregado" si el rollo aún no estaba en "Listo para recojo"
+        if (existingRoll.status !== 'READY_FOR_PICKUP' && status === 'DELIVERED') {
+          res.status(403).json({
+            success: false,
+            error: 'El rollo debe estar aprobado y en "Listo para recojo" antes de poder ser entregado.',
+          });
+          return;
+        }
+
+        // Bloqueo de retroceso: de En preparación no puede volver a Registrado
+        if (existingRoll.status === 'IN_PREPARATION' && status === 'REGISTERED') {
+          res.status(403).json({
+            success: false,
+            error: 'No se puede retroceder un rollo en preparación a estado registrado.',
+          });
+          return;
+        }
+      } else {
+        // 2. Validaciones para Asistente Administrativo / Administrador:
+        // El estado READY_FOR_PICKUP no se asigna manualmente por dropdown si aún no ha sido aprobado;
+        // debe pasar por la acción de aprobación explícita.
+        if (status === 'READY_FOR_PICKUP' && existingRoll.status !== 'READY_FOR_PICKUP') {
+          res.status(400).json({
+            success: false,
+            error:
+              'Para pasar el rollo a "Listo para recojo", utiliza el botón oficial de "Aprobar" en la sábana o notificaciones.',
+          });
+          return;
+        }
+      }
+
       if (status !== undefined) {
         dataToUpdate.status = status;
       }
@@ -609,19 +740,37 @@ export class ProductionController {
         data: dataToUpdate,
       });
 
-      // Si el rollo se marca como DELIVERED, comprobar si todos los rollos del lote ya están entregados
-      if (status === 'DELIVERED') {
+      // Verificación y actualización automática del estado del lote:
+      if (status !== undefined && status !== existingRoll.status) {
+        const batchId = existingRoll.batchId;
+        const totalRolls = await prisma.productionRoll.count({
+          where: { batchId },
+        });
         const pendingRolls = await prisma.productionRoll.count({
           where: {
-            batchId: existingRoll.batchId,
+            batchId,
             status: { not: 'DELIVERED' },
           },
         });
-        if (pendingRolls === 0) {
+
+        // Si todos los rollos están entregados (y hay al menos 1 rollo), pasar lote automáticamente a COMPLETED
+        if (totalRolls > 0 && pendingRolls === 0) {
           await prisma.productionBatch.update({
-            where: { id: existingRoll.batchId },
+            where: { id: batchId },
             data: { status: 'COMPLETED' },
           });
+        } else {
+          // Si algún rollo no está entregado y el lote estaba en COMPLETED, revertir a REQUESTED
+          const currentBatch = await prisma.productionBatch.findUnique({
+            where: { id: batchId },
+            select: { status: true },
+          });
+          if (currentBatch?.status === 'COMPLETED') {
+            await prisma.productionBatch.update({
+              where: { id: batchId },
+              data: { status: 'REQUESTED' },
+            });
+          }
         }
       }
 
@@ -632,6 +781,107 @@ export class ProductionController {
       });
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : 'Error al actualizar rollo.';
+      res.status(500).json({ success: false, error: errorMsg });
+    }
+  }
+
+  /**
+   * Aprobar un rollo pendiente (cambia estado a READY_FOR_PICKUP)
+   * Solo para Asistente Administrativo o Administrador del sistema
+   */
+  async approveRoll(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const rollId = String(req.params.rollId);
+
+      const existingRoll = await prisma.productionRoll.findUnique({
+        where: { id: rollId },
+        include: {
+          batch: {
+            include: {
+              supplier: {
+                select: { id: true, name: true, document: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!existingRoll) {
+        res.status(404).json({ success: false, error: 'Rollo no encontrado.' });
+        return;
+      }
+
+      const updatedRoll = await prisma.productionRoll.update({
+        where: { id: rollId },
+        data: {
+          status: 'READY_FOR_PICKUP',
+        },
+      });
+
+      const supplierName =
+        existingRoll.batch?.supplier?.name || existingRoll.batch?.supplierName || 'Proveedor';
+      const batchNumber = existingRoll.batch?.batchNumber || 'Lote';
+
+      res.status(200).json({
+        success: true,
+        message: `El Rollo N° ${existingRoll.rollNumber} del Lote [${batchNumber}] (${supplierName}) fue aprobado con éxito y su estado cambió a "Listo para recojo".`,
+        data: updatedRoll,
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al aprobar rollo.';
+      res.status(500).json({ success: false, error: errorMsg });
+    }
+  }
+
+  /**
+   * Obtener rollos pendientes de aprobación (READY_FOR_APPROVAL)
+   * Para alimentar las notificaciones en la plataforma
+   */
+  async getPendingApprovals(_req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const pendingRolls = await prisma.productionRoll.findMany({
+        where: {
+          status: 'READY_FOR_APPROVAL',
+        },
+        include: {
+          batch: {
+            include: {
+              supplier: {
+                select: { id: true, name: true, document: true },
+              },
+            },
+          },
+        },
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      });
+
+      const formatted = pendingRolls.map((roll) => {
+        const batchNumber = roll.batch?.batchNumber || 'Sin Lote';
+        const supplierName = roll.batch?.supplier?.name || roll.batch?.supplierName || 'Sin Proveedor';
+        const machineName = roll.batch?.machineName || null;
+
+        return {
+          rollId: roll.id,
+          rollNumber: roll.rollNumber,
+          weight: roll.weight,
+          status: roll.status,
+          batchId: roll.batchId,
+          batchNumber,
+          supplierName,
+          machineName,
+          createdAt: roll.createdAt,
+          updatedAt: roll.updatedAt,
+          message: `El Lote ${batchNumber} del proveedor ${supplierName} tiene el Rollo N° ${roll.rollNumber} listo para aprobar.`,
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        data: formatted,
+        count: formatted.length,
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al obtener notificaciones de aprobación.';
       res.status(500).json({ success: false, error: errorMsg });
     }
   }
@@ -655,6 +905,36 @@ export class ProductionController {
       await prisma.productionRoll.delete({
         where: { id: rollId },
       });
+
+      // Recalcular estado automático del lote tras eliminar el rollo
+      const remainingTotal = await prisma.productionRoll.count({
+        where: { batchId: existingRoll.batchId },
+      });
+      if (remainingTotal === 0) {
+        const batch = await prisma.productionBatch.findUnique({
+          where: { id: existingRoll.batchId },
+          select: { status: true },
+        });
+        if (batch?.status === 'COMPLETED') {
+          await prisma.productionBatch.update({
+            where: { id: existingRoll.batchId },
+            data: { status: 'REQUESTED' },
+          });
+        }
+      } else {
+        const remainingPending = await prisma.productionRoll.count({
+          where: {
+            batchId: existingRoll.batchId,
+            status: { not: 'DELIVERED' },
+          },
+        });
+        if (remainingPending === 0) {
+          await prisma.productionBatch.update({
+            where: { id: existingRoll.batchId },
+            data: { status: 'COMPLETED' },
+          });
+        }
+      }
 
       res.status(200).json({
         success: true,
@@ -684,7 +964,7 @@ export class ProductionController {
 
       const isOperatorRole = (r: string) => {
         const upper = (r || '').toUpperCase();
-        return upper === 'OPERATOR' || upper === 'OPERARIO' || upper === 'OPERADOR';
+        return upper === 'OPERATOR' || upper === 'OPERARIO' || upper === 'OPERADOR' || upper === 'TEJEDOR';
       };
 
       let operatorUsers = users.filter((u) => isOperatorRole(u.role));
@@ -781,22 +1061,6 @@ export class ProductionController {
         where: { id: yarnId },
         data: dataToUpdate,
       });
-
-      // Si todos los hilos del lote están en 'DELIVERED', el lote puede marcarse como COMPLETED
-      if (status === 'DELIVERED') {
-        const activeYarns = await prisma.batchYarn.count({
-          where: {
-            batchId: existingYarn.batchId,
-            status: { not: 'DELIVERED' },
-          },
-        });
-        if (activeYarns === 0) {
-          await prisma.productionBatch.update({
-            where: { id: existingYarn.batchId },
-            data: { status: 'COMPLETED' },
-          });
-        }
-      }
 
       res.status(200).json({
         success: true,
@@ -906,6 +1170,7 @@ export class ProductionController {
       const totalWeight = batch.rolls.reduce((sum, r) => sum + (r.weight || 0), 0);
       const registeredCount = batch.rolls.filter((r) => !r.status || r.status === 'REGISTERED').length;
       const inPrepCount = batch.rolls.filter((r) => r.status === 'IN_PREPARATION').length;
+      const readyForApprovalCount = batch.rolls.filter((r) => r.status === 'READY_FOR_APPROVAL').length;
       const readyPickupCount = batch.rolls.filter((r) => r.status === 'READY_FOR_PICKUP').length;
       const deliveredCount = batch.rolls.filter((r) => r.status === 'DELIVERED').length;
 
@@ -929,6 +1194,7 @@ export class ProductionController {
           counts: {
             registered: registeredCount,
             inPreparation: inPrepCount,
+            readyForApproval: readyForApprovalCount,
             readyForPickup: readyPickupCount,
             delivered: deliveredCount,
           },

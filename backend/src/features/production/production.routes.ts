@@ -12,6 +12,7 @@ router.get('/track/:code', controller.trackBatch);
 // Lotes de producción (Batches)
 router.get('/', authenticateJwt, requirePermission('production:read'), controller.getBatches);
 router.get('/operators/list', authenticateJwt, requirePermission('production:read'), controller.getOperators);
+router.get('/pending-approvals', authenticateJwt, requirePermission('production:approve'), controller.getPendingApprovals);
 router.get('/:id', authenticateJwt, requirePermission('production:read'), controller.getBatchById);
 router.post('/', authenticateJwt, requirePermission('production:create'), controller.createBatch);
 router.put('/:id', authenticateJwt, requirePermission('production:edit'), controller.updateBatch);
@@ -24,6 +25,7 @@ router.delete('/yarns/:yarnId', authenticateJwt, requirePermission('production:d
 
 // Rollos dentro de un lote (Rolls)
 router.post('/:batchId/rolls', authenticateJwt, requirePermission('production:create'), controller.addRoll);
+router.post('/rolls/:rollId/approve', authenticateJwt, requirePermission('production:approve'), controller.approveRoll);
 router.put('/rolls/:rollId', authenticateJwt, requirePermission('production:edit'), controller.updateRoll);
 router.delete('/rolls/:rollId', authenticateJwt, requirePermission('production:delete'), controller.deleteRoll);
 

@@ -50,8 +50,23 @@ export interface UpdateYarnDTO {
 export type RollStatus =
   | 'REGISTERED' // Registrado (por default al crear)
   | 'IN_PREPARATION' // En preparación
+  | 'READY_FOR_APPROVAL' // Listo para aprobar (esperando visto bueno del Asistente o Administrador)
   | 'READY_FOR_PICKUP' // Listo para recojo
   | 'DELIVERED'; // Entregado
+
+export interface PendingApprovalRoll {
+  rollId: string;
+  rollNumber: string;
+  weight?: number | null;
+  status: RollStatus;
+  batchId: string;
+  batchNumber: string;
+  supplierName: string;
+  machineName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  message: string;
+}
 
 export interface ProductionRoll {
   id: string;
@@ -113,6 +128,7 @@ export interface BatchTrackingData {
   counts: {
     registered: number;
     inPreparation: number;
+    readyForApproval?: number;
     readyForPickup: number;
     delivered: number;
   };

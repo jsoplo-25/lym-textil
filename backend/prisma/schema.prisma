@@ -35,7 +35,7 @@ model User {
   passwordHash   String          @map("password_hash")
   firstName      String          @map("first_name")
   lastName       String          @map("last_name")
-  role           String          @default("OPERATOR")
+  role           String          @default("ADMINISTRADOR")
   roleDefinition RoleDefinition? @relation(fields: [role], references: [code], onDelete: Restrict, onUpdate: Cascade)
   avatarUrl      String?         @map("avatar_url")
   createdAt      DateTime        @default(now()) @map("created_at")

@@ -84,8 +84,21 @@ export const useLogin = (initialEmail = '') => {
     } catch (err: unknown) {
       let errorMessage = 'Error al conectar con el servidor. Verifica tus credenciales.';
       if (err && typeof err === 'object') {
-        const errorObj = err as { response?: { data?: { error?: string } }; message?: string };
-        errorMessage = errorObj.response?.data?.error || errorObj.message || errorMessage;
+        const errorObj = err as {
+          response?: { data?: { error?: string } };
+          message?: string;
+          code?: string;
+        };
+
+        if (
+          errorObj.code === 'ECONNABORTED' ||
+          (errorObj.message && errorObj.message.toLowerCase().includes('timeout'))
+        ) {
+          errorMessage =
+            'El servidor tardó en responder. Es probable que se esté reactivando tras estar inactivo. Por favor, intenta ingresar nuevamente en unos segundos.';
+        } else {
+          errorMessage = errorObj.response?.data?.error || errorObj.message || errorMessage;
+        }
       }
 
       setState((prev) => ({ ...prev, error: errorMessage }));

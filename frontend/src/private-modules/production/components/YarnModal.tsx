@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Save, Tag, Hash, FileText, Activity, Scale } from 'lucide-react';
+import { Layers, Save, Tag, Hash, FileText, Activity, Scale, Loader2 } from 'lucide-react';
 import type { BatchYarn, CreateYarnDTO, UpdateYarnDTO, YarnStatus } from '../types/production.types';
 import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
@@ -92,6 +92,15 @@ export const YarnModal: React.FC<YarnModalProps> = ({
       };
 
       await onSave(payload, editingYarn?.id);
+      if (!editingYarn) {
+        setYarnName('');
+        setColor('');
+        setLotCode('');
+        setRollCount('');
+        setTotalWeight('');
+        setStatus('IN_PREPARATION');
+        setNotes('');
+      }
       onClose();
     } catch (err: unknown) {
       console.error('Error al guardar hilo:', err);
@@ -113,6 +122,8 @@ export const YarnModal: React.FC<YarnModalProps> = ({
       description="Control semanal y avance de producción por tipo de hilado"
       icon={<Layers className="w-6 h-6 text-emerald-500" />}
       size="lg"
+      isLoading={isLoading}
+      loadingMessage={editingYarn ? 'Actualizando partida de hilado...' : 'Registrando hilado en producción...'}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -270,8 +281,8 @@ export const YarnModal: React.FC<YarnModalProps> = ({
             disabled={isLoading}
             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
-            <span>{isLoading ? 'Guardando...' : editingYarn ? 'Guardar Cambios' : 'Registrar Hilo'}</span>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>{isLoading ? (editingYarn ? 'Actualizando...' : 'Guardando...') : editingYarn ? 'Guardar Cambios' : 'Registrar Hilo'}</span>
           </button>
         </div>
       </form>

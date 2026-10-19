@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import type { Supplier } from '../types/suppliers.types';
 import { ConfirmModal } from '../../../shared/ui/ConfirmModal';
 
@@ -25,13 +25,21 @@ export const DeleteSupplierConfirmModal: React.FC<DeleteSupplierConfirmModalProp
       isOpen={isOpen}
       onClose={onClose}
       onConfirm={onConfirm}
-      title="¿Eliminar Proveedor?"
-      description={`¿Estás seguro de que deseas eliminar permanentemente a [${supplier.document}] ${supplier.name}? Esta acción no se puede deshacer.`}
-      confirmLabel="Sí, Eliminar Proveedor"
-      cancelLabel="Cancelar"
       variant="danger"
+      icon={<Trash2 className="w-7 h-7" />}
+      title="¿Eliminar proveedor?"
+      description={
+        <>
+          Estás por eliminar el proveedor{' '}
+          <span className="font-semibold text-slate-800 dark:text-slate-200">
+            [{supplier.document}] {supplier.name}
+          </span>
+          . Esta acción lo retirará del catálogo de proveedores del sistema.
+        </>
+      }
+      confirmLabel={isLoading ? 'Eliminando...' : 'Sí, Eliminar'}
+      cancelLabel="Cancelar"
       isLoading={isLoading}
-      icon={<Truck className="w-6 h-6 text-rose-500" />}
     />
   );
 };
