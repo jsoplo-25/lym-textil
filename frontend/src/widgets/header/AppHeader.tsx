@@ -126,6 +126,18 @@ const SEARCHABLE_ITEMS: SearchableItem[] = [
   },
 ];
 
+const formatBatchDisplay = (raw?: string): string => {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return 'Lote';
+  if (/^lote\s+/i.test(trimmed)) {
+    return trimmed.replace(/^lote\s+/i, 'Lote ');
+  }
+  if (/^lote\b/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `Lote ${trimmed}`;
+};
+
 export const AppHeader: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -154,7 +166,12 @@ export const AppHeader: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const isHome = HOME_PATHS.includes(location.pathname);
-  const isAdmin = user?.role === 'ADMINISTRADOR';
+  const isAdmin =
+    user?.role === 'ADMINISTRADOR' ||
+    user?.roleName?.toUpperCase() === 'ADMINISTRADOR DEL SISTEMA';
+  const isAssistant =
+    user?.role === 'ASISTENTE_ADMINISTRATIVO' ||
+    user?.roleName?.toUpperCase() === 'ASISTENTE ADMINISTRATIVO';
 
   // Cargar notificaciones de rollos pendientes de aprobación
   const fetchPendingApprovals = async () => {
@@ -309,9 +326,9 @@ export const AppHeader: React.FC = () => {
                 </span>
                 <Badge
                   variant={
-                    user?.role === 'ADMINISTRADOR'
+                    isAdmin
                       ? 'emerald'
-                      : user?.role === 'ASISTENTE_ADMINISTRATIVO'
+                      : isAssistant
                       ? 'blue'
                       : 'purple'
                   }
@@ -324,9 +341,9 @@ export const AppHeader: React.FC = () => {
                 ¡Hola, {firstName}!
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                {user?.role === 'ADMINISTRADOR'
+                {isAdmin
                   ? 'Panel de control gerencial y estado global de la planta textil.'
-                  : user?.role === 'ASISTENTE_ADMINISTRATIVO'
+                  : isAssistant
                   ? 'Coordinación de despacho, proveedores y mesa de aprobaciones.'
                   : 'Turno de producción textil y control de rollos en máquina.'}
               </p>
@@ -526,7 +543,15 @@ export const AppHeader: React.FC = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs text-slate-800 dark:text-slate-200 leading-snug">
-                                El Lote <strong className="font-mono text-emerald-600 dark:text-emerald-400">{roll.batchNumber}</strong> del proveedor <strong>{roll.supplierName}</strong> tiene el Rollo N° <strong className="font-mono text-slate-900 dark:text-white">{roll.rollNumber}</strong> listo para aprobar.
+                                El{' '}
+                                <strong className="font-mono text-emerald-600 dark:text-emerald-400">
+                                  {formatBatchDisplay(roll.batchNumber)}
+                                </strong>{' '}
+                                del proveedor <strong>{roll.supplierName}</strong> tiene el Rollo N°{' '}
+                                <strong className="font-mono text-slate-900 dark:text-white">
+                                  {roll.rollNumber}
+                                </strong>{' '}
+                                listo para aprobar.
                               </p>
                               <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
                                 {roll.weight !== null && roll.weight !== undefined && (

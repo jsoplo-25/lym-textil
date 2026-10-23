@@ -71,6 +71,30 @@ export async function seedDefaultRoles(): Promise<void> {
         }
       }
     }
+
+    // Asegurar que el rol específico "Asistente Administrativo" cuente con permisos de aprobación y producción
+    const assistantRoles = await prisma.roleDefinition.findMany({
+      where: {
+        OR: [
+          { code: 'ASISTENTE_ADMINISTRATIVO' },
+          { name: { equals: 'Asistente Administrativo', mode: 'insensitive' } },
+        ],
+      },
+    });
+
+    for (const aRole of assistantRoles) {
+      const required = ['dashboard:view', 'profile:view', 'production:read', 'production:approve'];
+      const missing = required.filter((p) => !aRole.permissions.includes(p));
+      if (missing.length > 0) {
+        await prisma.roleDefinition.update({
+          where: { id: aRole.id },
+          data: {
+            permissions: Array.from(new Set([...aRole.permissions, ...required])),
+          },
+        });
+        console.log(`✅ [ROLES] Permisos de Asistente Administrativo actualizados con: ${missing.join(', ')}`);
+      }
+    }
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('⚠️ [ROLES] Error al sincronizar roles en base de datos:', msg);

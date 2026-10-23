@@ -22,9 +22,23 @@ export class AuthService {
       });
 
       if (roleDef) {
+        let perms = Array.isArray(roleDef.permissions) ? [...roleDef.permissions] : [];
+        const codeUpper = roleDef.code.toUpperCase();
+        const nameUpper = roleDef.name.toUpperCase();
+
+        // Garantizar que el rol específico Asistente Administrativo cuente siempre con facultades de aprobación y consulta
+        if (codeUpper === 'ASISTENTE_ADMINISTRATIVO' || nameUpper === 'ASISTENTE ADMINISTRATIVO') {
+          const assistantPerms = ['dashboard:view', 'profile:view', 'production:read', 'production:approve'];
+          for (const p of assistantPerms) {
+            if (!perms.includes(p)) {
+              perms.push(p);
+            }
+          }
+        }
+
         return {
           roleName: roleDef.name,
-          permissions: Array.isArray(roleDef.permissions) ? roleDef.permissions : [],
+          permissions: perms,
         };
       }
     } catch (error) {

@@ -640,9 +640,12 @@ export class ProductionController {
       }
 
       const userRole = String(req.user?.role || '').toUpperCase();
+      const roleName = String(req.user?.roleName || '').toUpperCase();
       let hasApprovePerm =
         userRole === 'ADMINISTRADOR' ||
+        roleName === 'ADMINISTRADOR DEL SISTEMA' ||
         userRole === 'ASISTENTE_ADMINISTRATIVO' ||
+        roleName === 'ASISTENTE ADMINISTRATIVO' ||
         (Array.isArray(req.user?.permissions) && req.user?.permissions.includes('production:approve'));
 
       if (!hasApprovePerm && req.user?.role) {
@@ -820,11 +823,16 @@ export class ProductionController {
 
       const supplierName =
         existingRoll.batch?.supplier?.name || existingRoll.batch?.supplierName || 'Proveedor';
-      const batchNumber = existingRoll.batch?.batchNumber || 'Lote';
+      const rawBatch = existingRoll.batch?.batchNumber || 'Lote';
+      const batchDisplay = /^lote\s+/i.test(rawBatch.trim())
+        ? rawBatch.trim().replace(/^lote\s+/i, 'Lote ')
+        : /^lote\b/i.test(rawBatch.trim())
+        ? rawBatch.trim()
+        : `Lote ${rawBatch.trim()}`;
 
       res.status(200).json({
         success: true,
-        message: `El Rollo N° ${existingRoll.rollNumber} del Lote [${batchNumber}] (${supplierName}) fue aprobado con éxito y su estado cambió a "Listo para recojo".`,
+        message: `El Rollo N° ${existingRoll.rollNumber} del ${batchDisplay} (${supplierName}) fue aprobado con éxito y su estado cambió a "Listo para recojo".`,
         data: updatedRoll,
       });
     } catch (error: unknown) {
@@ -860,6 +868,13 @@ export class ProductionController {
         const supplierName = roll.batch?.supplier?.name || roll.batch?.supplierName || 'Sin Proveedor';
         const machineName = roll.batch?.machineName || null;
 
+        const rawBatch = roll.batch?.batchNumber || 'Sin Lote';
+        const batchDisplay = /^lote\s+/i.test(rawBatch.trim())
+          ? rawBatch.trim().replace(/^lote\s+/i, 'Lote ')
+          : /^lote\b/i.test(rawBatch.trim())
+          ? rawBatch.trim()
+          : `Lote ${rawBatch.trim()}`;
+
         return {
           rollId: roll.id,
           rollNumber: roll.rollNumber,
@@ -871,7 +886,7 @@ export class ProductionController {
           machineName,
           createdAt: roll.createdAt,
           updatedAt: roll.updatedAt,
-          message: `El Lote ${batchNumber} del proveedor ${supplierName} tiene el Rollo N° ${roll.rollNumber} listo para aprobar.`,
+          message: `El ${batchDisplay} del proveedor ${supplierName} tiene el Rollo N° ${roll.rollNumber} listo para aprobar.`,
         };
       });
 

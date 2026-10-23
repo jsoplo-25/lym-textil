@@ -87,16 +87,31 @@ export function getRoleDisplayName(
  * - Custom and other roles check their dynamic permissions array.
  */
 export function hasPermission(
-  user?: { role?: string; permissions?: string[] } | null,
+  user?: { role?: string; roleName?: string; permissions?: string[] } | null,
   permission?: string
 ): boolean {
   if (!user || !permission) return false;
 
   const roleCode = String(user.role || '').toUpperCase().trim();
-  if (roleCode === 'ADMINISTRADOR') {
+  const roleName = String(user.roleName || '').toUpperCase().trim();
+
+  // 1. Administrador siempre tiene todas las facultades
+  if (roleCode === 'ADMINISTRADOR' || roleName === 'ADMINISTRADOR DEL SISTEMA') {
     return true;
   }
-  if (roleCode === 'ASISTENTE_ADMINISTRATIVO' && permission === 'production:approve') {
+
+  // 2. Asistente Administrativo tiene permisos de aprobación y lectura de producción/dashboard
+  const isAssistant =
+    roleCode === 'ASISTENTE_ADMINISTRATIVO' ||
+    roleName === 'ASISTENTE ADMINISTRATIVO';
+
+  if (
+    isAssistant &&
+    (permission === 'production:approve' ||
+      permission === 'production:read' ||
+      permission === 'dashboard:view' ||
+      permission === 'profile:view')
+  ) {
     return true;
   }
 

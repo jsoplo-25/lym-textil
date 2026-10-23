@@ -10,6 +10,7 @@ import { AdminDashboardView } from '../components/AdminDashboardView';
 import { AssistantDashboardView } from '../components/AssistantDashboardView';
 import { WeaverDashboardView } from '../components/WeaverDashboardView';
 import { Card } from '../../../shared/ui/Card';
+import { hasPermission } from '../../../shared/lib/roles';
 
 export const DashboardPage: React.FC = () => {
   const sessionUser = useSelector((state: RootState) => state.session.user);
@@ -35,10 +36,22 @@ export const DashboardPage: React.FC = () => {
   };
 
   const roleCode = String(sessionUser?.role || 'OPERATOR').toUpperCase().trim();
+  const roleName = String(sessionUser?.roleName || '').toUpperCase().trim();
+  const canApprove = hasPermission(sessionUser, 'production:approve');
 
   // Determinación de la vista según el rol del usuario
-  const isAdmin = roleCode === 'ADMINISTRADOR' || sessionUser?.permissions?.includes('users:read');
-  const isAssistant = roleCode === 'ASISTENTE_ADMINISTRATIVO';
+  const isAdmin =
+    roleCode === 'ADMINISTRADOR' ||
+    roleName === 'ADMINISTRADOR DEL SISTEMA' ||
+    roleName === 'ADMINISTRADOR' ||
+    (Boolean(sessionUser?.permissions?.includes('users:read')) &&
+      Boolean(sessionUser?.permissions?.includes('roles:read')));
+
+  const isAssistant =
+    !isAdmin &&
+    (roleCode === 'ASISTENTE_ADMINISTRATIVO' ||
+      roleName === 'ASISTENTE ADMINISTRATIVO');
+
   const isWeaver = !isAdmin && !isAssistant; // TEJEDOR, OPERATOR o rol de planta
 
   const todayFormatted = new Date().toLocaleDateString('es-PE', {

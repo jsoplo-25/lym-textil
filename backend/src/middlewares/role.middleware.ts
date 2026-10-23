@@ -38,8 +38,22 @@ export const requirePermission = (...requiredPermissions: string[]) => {
     }
 
     const userRole = String(req.user.role).toUpperCase();
+    const roleName = String(req.user.roleName || '').toUpperCase();
+
     // Administrador siempre tiene todas las facultades
-    if (userRole === 'ADMINISTRADOR') {
+    if (userRole === 'ADMINISTRADOR' || roleName === 'ADMINISTRADOR DEL SISTEMA') {
+      next();
+      return;
+    }
+
+    // Asistente Administrativo tiene facultad nativa de aprobar y consultar producción y dashboard
+    const isAssistant = userRole === 'ASISTENTE_ADMINISTRATIVO' || roleName === 'ASISTENTE ADMINISTRATIVO';
+    if (
+      isAssistant &&
+      requiredPermissions.every((p) =>
+        ['production:approve', 'production:read', 'dashboard:view', 'profile:view'].includes(p)
+      )
+    ) {
       next();
       return;
     }
