@@ -261,7 +261,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
@@ -273,7 +273,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+            className="px-5 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>{isLoading ? (editingSupplier ? 'Actualizando...' : 'Creando...') : editingSupplier ? 'Guardar Cambios' : 'Crear Proveedor'}</span>

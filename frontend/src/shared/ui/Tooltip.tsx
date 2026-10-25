@@ -94,7 +94,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
             role="tooltip"
             style={{ position: 'fixed', top: coords.top, left: coords.left }}
             className={cn(
-              'z-9999 whitespace-nowrap rounded-xl bg-slate-900 dark:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-xl pointer-events-none animate-fadeIn',
+              'z-9999 w-max max-w-[calc(100vw-1.5rem)] break-words rounded-xl bg-slate-900 dark:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white shadow-xl pointer-events-none animate-fadeIn',
               translateStyles[position]
             )}
           >

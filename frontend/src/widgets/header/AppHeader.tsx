@@ -315,9 +315,9 @@ export const AppHeader: React.FC = () => {
 
   return (
     <>
-      <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 py-4">
+      <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 md:py-4">
         {/* Left Side: Greeting (Inicio) or lightweight breadcrumb (otros módulos) */}
-        <div>
+        <div className="min-w-0">
           {isHome ? (
             <>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -349,7 +349,7 @@ export const AppHeader: React.FC = () => {
               </p>
             </>
           ) : (
-            <nav aria-label="Migaja de pan" className="flex items-center gap-1.5 text-xs font-semibold">
+            <nav aria-label="Migaja de pan" className="flex items-center flex-wrap gap-1.5 text-xs font-semibold">
               <button
                 onClick={() => navigate('/dashboard')}
                 className="flex items-center gap-1.5 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
@@ -382,18 +382,20 @@ export const AppHeader: React.FC = () => {
         </div>
 
         {/* Right Side: Controls & Profile */}
-        <div className="flex items-center gap-3 md:gap-4 self-end md:self-center">
+        <div className="fixed top-0 inset-x-0 z-30 h-[72px] pl-20 pr-4 justify-end bg-[#F6F8FB]/85 dark:bg-[#0F1522]/85 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 md:static md:z-auto md:h-auto md:p-0 md:bg-transparent md:dark:bg-transparent md:backdrop-blur-none md:border-0 md:self-center flex items-center gap-2.5 sm:gap-3 md:gap-4">
           {/* Light/Dark Mode Switcher Pill */}
-          <ThemeToggle />
+          <div className={isSearchOpen ? 'max-sm:hidden' : undefined}>
+            <ThemeToggle />
+          </div>
 
           {/* Interactive Expandable Search Bar */}
-          <div className="relative" ref={searchContainerRef}>
+          <div className={`relative ${isSearchOpen ? 'max-sm:flex-1' : ''}`} ref={searchContainerRef}>
             {isSearchOpen ? (
               <form
                 onSubmit={handleSearchSubmit}
-                className="relative flex items-center animate-fadeIn"
+                className="relative flex items-center animate-fadeIn max-sm:w-full"
               >
-                <div className="relative flex items-center">
+                <div className="relative flex items-center max-sm:w-full">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
                   <input
                     ref={searchInputRef}
@@ -401,7 +403,7 @@ export const AppHeader: React.FC = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Buscar módulos, usuarios..."
-                    className="w-56 sm:w-72 md:w-80 pl-10 pr-9 py-2 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-primary-500/40 dark:border-primary-500/40 text-slate-900 dark:text-white shadow-lg shadow-primary-500/5 focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all"
+                    className="max-sm:w-full w-72 md:w-80 pl-10 pr-9 py-2 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-primary-500/40 dark:border-primary-500/40 text-slate-900 dark:text-white shadow-lg shadow-primary-500/5 focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all"
                   />
                   {searchQuery ? (
                     <button
@@ -423,7 +425,7 @@ export const AppHeader: React.FC = () => {
                 </div>
 
                 {/* Live Suggestions Dropdown */}
-                <div className="absolute top-full right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-50 animate-fadeIn">
+                <div className="fixed sm:absolute inset-x-4 sm:inset-x-auto sm:top-full sm:right-0 mt-2 sm:w-80 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-50 animate-fadeIn">
                   <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 mb-1">
                     <span>Navegación Rápida</span>
                     <span className="text-[9px] font-normal lowercase">Esc para cerrar</span>
@@ -478,7 +480,7 @@ export const AppHeader: React.FC = () => {
 
           {/* Notifications Bell for Approvers */}
           {canApprove && (
-            <div className="relative" ref={notifRef}>
+            <div className={`relative ${isSearchOpen ? 'max-sm:hidden' : ''}`} ref={notifRef}>
               <Tooltip content="Notificaciones de aprobación" position="bottom">
                 <button
                   type="button"
@@ -497,7 +499,7 @@ export const AppHeader: React.FC = () => {
 
               {/* Notification Popover Dropdown */}
               {isNotifOpen && (
-                <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-3 z-50 animate-fadeIn">
+                <div className="fixed sm:absolute inset-x-4 sm:inset-x-auto sm:right-0 mt-3 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-3 z-50 animate-fadeIn">
                   {/* Header */}
                   <div className="px-4 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -603,7 +605,7 @@ export const AppHeader: React.FC = () => {
           )}
 
           {/* User Profile Avatar with Dropdown */}
-          <div className="relative" ref={dropdownRef}>
+          <div className={`relative ${isSearchOpen ? 'max-sm:hidden' : ''}`} ref={dropdownRef}>
             <Tooltip content="Menú de usuario" position="bottom">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -622,7 +624,7 @@ export const AppHeader: React.FC = () => {
 
             {/* Profile Dropdown Menu */}
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-3 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-50 animate-fadeIn">
+              <div className="absolute right-0 mt-3 w-64 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-50 animate-fadeIn">
                 <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
                   <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
                     {user?.firstName ? `${user.firstName} ${user?.lastName || ''}`.trim() : user?.name || ''}

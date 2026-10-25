@@ -220,16 +220,18 @@ export const SidebarNavigation: React.FC = () => {
       </button>
 
       {/* 3. Mobile Slide-Over Drawer (Icon + Text Label style) */}
-      {isMobileOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
+      <div
+        className={`md:hidden fixed inset-0 z-50 flex transition-[visibility] duration-300 ${isMobileOpen ? 'visible' : 'invisible'}`}
+        aria-hidden={!isMobileOpen}
+      >
           {/* Backdrop Overlay */}
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+            className={`fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 ${isMobileOpen ? 'opacity-100' : 'opacity-0'}`}
             onClick={() => setIsMobileOpen(false)}
           />
 
           {/* Drawer Drawer Container */}
-          <div className="relative z-50 w-72 max-w-[80vw] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-slate-800 h-full p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-300">
+          <div className={`relative z-50 w-72 max-w-[80vw] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-slate-800 h-full p-6 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-out ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             {/* Header: Logo & Close Button */}
             <div className="overflow-y-auto">
               <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800">
@@ -364,8 +366,7 @@ export const SidebarNavigation: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </div>
 
       {/* Logout Confirmation Modal */}
       <LogoutConfirmModal

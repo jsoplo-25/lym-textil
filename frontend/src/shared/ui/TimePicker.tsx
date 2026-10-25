@@ -179,8 +179,8 @@ export const TimePicker: React.FC<TimePickerProps> = ({
       {isOpen && (
         <div
           className={cn(
-            'absolute top-full mt-2 z-[110] w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-3.5 animate-in fade-in duration-150 select-none',
-            align === 'right' ? 'right-0' : 'left-0'
+            'fixed inset-x-4 mx-auto max-w-64 sm:absolute sm:inset-x-auto sm:mx-0 sm:top-full mt-2 z-[110] sm:w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-3.5 animate-in fade-in duration-150 select-none',
+            align === 'right' ? 'sm:right-0' : 'sm:left-0'
           )}
         >
           {/* Header Display */}

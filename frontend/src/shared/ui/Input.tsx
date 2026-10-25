@@ -41,7 +41,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-0.5"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer flex items-center justify-center p-1.5 -m-1"
             tabIndex={-1}
             aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
           >

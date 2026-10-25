@@ -25,7 +25,7 @@ export const ToastContainer: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   return (
-    <div className="fixed bottom-6 right-6 z-[200] flex flex-col items-end gap-2.5 pointer-events-none">
+    <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:bottom-6 sm:right-6 z-[200] flex flex-col items-end gap-2.5 pointer-events-none">
       {items.map((item) => (
         <ToastItemView
           key={item.id}
@@ -54,12 +54,12 @@ const ToastItemView: React.FC<{ variant: AlertVariant; message: string; onDismis
   return (
     <div
       className={cn(
-        'pointer-events-auto flex items-center gap-2 p-4 rounded-2xl text-white text-xs font-bold shadow-2xl animate-fadeIn max-w-sm',
+        'pointer-events-auto flex items-center gap-2 p-4 rounded-2xl text-white text-xs font-bold shadow-2xl animate-fadeIn w-full sm:w-auto max-w-sm',
         container
       )}
     >
       <Icon className="w-4 h-4 shrink-0" />
-      <span className="flex-1">{message}</span>
+      <span className="flex-1 min-w-0 break-words">{message}</span>
       <button
         onClick={onDismiss}
         aria-label="Cerrar notificación"

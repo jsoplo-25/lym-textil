@@ -212,7 +212,7 @@ export const MachinesPage: React.FC = () => {
       />
 
       {/* 2. KPI / Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* Total Máquinas */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
@@ -291,7 +291,7 @@ export const MachinesPage: React.FC = () => {
       {/* 3. Search and Filters Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
         {/* Search input */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <Search className="w-4 h-4" />
           </div>
@@ -305,9 +305,9 @@ export const MachinesPage: React.FC = () => {
         </div>
 
         {/* Dropdowns Filters */}
-        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           {/* Status filter */}
-          <div className="w-48">
+          <div className="w-full sm:w-44 lg:w-48">
             <Select
               options={STATUS_FILTERS}
               value={selectedStatus}
@@ -317,7 +317,7 @@ export const MachinesPage: React.FC = () => {
           </div>
 
           {/* Type/Process filter */}
-          <div className="w-48">
+          <div className="w-full sm:w-44 lg:w-48">
             <Select
               options={TYPE_FILTERS}
               value={selectedType}
@@ -330,7 +330,7 @@ export const MachinesPage: React.FC = () => {
           <button
             onClick={loadMachines}
             title="Actualizar lista"
-            className="p-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            className="p-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 self-end sm:self-auto"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -339,13 +339,13 @@ export const MachinesPage: React.FC = () => {
 
       {/* 4. Table / Cards View */}
       {isLoading && machines.length === 0 ? (
-        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl p-6 space-y-4">
+        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl p-4 sm:p-6 space-y-4">
           <Skeleton className="h-12 w-full rounded-xl" />
           <Skeleton className="h-12 w-full rounded-xl" />
           <Skeleton className="h-12 w-full rounded-xl" />
         </div>
       ) : machines.length === 0 ? (
-        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl p-12 text-center flex flex-col items-center justify-center space-y-3">
+        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-3">
           <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
             <Cog className="w-8 h-8" />
           </div>
@@ -384,8 +384,8 @@ export const MachinesPage: React.FC = () => {
                 <Tr key={machine.id}>
                   {/* Código y Nombre */}
                   <Td>
-                    <div className="flex items-center gap-3">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-mono font-extrabold text-[11px] shadow-xs">
+                    <div className="flex items-center gap-3 min-w-[10rem]">
+                      <span className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-mono font-extrabold text-[11px] shadow-xs">
                         {machine.code}
                       </span>
                       <div>
@@ -447,7 +447,7 @@ export const MachinesPage: React.FC = () => {
                   <Td>{renderStatusBadge(machine.status)}</Td>
 
                   {/* Observaciones / Notas */}
-                  <Td className="max-w-xs">
+                  <Td className="max-w-[10rem] sm:max-w-xs">
                     {machine.notes ? (
                       <Tooltip content={machine.notes}>
                         <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 truncate cursor-help">
@@ -468,7 +468,7 @@ export const MachinesPage: React.FC = () => {
                           <Tooltip content="Editar máquina">
                             <button
                               onClick={() => handleOpenEdit(machine)}
-                              className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
+                              className="p-2.5 sm:p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
@@ -478,7 +478,7 @@ export const MachinesPage: React.FC = () => {
                           <Tooltip content="Dar de baja máquina">
                             <button
                               onClick={() => handleOpenDelete(machine)}
-                              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                              className="p-2.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

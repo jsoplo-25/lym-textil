@@ -166,7 +166,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
         {/* Columna Izquierda: Mesa de Aprobación Inmediata (3 columnas) */}
         <div className="lg:col-span-3 space-y-6">
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent-500" />
@@ -205,7 +205,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                     key={roll.rollId}
                     className="p-4 rounded-2xl bg-accent-50/60 dark:bg-accent-950/20 border border-accent-200/80 dark:border-accent-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-accent-400 transition-all"
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-sm font-black text-accent-800 dark:text-accent-200">
                           Rollo #{roll.rollNumber}
@@ -245,7 +245,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                         type="button"
                         disabled={approvingRollId === roll.rollId}
                         onClick={() => onApproveRoll(roll.rollId, roll.rollNumber)}
-                        className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-all shadow-md shadow-primary-600/20 shrink-0 flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-all shadow-md shadow-primary-600/20 shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         {approvingRollId === roll.rollId ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -263,7 +263,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
 
           {/* Lotes de Producción en Curso */}
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <Factory className="w-5 h-5 text-blue-500" />
@@ -289,15 +289,15 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                   className="block p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 hover:bg-primary-500/5 hover:border-primary-500/20 border border-transparent transition-all group"
                 >
                   <div className="flex items-center justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <span className="font-mono text-xs font-black px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300">
                         {batch.batchNumber}
                       </span>
-                      <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-xs sm:max-w-sm">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white truncate min-w-0 max-w-[10rem] min-[400px]:max-w-[14rem] sm:max-w-sm">
                         {batch.supplierName || 'Cliente General'}
                       </span>
                     </div>
-                    <span className="font-mono text-xs font-black text-primary-600 dark:text-primary-400">
+                    <span className="font-mono text-xs font-black text-primary-600 dark:text-primary-400 shrink-0">
                       {batch.progressPercent}%
                     </span>
                   </div>
@@ -309,7 +309,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 text-[11px] text-slate-400">
                     <span>
                       {batch.deliveredRolls} de {batch.totalRolls} rollos entregados
                     </span>
@@ -328,7 +328,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
         {/* Columna Derecha: Rollos Listos para Recojo y Proveedores (2 columnas) */}
         <div className="lg:col-span-2 space-y-6">
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <PackageCheck className="w-5 h-5 text-primary-500" />
@@ -367,7 +367,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                     className="p-3 rounded-2xl bg-primary-50/50 dark:bg-primary-950/20 border border-primary-500/20 flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-xs font-black text-primary-800 dark:text-primary-200">
                           Rollo #{roll.rollNumber}
                         </span>
@@ -402,24 +402,24 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
             <div className="space-y-2">
               <NavLink
                 to="/production"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
+                className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
               >
                 <span>Gestión de Sábanas de Producción</span>
-                <ArrowUpRight className="w-4 h-4 text-primary-500" />
+                <ArrowUpRight className="w-4 h-4 text-primary-500 shrink-0" />
               </NavLink>
               <NavLink
                 to="/suppliers"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
+                className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
               >
                 <span>Directorio de Clientes / Proveedores</span>
-                <ArrowUpRight className="w-4 h-4 text-primary-500" />
+                <ArrowUpRight className="w-4 h-4 text-primary-500 shrink-0" />
               </NavLink>
               <NavLink
                 to="/machines"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
+                className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
               >
                 <span>Control de Maquinarias Textil</span>
-                <ArrowUpRight className="w-4 h-4 text-primary-500" />
+                <ArrowUpRight className="w-4 h-4 text-primary-500 shrink-0" />
               </NavLink>
             </div>
           </Card>

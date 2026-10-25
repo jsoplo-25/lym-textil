@@ -586,16 +586,16 @@ export const ProductionDetailPage: React.FC = () => {
       </div>
 
       {/* 2. Sábana Header Sheet Card */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
+      <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
         {/* Cabecera Principal y KPIs */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 border-b border-slate-100 dark:border-slate-800 pb-5">
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="text-xs font-bold uppercase tracking-widest text-primary-600 dark:text-primary-400">
                 Producción Textil • Sábana de Control
               </span>
               {batch.trackingCode && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono text-xs font-black px-2.5 py-1 rounded-lg bg-primary-500/10 text-primary-700 dark:text-primary-300 border border-primary-500/20 flex items-center gap-1.5">
                     <span className="text-slate-400 font-sans font-normal">Cód. Seguimiento:</span>
                     <strong>{batch.trackingCode}</strong>
@@ -616,7 +616,7 @@ export const ProductionDetailPage: React.FC = () => {
               )}
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center flex-wrap gap-x-3 break-all min-w-0">
               <span>LOTE:</span>
               <span className="text-primary-600 dark:text-primary-400 font-mono">{batch.batchNumber}</span>
             </h1>
@@ -862,8 +862,8 @@ export const ProductionDetailPage: React.FC = () => {
 
       {/* 3. Quick Roll Add Form (Barra rápida de ingreso) */}
       {canCreate && (
-        <div className="relative z-20 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm print:hidden space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+        <div className="relative z-20 p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm print:hidden space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold">
                 <Plus className="w-3.5 h-3.5 stroke-[3]" />
@@ -1016,7 +1016,7 @@ export const ProductionDetailPage: React.FC = () => {
           className="relative z-10"
           maxBodyHeight="880px"
           footer={
-            <div className="bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs font-bold text-slate-700 dark:text-slate-200">
+            <div className="bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs font-bold text-slate-700 dark:text-slate-200">
               <span className="uppercase tracking-wider">Total Acumulado ({totalRolls} rollos):</span>
               <span className="font-mono text-primary-600 dark:text-primary-400 text-sm">
                 {totalWeight.toFixed(2)} Kg
@@ -1057,7 +1057,7 @@ export const ProductionDetailPage: React.FC = () => {
                   <Td className="min-w-[220px]">
                     <div className="flex items-center gap-2">
                       <Tooltip content={getRollSelectTooltip(roll)}>
-                        <div className="w-44 relative">
+                        <div className="w-40 sm:w-44 relative">
                           <Select
                             options={getRollAvailableOptions(roll)}
                             value={roll.status || 'REGISTERED'}

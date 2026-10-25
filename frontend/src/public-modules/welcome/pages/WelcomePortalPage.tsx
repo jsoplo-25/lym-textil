@@ -178,26 +178,26 @@ export const WelcomePortalPage: React.FC = () => {
 
       {/* 1. Header Superior con Selector de Tema y Acceso Interno */}
       <header className="border-b border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-950/60 backdrop-blur-xl sticky top-0 z-40 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-          <Link to="/" onClick={handleClearSearch} className="flex items-center gap-3.5 group cursor-pointer">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 min-h-20 py-3 flex items-center justify-between gap-3">
+          <Link to="/" onClick={handleClearSearch} className="flex items-center gap-3 sm:gap-3.5 group cursor-pointer min-w-0">
             <Logo size="md" className="group-hover:scale-105 transition-transform shrink-0" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black tracking-tight text-lg text-slate-900 dark:text-white">
+            <div className="min-w-0">
+              <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
+                <span className="font-black tracking-tight text-base sm:text-lg text-slate-900 dark:text-white">
                   TEXTIL L&amp;M
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-primary-500/10 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 text-[10px] font-extrabold uppercase tracking-wider border border-primary-500/20 dark:border-primary-500/30">
                   Planta Textil
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 font-medium">
                 Control de Producción y Tejeduría Circular
               </p>
             </div>
           </Link>
 
           {/* Acciones de la Cabecera: Toggle de Tema + Acceso Interno */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Botón de Modo Claro / Oscuro para el portal */}
             <button
               type="button"
@@ -221,19 +221,21 @@ export const WelcomePortalPage: React.FC = () => {
                 rel="noopener noreferrer"
                 className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-extrabold text-xs transition-all flex items-center gap-2 shadow-md shadow-primary-600/20"
               >
-                <span>Ir al Panel ({sessionUser?.name?.split(' ')[0] || 'Usuario'})</span>
+                <span className="hidden sm:inline">Ir al Panel ({sessionUser?.name?.split(' ')[0] || 'Usuario'})</span>
+                <span className="sm:hidden">Panel</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             ) : (
               <Link
                 to="/login"
+                aria-label="Acceso Interno"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/15 text-slate-800 dark:text-white font-bold text-xs transition-all border border-slate-200 dark:border-white/15 flex items-center gap-2 shadow-xs"
               >
                 <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <span>Acceso Interno</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                <span className="hidden min-[420px]:inline">Acceso Interno</span>
+                <ChevronRight className="hidden min-[420px]:block w-3.5 h-3.5 text-slate-400" />
               </Link>
             )}
           </div>
@@ -259,8 +261,8 @@ export const WelcomePortalPage: React.FC = () => {
 
           {/* Buscador Central Directo */}
           <form onSubmit={handleSearchSubmit} className="relative max-w-xl mx-auto pt-3">
-            <div className="relative flex items-center shadow-xl dark:shadow-2xl rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/90 backdrop-blur-md focus-within:ring-2 focus-within:ring-primary-500/30 focus-within:border-primary-500 transition-all">
-              <div className="pl-4 text-slate-400 pointer-events-none">
+            <div className="relative flex flex-col sm:flex-row sm:items-center shadow-xl dark:shadow-2xl rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/90 backdrop-blur-md focus-within:ring-2 focus-within:ring-primary-500/30 focus-within:border-primary-500 transition-all">
+              <div className="absolute left-4 top-[1.15rem] sm:static sm:pl-4 text-slate-400 pointer-events-none">
                 <Search className="w-5 h-5" />
               </div>
               <input
@@ -268,7 +270,7 @@ export const WelcomePortalPage: React.FC = () => {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Ingresa Código (ej. TRK-8F3A2B) o N° de Lote"
-                className="w-full px-3.5 py-4 bg-transparent text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none uppercase font-mono tracking-wider"
+                className="w-full min-w-0 pl-12 pr-3.5 sm:px-3.5 py-4 bg-transparent text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none uppercase font-mono tracking-wider"
               />
               {searchInput && (
                 <button
@@ -283,7 +285,7 @@ export const WelcomePortalPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading || !searchInput.trim()}
-                className="mr-1.5 px-6 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 active:scale-95 text-white font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-600/25 shrink-0"
+                className="m-1.5 sm:ml-0 sm:mr-1.5 px-6 py-3 rounded-xl justify-center bg-primary-600 hover:bg-primary-500 active:scale-95 text-white font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-600/25 shrink-0"
               >
                 {isLoading ? (
                   <span>Consultando...</span>
@@ -344,9 +346,9 @@ export const WelcomePortalPage: React.FC = () => {
         {trackingData && (
           <div className="space-y-6 animate-fadeIn">
             {/* Tarjeta Principal de Identificación */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-2xl backdrop-blur-md space-y-6 transition-colors">
+            <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-2xl backdrop-blur-md space-y-6 transition-colors">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <span className="font-mono text-xs font-black px-3 py-1 rounded-xl bg-primary-500/10 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 border border-primary-500/20 dark:border-primary-500/30">
                       CÓDIGO: {trackingData.trackingCode}
@@ -355,13 +357,13 @@ export const WelcomePortalPage: React.FC = () => {
                       LOTE: {trackingData.batchNumber}
                     </span>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2 flex items-center gap-2.5">
-                    <Building2 className="w-7 h-7 text-primary-600 dark:text-primary-400" />
-                    <span>{trackingData.supplierName}</span>
+                  <h2 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2 flex items-center gap-2.5">
+                    <Building2 className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 text-primary-600 dark:text-primary-400" />
+                    <span className="min-w-0 break-words">{trackingData.supplierName}</span>
                   </h2>
                 </div>
 
-                <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                   <button
                     onClick={handleCopyLink}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
@@ -388,7 +390,7 @@ export const WelcomePortalPage: React.FC = () => {
                     <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0">
                       <Bell className="w-6 h-6 animate-bounce" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h4 className="text-base font-black">
                         ¡Tienes {trackingData.counts.readyForPickup} {trackingData.counts.readyForPickup === 1 ? 'rollo listo' : 'rollos listos'} para recoger!
                       </h4>
@@ -405,7 +407,7 @@ export const WelcomePortalPage: React.FC = () => {
 
               {/* Barra de Progreso General */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold">
+                <div className="flex items-center justify-between gap-3 text-xs font-bold">
                   <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Avance de Preparación / Entrega
                   </span>
@@ -423,7 +425,7 @@ export const WelcomePortalPage: React.FC = () => {
 
               {/* 4 Métricas de Estado de Rollos */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
+                <div className="p-3 sm:p-4 min-w-0 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     1. Registrados
                   </span>
@@ -433,7 +435,7 @@ export const WelcomePortalPage: React.FC = () => {
                   <p className="text-[10px] text-slate-400">Ingresados en sistema</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-accent-500/10 border border-accent-500/20 dark:border-accent-500/30 space-y-1">
+                <div className="p-3 sm:p-4 min-w-0 rounded-2xl bg-accent-500/10 border border-accent-500/20 dark:border-accent-500/30 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-accent-700 dark:text-accent-300">
                     2. En Preparación
                   </span>
@@ -443,7 +445,7 @@ export const WelcomePortalPage: React.FC = () => {
                   <p className="text-[10px] text-accent-600 dark:text-accent-400/80">En proceso de tejido</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-primary-500/10 dark:bg-primary-500/15 border border-primary-500/25 dark:border-primary-500/40 space-y-1">
+                <div className="p-3 sm:p-4 min-w-0 rounded-2xl bg-primary-500/10 dark:bg-primary-500/15 border border-primary-500/25 dark:border-primary-500/40 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-primary-700 dark:text-primary-300">
                     3. Listos para Recojo
                   </span>
@@ -453,7 +455,7 @@ export const WelcomePortalPage: React.FC = () => {
                   <p className="text-[10px] text-primary-600 dark:text-primary-400/80">Disponibles en planta</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 dark:border-purple-500/30 space-y-1">
+                <div className="p-3 sm:p-4 min-w-0 rounded-2xl bg-purple-500/10 border border-purple-500/20 dark:border-purple-500/30 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
                     4. Entregados
                   </span>
@@ -482,8 +484,8 @@ export const WelcomePortalPage: React.FC = () => {
             </div>
 
             {/* Tabla Oficial de Detalle de Rollos */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-2xl backdrop-blur-md space-y-4 transition-colors">
-              <div className="flex items-center justify-between">
+            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-2xl backdrop-blur-md space-y-4 transition-colors">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="text-lg font-black text-slate-900 dark:text-white">
                     Detalle de Rollos del Pedido
@@ -503,7 +505,7 @@ export const WelcomePortalPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full min-w-[640px] text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40">
                         <th className="py-3 px-4">Rollo</th>
@@ -539,13 +541,13 @@ export const WelcomePortalPage: React.FC = () => {
                               <span className="text-slate-400 dark:text-slate-500 italic">-</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400">
+                          <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             {roll.startDate ? `${roll.startDate} ${roll.startTime || ''}`.trim() : '-'}
                           </td>
-                          <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400">
+                          <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             {roll.endDate ? `${roll.endDate} ${roll.endTime || ''}`.trim() : '-'}
                           </td>
-                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400 min-w-40 break-words">
                             {roll.observations || '-'}
                           </td>
                         </tr>

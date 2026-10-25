@@ -111,7 +111,7 @@ export const CookiesInfoModal: React.FC<CookiesInfoModalProps> = ({ isOpen, onCl
                   <span className="font-mono font-bold text-xs text-primary-700 dark:text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded border border-primary-500/20">
                     {cookie.name}
                   </span>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500 dark:text-slate-400">
                     <span className="font-medium">{cookie.type}</span>
                     <span>&bull;</span>
                     <span>{cookie.duration}</span>
@@ -126,7 +126,7 @@ export const CookiesInfoModal: React.FC<CookiesInfoModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Modal Footer */}
-        <div className="pt-2 flex items-center justify-end">
+        <div className="pt-2 flex items-center justify-end [&>button]:w-full sm:[&>button]:w-auto">
           <Button
             type="button"
             variant="secondary"

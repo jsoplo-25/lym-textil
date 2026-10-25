@@ -352,8 +352,8 @@ export const ProductionBatchesPage: React.FC = () => {
         </div>
 
         {/* Dropdowns */}
-        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-          <div className="w-44">
+        <div className="flex items-center gap-2.5 flex-wrap lg:flex-nowrap">
+          <div className="w-full sm:w-44">
             <Select
               options={supplierOptions.length > 0 ? supplierOptions : [{ value: 'ALL', label: 'Todos los proveedores' }]}
               value={selectedSupplier}
@@ -362,7 +362,7 @@ export const ProductionBatchesPage: React.FC = () => {
             />
           </div>
 
-          <div className="w-44">
+          <div className="w-full sm:w-44">
             <Select
               options={machineOptions.length > 0 ? machineOptions : [{ value: 'ALL', label: 'Todas las máquinas' }]}
               value={selectedMachine}
@@ -371,7 +371,7 @@ export const ProductionBatchesPage: React.FC = () => {
             />
           </div>
 
-          <div className="w-44">
+          <div className="w-full sm:w-44">
             <Select
               options={STATUS_FILTERS}
               value={selectedStatus}
@@ -393,7 +393,7 @@ export const ProductionBatchesPage: React.FC = () => {
       {/* 4. Table of Batches */}
       <TableContainer>
         {isLoading && batches.length === 0 ? (
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <Skeleton className="h-12 w-full rounded-xl" />
             <Skeleton className="h-12 w-full rounded-xl" />
             <Skeleton className="h-12 w-full rounded-xl" />

@@ -22,14 +22,14 @@ export const Card: React.FC<CardProps> = ({
   const paddingStyles = {
     none: 'p-0',
     sm: 'p-4',
-    md: 'p-6',
-    lg: 'p-8',
+    md: 'p-4 sm:p-6',
+    lg: 'p-4 sm:p-8',
   };
 
   return (
     <div
       className={cn(
-        'rounded-3xl transition-all duration-300',
+        'rounded-3xl min-w-0 transition-all duration-300',
         variantStyles[variant],
         paddingStyles[padding],
         className
