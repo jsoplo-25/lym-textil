@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --primary: #C2EF51;
+    --primary: #3B87CB;
     --secondary: oklch(20.8% 0.042 265.755);
   }
 
@@ -23,7 +23,30 @@
   --font-heading: 'Inter', sans-serif;
   --font-title: 'Inter', sans-serif;
 
-  --color-primary: #C2EF51;
+  --color-primary: #3B87CB;
+  --color-primary-50: #EFF6FC;
+  --color-primary-100: #DCEBF8;
+  --color-primary-200: #BBD8F1;
+  --color-primary-300: #8DBDE6;
+  --color-primary-400: #5A9DD8;
+  --color-primary-500: #3B87CB;
+  --color-primary-600: #2C6DAA;
+  --color-primary-700: #255888;
+  --color-primary-800: #214A70;
+  --color-primary-900: #1F3E5C;
+  --color-primary-950: #11263B;
+
+  --color-accent-50: #FDF8EC;
+  --color-accent-100: #FAEFCF;
+  --color-accent-200: #F4DC9F;
+  --color-accent-300: #EDC56B;
+  --color-accent-400: #E7B24A;
+  --color-accent-500: #E0A030;
+  --color-accent-600: #C28121;
+  --color-accent-700: #9F611D;
+  --color-accent-800: #824E1F;
+  --color-accent-900: #6C411D;
+  --color-accent-950: #3E210C;
   --color-secondary: oklch(20.8% 0.042 265.755);
 
   --color-brand-lime: #C2EF51;

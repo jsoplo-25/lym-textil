@@ -7,9 +7,9 @@ export type ModalIconVariant = 'emerald' | 'red' | 'amber' | 'slate';
 
 /** Estilos del badge de ícono, reutilizados también por ConfirmModal. */
 export const MODAL_ICON_VARIANT_STYLES: Record<ModalIconVariant, string> = {
-  emerald: 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
+  emerald: 'bg-primary-500/10 dark:bg-primary-500/15 text-primary-600 dark:text-primary-400 border border-primary-500/20',
   red: 'bg-red-500/10 dark:bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/20',
-  amber: 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30',
+  amber: 'bg-accent-500/10 dark:bg-accent-500/20 text-accent-500 dark:text-accent-400 border border-accent-500/30',
   slate: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20',
 };
 
@@ -101,7 +101,7 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Animated Loading Bar at top edge */}
         {isLoading && (
           <div className="absolute top-0 left-0 right-0 h-1.5 overflow-hidden rounded-t-3xl bg-slate-100 dark:bg-slate-800 z-30">
-            <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+            <div className="h-full bg-primary-500 w-full animate-pulse" />
           </div>
         )}
 
@@ -109,7 +109,7 @@ export const Modal: React.FC<ModalProps> = ({
         {isLoading && (
           <div className="absolute inset-0 z-30 rounded-3xl bg-white/80 dark:bg-slate-900/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 animate-fadeIn transition-all">
             <div className="flex flex-col items-center gap-3 px-6 py-5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border border-slate-200/80 dark:border-slate-700/80 text-center animate-scaleIn">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-primary-500/10 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 flex items-center justify-center shadow-xs">
                 <Loader2 className="w-6 h-6 animate-spin" />
               </div>
               <div>

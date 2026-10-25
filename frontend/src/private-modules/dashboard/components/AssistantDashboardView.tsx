@@ -60,11 +60,11 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
   return (
     <div className="space-y-6">
       {/* 1. Buscador rápido y Atajo de Seguimiento */}
-      <Card variant="glass" padding="md" className="bg-gradient-to-r from-emerald-500/[0.07] to-blue-500/[0.07]">
+      <Card variant="glass" padding="md" className="bg-primary-500/[0.07]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-500" />
+              <Sparkles className="w-4 h-4 text-primary-500" />
               <span>Coordinación Operativa y Mesa de Despacho</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -82,12 +82,12 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                 value={searchTracking}
                 onChange={(e) => setSearchTracking(e.target.value)}
                 placeholder="N° Lote o Cód. Seguimiento..."
-                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 uppercase font-mono"
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 uppercase font-mono"
               />
             </div>
             <button
               type="submit"
-              className="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold hover:bg-emerald-600 dark:hover:bg-emerald-500 dark:hover:text-white transition-colors cursor-pointer shrink-0"
+              className="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold hover:bg-primary-600 dark:hover:bg-primary-500 dark:hover:text-white transition-colors cursor-pointer shrink-0"
             >
               Buscar
             </button>
@@ -108,13 +108,13 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
           icon={<CheckCircle2 className="w-6 h-6" />}
           iconBg={
             (stats?.rollsByStatus.readyForApproval ?? 0) > 0
-              ? 'bg-amber-500/20'
-              : 'bg-emerald-500/15'
+              ? 'bg-accent-500/20'
+              : 'bg-primary-500/15'
           }
           iconColor={
             (stats?.rollsByStatus.readyForApproval ?? 0) > 0
-              ? 'text-amber-600 dark:text-amber-400'
-              : 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-accent-600 dark:text-accent-400'
+              : 'text-primary-600 dark:text-primary-400'
           }
           badge={{
             text:
@@ -132,8 +132,8 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
           value={isLoading ? '-' : stats?.rollsByStatus.readyForPickup ?? 0}
           subtitle="Rollos aprobados para retiro del cliente"
           icon={<PackageCheck className="w-6 h-6" />}
-          iconBg="bg-emerald-500/15"
-          iconColor="text-emerald-600 dark:text-emerald-400"
+          iconBg="bg-primary-500/15"
+          iconColor="text-primary-600 dark:text-primary-400"
           badge={{ text: 'Para Entrega', variant: 'emerald' }}
           isLoading={isLoading}
         />
@@ -169,7 +169,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-amber-500" />
+                  <CheckCircle2 className="w-5 h-5 text-accent-500" />
                   <span>Mesa de Aprobación de Rollos</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -189,7 +189,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
               </div>
             ) : pendingApprovals.length === 0 ? (
               <div className="py-10 text-center">
-                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-2 opacity-80" />
+                <CheckCircle2 className="w-12 h-12 text-primary-500 mx-auto mb-2 opacity-80" />
                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
                   No hay rollos pendientes de aprobación
                 </p>
@@ -203,23 +203,23 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                 {pendingApprovals.map((roll) => (
                   <div
                     key={roll.rollId}
-                    className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-amber-400 transition-all"
+                    className="p-4 rounded-2xl bg-accent-50/60 dark:bg-accent-950/20 border border-accent-200/80 dark:border-accent-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-accent-400 transition-all"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-sm font-black text-amber-800 dark:text-amber-200">
+                        <span className="font-mono text-sm font-black text-accent-800 dark:text-accent-200">
                           Rollo #{roll.rollNumber}
                         </span>
                         <NavLink
                           to={`/production/${roll.batchId}`}
-                          className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:text-emerald-600 flex items-center gap-1"
+                          className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:text-primary-600 flex items-center gap-1"
                           title="Abrir sábana del lote"
                         >
                           <span>{roll.batchNumber}</span>
                           <ExternalLink className="w-3 h-3" />
                         </NavLink>
                         {roll.weight && (
-                          <span className="font-mono text-xs font-black text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded bg-emerald-500/10">
+                          <span className="font-mono text-xs font-black text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded bg-primary-500/10">
                             {roll.weight} kg
                           </span>
                         )}
@@ -245,7 +245,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                         type="button"
                         disabled={approvingRollId === roll.rollId}
                         onClick={() => onApproveRoll(roll.rollId, roll.rollNumber)}
-                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 shrink-0 flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-all shadow-md shadow-primary-600/20 shrink-0 flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         {approvingRollId === roll.rollId ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -275,7 +275,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
               </div>
               <NavLink
                 to="/production"
-                className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                className="flex items-center gap-1 text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline"
               >
                 Ver todos <ArrowUpRight className="w-3.5 h-3.5" />
               </NavLink>
@@ -286,7 +286,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                 <NavLink
                   key={batch.id}
                   to={`/production/${batch.id}`}
-                  className="block p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 hover:bg-emerald-500/5 hover:border-emerald-500/20 border border-transparent transition-all group"
+                  className="block p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 hover:bg-primary-500/5 hover:border-primary-500/20 border border-transparent transition-all group"
                 >
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2.5">
@@ -297,14 +297,14 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                         {batch.supplierName || 'Cliente General'}
                       </span>
                     </div>
-                    <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400">
+                    <span className="font-mono text-xs font-black text-primary-600 dark:text-primary-400">
                       {batch.progressPercent}%
                     </span>
                   </div>
 
                   <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mb-1.5">
                     <div
-                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                      className="h-full rounded-full bg-primary-500 transition-all duration-500"
                       style={{ width: `${batch.progressPercent}%` }}
                     />
                   </div>
@@ -331,7 +331,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
-                  <PackageCheck className="w-5 h-5 text-emerald-500" />
+                  <PackageCheck className="w-5 h-5 text-primary-500" />
                   <span>Listos para Recojo</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -364,11 +364,11 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                 {readyForPickupRolls.map((roll) => (
                   <div
                     key={roll.rollId}
-                    className="p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/20 flex items-center justify-between gap-3"
+                    className="p-3 rounded-2xl bg-primary-50/50 dark:bg-primary-950/20 border border-primary-500/20 flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-black text-emerald-800 dark:text-emerald-200">
+                        <span className="font-mono text-xs font-black text-primary-800 dark:text-primary-200">
                           Rollo #{roll.rollNumber}
                         </span>
                         <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
@@ -381,10 +381,10 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400 block">
+                      <span className="font-mono text-xs font-black text-primary-600 dark:text-primary-400 block">
                         {roll.weight ? `${roll.weight} kg` : '-'}
                       </span>
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                      <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase">
                         Listo
                       </span>
                     </div>
@@ -402,24 +402,24 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
             <div className="space-y-2">
               <NavLink
                 to="/production"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
               >
                 <span>Gestión de Sábanas de Producción</span>
-                <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                <ArrowUpRight className="w-4 h-4 text-primary-500" />
               </NavLink>
               <NavLink
                 to="/suppliers"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
               >
                 <span>Directorio de Clientes / Proveedores</span>
-                <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                <ArrowUpRight className="w-4 h-4 text-primary-500" />
               </NavLink>
               <NavLink
                 to="/machines"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-primary-500/10 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
               >
                 <span>Control de Maquinarias Textil</span>
-                <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                <ArrowUpRight className="w-4 h-4 text-primary-500" />
               </NavLink>
             </div>
           </Card>

@@ -214,14 +214,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         }}
         className={cn(
           'w-full bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl px-3.5 py-2.5 transition-all duration-200 flex items-center justify-between outline-none cursor-pointer select-none shadow-xs',
-          isOpen && 'ring-2 ring-emerald-500/20 border-emerald-500 dark:border-emerald-500',
+          isOpen && 'ring-2 ring-primary-500/20 border-primary-500 dark:border-primary-500',
           disabled && 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800',
           error && 'border-red-500 focus:border-red-500 text-red-900 dark:text-red-200'
         )}
       >
         <div className="flex items-center gap-2.5 truncate">
           <div className="text-slate-400 dark:text-slate-500 flex items-center justify-center shrink-0">
-            {leftIcon || <CalendarIcon className="w-4 h-4 text-emerald-500" />}
+            {leftIcon || <CalendarIcon className="w-4 h-4 text-primary-500" />}
           </div>
           <span
             className={cn(
@@ -271,7 +271,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
             <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white text-sm">
               <span>{MONTH_NAMES[viewMonth]}</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-mono">{viewYear}</span>
+              <span className="text-primary-600 dark:text-primary-400 font-mono">{viewYear}</span>
             </div>
 
             <button
@@ -330,14 +330,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                       ? 'opacity-30 cursor-not-allowed pointer-events-none'
                       : 'cursor-pointer',
                     selected
-                      ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-500/20 scale-105'
-                      : !disabledDay && 'text-slate-700 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400',
-                    currentDay && !selected && 'border border-emerald-500/40 font-bold text-emerald-600 dark:text-emerald-400'
+                      ? 'bg-primary-600 text-white font-bold shadow-md shadow-primary-500/20 scale-105'
+                      : !disabledDay && 'text-slate-700 dark:text-slate-300 hover:bg-primary-500/10 hover:text-primary-600 dark:hover:text-primary-400',
+                    currentDay && !selected && 'border border-primary-500/40 font-bold text-primary-600 dark:text-primary-400'
                   )}
                 >
                   {day}
                   {currentDay && !selected && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 rounded-full" />
                   )}
                 </button>
               );
@@ -349,7 +349,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <button
               type="button"
               onClick={handleSelectToday}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-500/10 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-primary-600 dark:text-primary-400 font-bold hover:bg-primary-500/10 transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
               <span>Hoy ({today.getDate()} {MONTH_NAMES[today.getMonth()].slice(0, 3)})</span>

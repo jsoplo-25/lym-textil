@@ -180,7 +180,7 @@ export const UsersPage: React.FC = () => {
       {/* Top indeterminate loader when refreshing/updating data */}
       {isLoading && (
         <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+          <div className="h-full bg-primary-500 w-full animate-pulse" />
         </div>
       )}
 
@@ -206,16 +206,16 @@ export const UsersPage: React.FC = () => {
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{totalUsers}</p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-500">Administradores</span>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{adminCount}</p>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-primary-500">Administradores</span>
+          <p className="text-2xl font-black text-primary-600 dark:text-primary-400 mt-1">{adminCount}</p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Personal Operativo</span>
           <p className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1">{nonAdminCount}</p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Cuentas Activas</span>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{activeCount}</p>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">Cuentas Activas</span>
+          <p className="text-2xl font-black text-primary-600 dark:text-primary-400 mt-1">{activeCount}</p>
         </div>
       </div>
 
@@ -227,7 +227,7 @@ export const UsersPage: React.FC = () => {
             placeholder="Buscar por nombre o correo..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
         </div>
@@ -259,7 +259,9 @@ export const UsersPage: React.FC = () => {
       <TableContainer>
         <Table>
           <TableHead>
+            <Th>ID</Th>
             <Th>Colaborador</Th>
+            <Th>Cargo / Contacto</Th>
             <Th>Rol en Planta</Th>
             <Th>Estado</Th>
             <Th>Registro</Th>
@@ -270,6 +272,9 @@ export const UsersPage: React.FC = () => {
               Array.from({ length: 5 }).map((_, i) => (
                 <Tr key={i}>
                   <Td>
+                    <Skeleton className="h-5 w-16 rounded-md" />
+                  </Td>
+                  <Td>
                     <div className="flex items-center gap-3">
                       <Skeleton className="w-10 h-10 rounded-full shrink-0" />
                       <div className="space-y-2">
@@ -277,6 +282,9 @@ export const UsersPage: React.FC = () => {
                         <Skeleton className="h-3 w-40" />
                       </div>
                     </div>
+                  </Td>
+                  <Td>
+                    <Skeleton className="h-3.5 w-24" />
                   </Td>
                   <Td>
                     <Skeleton className="h-5 w-24 rounded-full" />
@@ -296,12 +304,19 @@ export const UsersPage: React.FC = () => {
                 </Tr>
               ))
             ) : users.length === 0 ? (
-              <TableEmptyRow colSpan={5}>
+              <TableEmptyRow colSpan={7}>
                 No se encontraron usuarios con los filtros seleccionados.
               </TableEmptyRow>
             ) : (
               users.map((user) => (
                 <Tr key={user.id}>
+                  {/* Worker ID */}
+                  <Td>
+                    <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                      {user.workerId || '-'}
+                    </span>
+                  </Td>
+
                   {/* User Identity */}
                   <Td>
                     <div className="flex items-center gap-3">
@@ -319,6 +334,20 @@ export const UsersPage: React.FC = () => {
                     </div>
                   </Td>
 
+                  {/* Cargo & Phone */}
+                  <Td>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                        {user.jobTitle || 'Sin cargo definido'}
+                      </p>
+                      {user.phone && (
+                        <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                          📞 {user.phone}
+                        </p>
+                      )}
+                    </div>
+                  </Td>
+
                   {/* Role */}
                   <Td>{getRoleBadge(user)}</Td>
 
@@ -329,8 +358,13 @@ export const UsersPage: React.FC = () => {
                         <XCircle className="w-4 h-4" />
                         <span>Inactivo</span>
                       </span>
+                    ) : user.status === 'SUSPENDED' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-accent-500 font-medium">
+                        <XCircle className="w-4 h-4" />
+                        <span>Suspendido</span>
+                      </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span className="inline-flex items-center gap-1.5 text-xs text-primary-600 dark:text-primary-400 font-medium">
                         <CheckCircle2 className="w-4 h-4" />
                         <span>Activo</span>
                       </span>
@@ -338,7 +372,7 @@ export const UsersPage: React.FC = () => {
                   </Td>
 
                   {/* Registered Date */}
-                  <Td className="text-slate-400">
+                  <Td className="text-slate-400 font-mono text-xs">
                     {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : 'Reciente'}
                   </Td>
 
@@ -350,7 +384,7 @@ export const UsersPage: React.FC = () => {
                           <button
                             onClick={() => handleOpenEdit(user)}
                             aria-label="Editar usuario"
-                            className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                            className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>

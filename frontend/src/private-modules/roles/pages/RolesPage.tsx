@@ -120,9 +120,9 @@ export const RolesPage: React.FC = () => {
       case 'ADMINISTRADOR':
         // Primario — máximo privilegio
         return {
-          badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-          iconBg: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-          ring: 'group-hover:border-emerald-500/40',
+          badge: 'bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-500/20',
+          iconBg: 'bg-primary-500/15 text-primary-600 dark:text-primary-400',
+          ring: 'group-hover:border-primary-500/40',
         };
       case 'MANAGER':
       case 'SUPERVISOR':
@@ -147,7 +147,7 @@ export const RolesPage: React.FC = () => {
       {/* Top indeterminate loader when refreshing/updating data */}
       {isLoading && (
         <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+          <div className="h-full bg-primary-500 w-full animate-pulse" />
         </div>
       )}
 
@@ -217,7 +217,7 @@ export const RolesPage: React.FC = () => {
                       <span>Nativo</span>
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-primary-600 dark:text-primary-400">
                       <Sparkles className="w-3 h-3" />
                       <span>Personalizado</span>
                     </span>
@@ -257,7 +257,7 @@ export const RolesPage: React.FC = () => {
                       </span>
                     ))}
                     {role.permissions.length > 5 && (
-                      <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                      <span className="px-2 py-0.5 rounded-lg bg-primary-500/10 text-[10px] font-bold text-primary-600 dark:text-primary-400">
                         +{role.permissions.length - 5} más
                       </span>
                     )}

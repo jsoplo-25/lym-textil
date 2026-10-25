@@ -181,13 +181,20 @@ export const ProductionDetailPage: React.FC = () => {
       return;
     }
 
+    const effectiveStartDate = quickStartDate.trim() || getTodayLocalDate();
+    const effectiveStartTime = quickStartTime.trim() || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    if (!quickStartOperator.trim()) {
+      toast.error('Selecciona o ingresa el operario de inicio.');
+      return;
+    }
+
     try {
       setIsQuickAdding(true);
       const payload: CreateRollDTO = {
         rollNumber: quickRollNumber.trim(),
-        startDate: quickStartDate.trim() || undefined,
-        startTime: quickStartTime.trim() || undefined,
-        startOperator: quickStartOperator.trim() || undefined,
+        startDate: effectiveStartDate,
+        startTime: effectiveStartTime,
+        startOperator: quickStartOperator.trim(),
         endDate: quickEndDate.trim() || undefined,
         endTime: quickEndTime.trim() || undefined,
         endOperator: quickEndOperator.trim() || undefined,
@@ -440,12 +447,15 @@ export const ProductionDetailPage: React.FC = () => {
     );
   };
 
+  const isPaused = batch?.status === 'PAUSED';
+  const latestPauseLog = isPaused && batch?.statusLogs && batch.statusLogs.length > 0
+    ? batch.statusLogs.find((l) => l.status === 'PAUSED')
+    : null;
+
   const isRollSelectDisabled = (roll: ProductionRoll) => {
+    if (isPaused) return true;
     if (!canEdit) return true;
     if (!canApprove) {
-      // Bloqueado si ya fue entregado (finalizado) o si está esperando visto bueno
-      // Pero si está en READY_FOR_PICKUP (Listo para recojo), NO está bloqueado:
-      // el tejedor puede cambiarlo a DELIVERED cuando el proveedor viene a recoger
       if (roll.status === 'DELIVERED' || roll.status === 'READY_FOR_APPROVAL') {
         return true;
       }
@@ -454,6 +464,9 @@ export const ProductionDetailPage: React.FC = () => {
   };
 
   const getRollSelectTooltip = (roll: ProductionRoll) => {
+    if (isPaused) {
+      return 'El lote se encuentra PAUSADO. La gestión de rollos está bloqueada.';
+    }
     if (updatingRollId === roll.id) {
       return 'Actualizando estado del rollo...';
     }
@@ -474,9 +487,9 @@ export const ProductionDetailPage: React.FC = () => {
   const getRollStatusSelectClass = (status?: RollStatus) => {
     switch (status) {
       case 'READY_FOR_APPROVAL':
-        return '!bg-amber-100/90 dark:!bg-amber-950/60 !border-amber-400 dark:!border-amber-600 !text-amber-800 dark:!text-amber-300 font-extrabold';
+        return '!bg-accent-100/90 dark:!bg-accent-950/60 !border-accent-400 dark:!border-accent-600 !text-accent-800 dark:!text-accent-300 font-extrabold';
       case 'READY_FOR_PICKUP':
-        return '!bg-emerald-50/90 dark:!bg-emerald-950/50 !border-emerald-300 dark:!border-emerald-700 !text-emerald-700 dark:!text-emerald-300';
+        return '!bg-primary-50/90 dark:!bg-primary-950/50 !border-primary-300 dark:!border-primary-700 !text-primary-700 dark:!text-primary-300';
       case 'DELIVERED':
         return '!bg-purple-50/90 dark:!bg-purple-950/50 !border-purple-300 dark:!border-purple-700 !text-purple-700 dark:!text-purple-300';
       case 'IN_PREPARATION':
@@ -492,7 +505,39 @@ export const ProductionDetailPage: React.FC = () => {
       {/* Top indeterminate loader when refreshing/updating data */}
       {isLoading && (
         <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+          <div className="h-full bg-primary-500 w-full animate-pulse" />
+        </div>
+      )}
+
+      {/* Banner de Lote Pausado */}
+      {isPaused && (
+        <div className="p-4 rounded-2xl bg-accent-500/10 border-2 border-accent-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-accent-800 dark:text-accent-300 shadow-sm print:hidden">
+          <div className="flex items-start gap-3">
+            <span className="p-2 rounded-xl bg-accent-500/20 text-accent-600 dark:text-accent-400 font-bold shrink-0">
+              ⏸️
+            </span>
+            <div>
+              <p className="font-extrabold text-sm">
+                LOTE PAUSADO — Producción y registro de rollos temporalmente detenidos
+              </p>
+              {latestPauseLog?.notes && (
+                <p className="text-xs text-accent-700 dark:text-accent-400/90 mt-0.5">
+                  <span className="font-semibold">Motivo:</span> {latestPauseLog.notes}
+                  {latestPauseLog.changedByUser && (
+                    <span className="opacity-80"> • Pausado por: {latestPauseLog.changedByUser.firstName} {latestPauseLog.changedByUser.lastName}</span>
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+          {canEdit && (
+            <button
+              onClick={() => setIsBatchModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold transition-all shrink-0 cursor-pointer"
+            >
+              Reanudar Lote
+            </button>
+          )}
         </div>
       )}
 
@@ -526,7 +571,13 @@ export const ProductionDetailPage: React.FC = () => {
           )}
 
           {canCreate && (
-            <Button variant="secondary" size="cta" onClick={handleOpenAddRoll}>
+            <Button
+              variant="secondary"
+              size="cta"
+              disabled={isPaused}
+              onClick={handleOpenAddRoll}
+              title={isPaused ? 'El lote se encuentra pausado. Reanúdalo para añadir rollos.' : undefined}
+            >
               <Plus className="w-4 h-4" />
               <span>Agregar Rollo</span>
             </Button>
@@ -540,12 +591,12 @@ export const ProductionDetailPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 border-b border-slate-100 dark:border-slate-800 pb-5">
           <div className="space-y-2">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+              <span className="text-xs font-bold uppercase tracking-widest text-primary-600 dark:text-primary-400">
                 Producción Textil • Sábana de Control
               </span>
               {batch.trackingCode && (
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 flex items-center gap-1.5">
+                  <span className="font-mono text-xs font-black px-2.5 py-1 rounded-lg bg-primary-500/10 text-primary-700 dark:text-primary-300 border border-primary-500/20 flex items-center gap-1.5">
                     <span className="text-slate-400 font-sans font-normal">Cód. Seguimiento:</span>
                     <strong>{batch.trackingCode}</strong>
                   </span>
@@ -555,7 +606,7 @@ export const ProductionDetailPage: React.FC = () => {
                       navigator.clipboard.writeText(batch.trackingCode!);
                       toast.success(`Código de seguimiento [${batch.trackingCode}] copiado.`);
                     }}
-                    className="px-2 py-1 rounded-lg text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                    className="px-2 py-1 rounded-lg text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/40 hover:bg-primary-100 dark:hover:bg-primary-900/50 border border-primary-200 dark:border-primary-800 transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
                     title="Copiar código de seguimiento"
                   >
                     <Copy className="w-3.5 h-3.5" />
@@ -567,7 +618,7 @@ export const ProductionDetailPage: React.FC = () => {
 
             <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
               <span>LOTE:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-mono">{batch.batchNumber}</span>
+              <span className="text-primary-600 dark:text-primary-400 font-mono">{batch.batchNumber}</span>
             </h1>
 
             {/* Metadata pills */}
@@ -610,11 +661,11 @@ export const ProductionDetailPage: React.FC = () => {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Rollos</span>
               <span className="text-xl font-extrabold font-mono text-slate-900 dark:text-white">{totalRolls}</span>
             </div>
-            <div className="px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
+            <div className="px-4 py-2.5 rounded-2xl bg-primary-500/10 border border-primary-500/20">
+              <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider block">
                 Peso Total
               </span>
-              <span className="text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+              <span className="text-xl font-extrabold font-mono text-primary-600 dark:text-primary-400">
                 {totalWeight.toFixed(2)} Kg
               </span>
             </div>
@@ -683,10 +734,10 @@ export const ProductionDetailPage: React.FC = () => {
                   onClick={() => handleQuickUpdateStatus('COMPLETED')}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                     batch.status === 'COMPLETED'
-                      ? 'bg-emerald-600 text-white shadow-xs'
+                      ? 'bg-primary-600 text-white shadow-xs'
                       : deliveredRollsCount < totalRolls || totalRolls === 0
                       ? 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-                      : 'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                      : 'text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-950/40'
                   } ${!canEdit || isUpdatingBatchStatus ? 'cursor-default opacity-60' : ''}`}
                 >
                   {isUpdatingBatchStatus && batch.status === 'COMPLETED' ? (
@@ -703,8 +754,8 @@ export const ProductionDetailPage: React.FC = () => {
 
         {/* Notes / Despacho Banner */}
         {batch.notes && (
-          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
-            <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="p-3.5 rounded-2xl bg-accent-500/10 border border-accent-500/20 flex items-start gap-2.5 text-xs text-accent-900 dark:text-accent-200">
+            <FileText className="w-4 h-4 text-accent-600 dark:text-accent-400 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">Despacho / Notas: </span>
               <span>{batch.notes}</span>
@@ -747,13 +798,13 @@ export const ProductionDetailPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-4 rounded-3xl bg-amber-500/[0.08] border border-amber-500/30 flex items-center justify-between shadow-xs">
+        <div className="p-4 rounded-3xl bg-accent-500/[0.08] border border-accent-500/30 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center font-bold shadow-xs">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="w-10 h-10 rounded-2xl bg-accent-500/20 text-accent-700 dark:text-accent-300 flex items-center justify-center font-bold shadow-xs">
+              <AlertCircle className="w-5 h-5 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-accent-700 dark:text-accent-300 uppercase tracking-wider block">
                 Por Aprobar
               </span>
               <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
@@ -765,19 +816,19 @@ export const ProductionDetailPage: React.FC = () => {
             </div>
           </div>
           {readyApprovalRollsCount > 0 && (
-            <span className="px-2 py-0.5 rounded-xl bg-amber-600 text-white text-[10px] font-extrabold shadow-xs animate-pulse">
+            <span className="px-2 py-0.5 rounded-xl bg-accent-600 text-white text-[10px] font-extrabold shadow-xs animate-pulse">
               ¡Revisar!
             </span>
           )}
         </div>
 
-        <div className="p-4 rounded-3xl bg-emerald-500/[0.08] border border-emerald-500/30 flex items-center justify-between shadow-xs">
+        <div className="p-4 rounded-3xl bg-primary-500/[0.08] border border-primary-500/30 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center font-bold shadow-xs">
               <Bell className="w-5 h-5 animate-bounce" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase tracking-wider block">
                 Listo para Recojo
               </span>
               <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
@@ -786,7 +837,7 @@ export const ProductionDetailPage: React.FC = () => {
             </div>
           </div>
           {readyRollsCount > 0 && (
-            <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white text-[10px] font-extrabold shadow-xs">
+            <span className="px-2.5 py-1 rounded-xl bg-primary-600 text-white text-[10px] font-extrabold shadow-xs">
               ¡Avisar recojo!
             </span>
           )}
@@ -814,7 +865,7 @@ export const ProductionDetailPage: React.FC = () => {
         <div className="relative z-20 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm print:hidden space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <div className="w-6 h-6 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold">
                 <Plus className="w-3.5 h-3.5 stroke-[3]" />
               </div>
               <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
@@ -839,7 +890,7 @@ export const ProductionDetailPage: React.FC = () => {
                   value={quickRollNumber}
                   onChange={(e) => setQuickRollNumber(e.target.value)}
                   placeholder="Ej. 718"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 shadow-xs"
                 />
               </div>
 
@@ -915,7 +966,7 @@ export const ProductionDetailPage: React.FC = () => {
                   value={quickWeight}
                   onChange={(e) => setQuickWeight(e.target.value)}
                   placeholder="21.65"
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 shadow-xs"
                 />
               </div>
 
@@ -928,7 +979,7 @@ export const ProductionDetailPage: React.FC = () => {
                   value={quickObservations}
                   onChange={(e) => setQuickObservations(e.target.value)}
                   placeholder="Incidencias / Calidad..."
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 shadow-xs"
                 />
               </div>
 
@@ -967,7 +1018,7 @@ export const ProductionDetailPage: React.FC = () => {
           footer={
             <div className="bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs font-bold text-slate-700 dark:text-slate-200">
               <span className="uppercase tracking-wider">Total Acumulado ({totalRolls} rollos):</span>
-              <span className="font-mono text-emerald-600 dark:text-emerald-400 text-sm">
+              <span className="font-mono text-primary-600 dark:text-primary-400 text-sm">
                 {totalWeight.toFixed(2)} Kg
                 <span className="ml-3 font-sans font-medium text-slate-500 text-[11px]">
                   Promedio por rollo: {avgWeight.toFixed(2)} Kg
@@ -1018,7 +1069,7 @@ export const ProductionDetailPage: React.FC = () => {
                           />
                           {updatingRollId === roll.id && (
                             <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-600 dark:text-primary-400" />
                             </div>
                           )}
                         </div>
@@ -1029,7 +1080,7 @@ export const ProductionDetailPage: React.FC = () => {
                             type="button"
                             disabled={approvingRollId === roll.id}
                             onClick={() => handleApproveRollDirectly(roll)}
-                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-sm shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1 shrink-0 animate-pulse hover:animate-none disabled:opacity-50"
+                            className="px-2.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-[11px] shadow-sm shadow-primary-600/30 transition-all cursor-pointer flex items-center gap-1 shrink-0 animate-pulse hover:animate-none disabled:opacity-50"
                           >
                             {approvingRollId === roll.id ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1064,7 +1115,7 @@ export const ProductionDetailPage: React.FC = () => {
                   {/* Peso */}
                   <Td align="right" className="font-mono font-bold text-slate-900 dark:text-white">
                     {roll.weight !== null && roll.weight !== undefined ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 text-xs">
+                      <span className="text-primary-600 dark:text-primary-400 text-xs">
                         {roll.weight.toFixed(2)}
                       </span>
                     ) : (
@@ -1078,7 +1129,7 @@ export const ProductionDetailPage: React.FC = () => {
                       <span
                         className={
                           roll.observations.toLowerCase().includes('despacho')
-                            ? 'px-2 py-0.5 rounded-md bg-yellow-400/20 text-yellow-800 dark:text-yellow-300 font-bold text-[11px]'
+                            ? 'px-2 py-0.5 rounded-md bg-accent-400/20 text-accent-800 dark:text-accent-300 font-bold text-[11px]'
                             : 'text-slate-700 dark:text-slate-300'
                         }
                       >
@@ -1093,21 +1144,22 @@ export const ProductionDetailPage: React.FC = () => {
                   <Td align="right" className="print:hidden">
                     <div className="flex items-center justify-end gap-1">
                       {canEdit && (
-                        <Tooltip content="Editar rollo">
+                        <Tooltip content={isPaused ? 'Lote pausado: no se pueden editar rollos' : 'Editar rollo'}>
                           <button
+                            disabled={isPaused}
                             onClick={() => handleOpenEditRoll(roll)}
-                            className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                            className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                         </Tooltip>
                       )}
                       {canDelete && (canApprove || (roll.status !== 'READY_FOR_PICKUP' && roll.status !== 'DELIVERED')) && (
-                        <Tooltip content="Eliminar rollo">
+                        <Tooltip content={isPaused ? 'Lote pausado: no se pueden eliminar rollos' : 'Eliminar rollo'}>
                           <button
                             onClick={() => handleDeleteRoll(roll)}
-                            disabled={deletingRollId === roll.id}
-                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer disabled:opacity-50"
+                            disabled={isPaused || deletingRollId === roll.id}
+                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             {deletingRollId === roll.id ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />

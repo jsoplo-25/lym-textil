@@ -34,13 +34,13 @@ export const Logo: React.FC<LogoProps> = ({
     <div className={cn('inline-flex items-center gap-3', className)}>
       <div
         className={cn(
-          'bg-white text-slate-900 flex items-center justify-center shrink-0 shadow-md shadow-slate-900/10 dark:shadow-emerald-500/10 border border-slate-200/80 dark:border-slate-700/80 transition-all duration-200 overflow-hidden',
+          'bg-white text-slate-900 flex items-center justify-center shrink-0 shadow-md shadow-slate-900/10 dark:shadow-primary-500/10 border border-slate-200/80 dark:border-slate-700/80 transition-all duration-200 overflow-hidden',
           SIZES[size],
           badgeClassName
         )}
       >
         <img
-          src="/images/logo/Monograma-LM-con-hilo-y-aguja.webp"
+          src="/images/logo/Logo-lym.webp"
           alt="Textil L&M"
           className="w-full h-full object-contain select-none"
           loading="eager"
@@ -53,7 +53,7 @@ export const Logo: React.FC<LogoProps> = ({
             Textil L&amp;M
           </span>
           {subtitle && (
-            <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wide mt-0.5">
+            <p className="text-[11px] font-bold text-primary-600 dark:text-primary-400 tracking-wide mt-0.5">
               {subtitle}
             </p>
           )}

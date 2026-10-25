@@ -139,8 +139,8 @@ export const SuppliersPage: React.FC = () => {
   const getStatusBadge = (status: SupplierStatus) => {
     if (status === 'ACTIVE') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
           Activo
         </span>
       );
@@ -158,7 +158,7 @@ export const SuppliersPage: React.FC = () => {
       {/* Top indeterminate loader when refreshing/updating data */}
       {isLoading && (
         <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+          <div className="h-full bg-primary-500 w-full animate-pulse" />
         </div>
       )}
 
@@ -199,18 +199,18 @@ export const SuppliersPage: React.FC = () => {
 
         {/* Activos */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold shrink-0">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
             {isLoading ? (
               <Skeleton className="h-7 w-12 mb-1" />
             ) : (
-              <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-tight font-mono">
+              <p className="text-2xl font-black text-primary-600 dark:text-primary-400 leading-tight font-mono">
                 {stats.active}
               </p>
             )}
-            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Activos / Operativos</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">Activos / Operativos</p>
           </div>
         </div>
 
@@ -244,7 +244,7 @@ export const SuppliersPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar por RUC, razón social, tipo de hilo o contacto..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
           />
         </div>
 
@@ -363,10 +363,12 @@ export const SuppliersPage: React.FC = () => {
 
                     {/* Yarn Types */}
                     <td className="py-3 px-4">
-                      {supplier.yarnTypes ? (
+                      {supplier.yarnTypes && (Array.isArray(supplier.yarnTypes) ? supplier.yarnTypes.length > 0 : String(supplier.yarnTypes).trim()) ? (
                         <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200">
-                          <Layers className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          <span className="font-semibold">{supplier.yarnTypes}</span>
+                          <Layers className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                          <span className="font-semibold">
+                            {Array.isArray(supplier.yarnTypes) ? supplier.yarnTypes.join(', ') : supplier.yarnTypes}
+                          </span>
                         </div>
                       ) : (
                         <span className="text-slate-400 italic text-[11px]">No especificado</span>

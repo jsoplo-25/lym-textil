@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticateJwt = void 0;
 const jwt_1 = require("../shared/utils/jwt");
 const cookies_1 = require("../shared/utils/cookies");
+const session_manager_1 = require("../features/auth/session.manager");
 const authenticateJwt = (req, res, next) => {
     let token = null;
     // 1. Prioritize secure httpOnly cookie
@@ -22,6 +23,16 @@ const authenticateJwt = (req, res, next) => {
     }
     try {
         const decoded = (0, jwt_1.verifyToken)(token);
+        // Validar que la sesión no haya sido reemplazada por otro login (en otra pestaña o en otra PC)
+        if (decoded.sessionId && !session_manager_1.sessionManager.isValidSession(decoded.id, decoded.sessionId)) {
+            res.status(401).json({
+                success: false,
+                code: 'SESSION_SUPERSEDED',
+                error: 'Tu sesión ha sido iniciada en otro dispositivo o pestaña. La sesión actual se ha cerrado automáticamente.',
+            });
+            return;
+        }
+        session_manager_1.sessionManager.touchSession(decoded.id);
         req.user = decoded;
         next();
     }

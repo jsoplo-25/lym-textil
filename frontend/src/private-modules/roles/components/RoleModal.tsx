@@ -190,7 +190,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
               disabled={!!editingRole}
               required
               placeholder="Ej. AUDITOR_EXTERNO"
-              className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-60"
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:opacity-60"
             />
           </div>
 
@@ -204,7 +204,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="Ej. Auditor de Calidad Externo"
-              className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:outline-none"
             />
           </div>
         </div>
@@ -218,7 +218,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe las responsabilidades del rol en la planta..."
-            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:outline-none"
           />
         </div>
 
@@ -244,7 +244,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
                     <button
                       type="button"
                       onClick={() => toggleAllCategory(group.items)}
-                      className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                      className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 hover:underline cursor-pointer"
                     >
                       {allSelected ? 'Desmarcar todos' : 'Marcar todos'}
                     </button>
@@ -258,12 +258,12 @@ export const RoleModal: React.FC<RoleModalProps> = ({
                           key={item.id}
                           onClick={() => togglePermission(item.id)}
                           className={`flex items-center gap-2 p-2 rounded-xl text-xs cursor-pointer transition-colors ${isChecked
-                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'
+                              ? 'bg-primary-500/10 text-primary-700 dark:text-primary-300 font-semibold'
                               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
                             }`}
                         >
                           {isChecked ? (
-                            <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <CheckSquare className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
                           ) : (
                             <Square className="w-4 h-4 text-slate-400 shrink-0" />
                           )}
@@ -289,7 +289,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+            className="px-5 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>{isLoading ? (editingRole ? 'Actualizando...' : 'Creando...') : editingRole ? 'Guardar Cambios' : 'Crear Rol'}</span>

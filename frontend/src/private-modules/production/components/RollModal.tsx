@@ -108,6 +108,29 @@ export const RollModal: React.FC<RollModalProps> = ({
       return;
     }
 
+    if (!startOperator.trim()) {
+      setError('El operario de inicio es obligatorio. Selecciona un tejedor u operario.');
+      return;
+    }
+
+    if (!startDate.trim()) {
+      setError('La fecha de inicio es obligatoria.');
+      return;
+    }
+
+    if (!startTime.trim()) {
+      setError('La hora de inicio es obligatoria (ej. 08:30).');
+      return;
+    }
+
+    if (weight.trim() !== '') {
+      const num = parseFloat(weight);
+      if (isNaN(num) || num < 0) {
+        setError('El peso en kg debe ser un número decimal mayor o igual a 0.');
+        return;
+      }
+    }
+
     if (status === 'READY_FOR_PICKUP' && !canApprove && editingRoll?.status !== 'READY_FOR_PICKUP') {
       setError(
         'Solo el Asistente Administrativo o Administrador del sistema pueden aprobar el rollo y pasarlo a "Listo para recojo". Selecciona "Listo para aprobar".'
@@ -125,9 +148,9 @@ export const RollModal: React.FC<RollModalProps> = ({
 
       const payload: CreateRollDTO = {
         rollNumber: rollNumber.trim(),
-        startOperator: startOperator.trim() || undefined,
-        startDate: startDate.trim() || undefined,
-        startTime: startTime.trim() || undefined,
+        startOperator: startOperator.trim(),
+        startDate: startDate.trim(),
+        startTime: startTime.trim(),
         endOperator: endOperator.trim() || undefined,
         endDate: endDate.trim() || undefined,
         endTime: endTime.trim() || undefined,
@@ -207,7 +230,7 @@ export const RollModal: React.FC<RollModalProps> = ({
       onClose={onClose}
       title={editingRoll ? `Editar Rollo N° ${editingRoll.rollNumber}` : 'Registrar Nuevo Rollo'}
       description="Detalle de turno, horarios, operarios y peso del rollo de tela"
-      icon={<Layers className="w-6 h-6 text-emerald-500" />}
+      icon={<Layers className="w-6 h-6 text-primary-500" />}
       size="2xl"
       isLoading={isLoading}
       loadingMessage={editingRoll ? 'Actualizando datos del rollo...' : 'Registrando rollo en producción...'}
@@ -244,7 +267,7 @@ export const RollModal: React.FC<RollModalProps> = ({
                 value={rollNumber}
                 onChange={(e) => setRollNumber(e.target.value)}
                 placeholder="Ej. 718"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono disabled:opacity-60"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono disabled:opacity-60"
               />
             </div>
           </div>
@@ -265,7 +288,7 @@ export const RollModal: React.FC<RollModalProps> = ({
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder="Ej. 21.65"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono disabled:opacity-60"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono disabled:opacity-60"
               />
             </div>
           </div>
@@ -287,7 +310,7 @@ export const RollModal: React.FC<RollModalProps> = ({
 
         {/* 2. Sección Inicio (Operario -> Fecha -> Hora) */}
         <div className="relative z-30 p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 space-y-3">
-          <p className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-primary-600 dark:text-primary-400 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             1. Inicio del Rollo
           </p>
@@ -295,7 +318,7 @@ export const RollModal: React.FC<RollModalProps> = ({
             {/* 1. Operario Inicio */}
             <div>
               <Select
-                label="Operario Inicio"
+                label="Operario Inicio *"
                 leftIcon={<User className="w-4 h-4 text-slate-400" />}
                 options={operatorOptions}
                 value={startOperator}
@@ -307,7 +330,7 @@ export const RollModal: React.FC<RollModalProps> = ({
             {/* 2. Fecha Inicio */}
             <div>
               <DatePicker
-                label="Fecha Inicio"
+                label="Fecha Inicio *"
                 value={startDate}
                 onChange={setStartDate}
                 placeholder="Seleccionar fecha..."
@@ -317,7 +340,7 @@ export const RollModal: React.FC<RollModalProps> = ({
             {/* 3. Hora Inicio */}
             <div>
               <TimePicker
-                label="Hora Inicio"
+                label="Hora Inicio *"
                 value={startTime}
                 onChange={setStartTime}
                 placeholder="HH:MM"
@@ -380,7 +403,7 @@ export const RollModal: React.FC<RollModalProps> = ({
             value={observations}
             onChange={(e) => setObservations(e.target.value)}
             placeholder="Ej. caída - cabeza, Despacho SANDRO 213.55, corte, etc."
-            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
           />
         </div>
 
@@ -397,7 +420,7 @@ export const RollModal: React.FC<RollModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+            className="px-5 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>{isLoading ? (editingRoll ? 'Actualizando...' : 'Guardando...') : editingRoll ? 'Guardar Cambios' : 'Registrar Rollo'}</span>

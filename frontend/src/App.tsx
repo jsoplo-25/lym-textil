@@ -4,7 +4,7 @@ import { store } from './app/store';
 import { AppRouter } from './app/router/AppRouter';
 import { ToastContainer } from './shared/ui/Toast';
 
-export const App: React.FC = () => {
+const App: React.FC = () => {
   return (
     <Provider store={store}>
       <AppRouter />

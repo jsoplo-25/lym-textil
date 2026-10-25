@@ -7,7 +7,7 @@ export interface Supplier {
   phone?: string | null;
   email?: string | null;
   address?: string | null;
-  yarnTypes?: string | null;
+  yarnTypes?: string[] | string | null;
   status: SupplierStatus;
   notes?: string | null;
   createdAt: string;
@@ -29,7 +29,7 @@ export interface CreateSupplierDTO {
   phone?: string;
   email?: string;
   address?: string;
-  yarnTypes?: string;
+  yarnTypes?: string[] | string;
   status?: SupplierStatus;
   notes?: string;
 }
@@ -40,7 +40,7 @@ export interface UpdateSupplierDTO {
   phone?: string;
   email?: string;
   address?: string;
-  yarnTypes?: string;
+  yarnTypes?: string[] | string;
   status?: SupplierStatus;
   notes?: string;
 }

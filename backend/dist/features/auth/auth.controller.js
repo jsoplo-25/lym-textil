@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const auth_service_1 = require("./auth.service");
 const cookies_1 = require("../../shared/utils/cookies");
+const jwt_1 = require("../../shared/utils/jwt");
+const session_manager_1 = require("./session.manager");
 const authService = new auth_service_1.AuthService();
 class AuthController {
     async login(req, res) {
@@ -98,18 +100,110 @@ class AuthController {
             });
         }
     }
-    async logout(_req, res) {
+    async logout(req, res) {
+        try {
+            let token = req.cookies?.[cookies_1.COOKIE_NAMES.ACCESS_TOKEN];
+            if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+                token = req.headers.authorization.split(' ')[1];
+            }
+            if (token) {
+                const decoded = (0, jwt_1.verifyToken)(token);
+                if (decoded?.id) {
+                    session_manager_1.sessionManager.endSession(decoded.id, decoded.sessionId);
+                }
+            }
+        }
+        catch { }
         (0, cookies_1.clearAuthCookies)(res);
         res.status(200).json({
             success: true,
             message: 'Sesión cerrada exitosamente.',
         });
     }
-    async me(req, res) {
+    /**
+     * Chequeo rápido de sesión activa (usado por el frontend para detección de sesión única)
+     */
+    async checkSession(req, res) {
+        if (!req.user) {
+            res.status(401).json({ success: false, error: 'No autenticado.' });
+            return;
+        }
         res.status(200).json({
             success: true,
-            data: req.user,
+            data: {
+                active: true,
+                userId: req.user.id,
+                sessionId: req.user.sessionId,
+            },
         });
+    }
+    /**
+     * Stream Server-Sent Events (SSE) para desconexión en tiempo real ante concurrencia
+     */
+    async sessionStream(req, res) {
+        let token = null;
+        if (req.cookies && req.cookies[cookies_1.COOKIE_NAMES.ACCESS_TOKEN]) {
+            token = req.cookies[cookies_1.COOKIE_NAMES.ACCESS_TOKEN];
+        }
+        if (!token && typeof req.query.token === 'string') {
+            token = req.query.token;
+        }
+        if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+        if (!token) {
+            res.status(401).end();
+            return;
+        }
+        try {
+            const decoded = (0, jwt_1.verifyToken)(token);
+            if (!decoded.sessionId) {
+                res.status(400).end();
+                return;
+            }
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache, no-transform');
+            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('X-Accel-Buffering', 'no');
+            res.flushHeaders?.();
+            res.write(`: connected\n\n`);
+            const unsubscribe = session_manager_1.sessionManager.subscribe(decoded.id, decoded.sessionId, res);
+            const pingInterval = setInterval(() => {
+                try {
+                    res.write(`: ping\n\n`);
+                }
+                catch {
+                    clearInterval(pingInterval);
+                }
+            }, 25000);
+            req.on('close', () => {
+                clearInterval(pingInterval);
+                unsubscribe();
+            });
+        }
+        catch {
+            res.status(401).end();
+        }
+    }
+    async me(req, res) {
+        try {
+            if (!req.user?.id) {
+                res.status(401).json({ success: false, error: 'Usuario no autenticado.' });
+                return;
+            }
+            const freshUser = await authService.getProfile(req.user.id);
+            res.status(200).json({
+                success: true,
+                data: freshUser,
+            });
+        }
+        catch {
+            // Fallback defensivo a la información del token si la BD tiene micro-latencia
+            res.status(200).json({
+                success: true,
+                data: req.user,
+            });
+        }
     }
     async updateProfile(req, res) {
         try {
@@ -167,6 +261,92 @@ class AuthController {
         }
         catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Error al cambiar contraseña.';
+            res.status(400).json({
+                success: false,
+                error: errorMsg,
+            });
+        }
+    }
+    async forgotPassword(req, res) {
+        try {
+            const { email } = req.body;
+            if (!email) {
+                res.status(400).json({
+                    success: false,
+                    error: 'El correo electrónico es requerido.',
+                });
+                return;
+            }
+            await authService.requestPasswordReset(email);
+            res.status(200).json({
+                success: true,
+                message: 'Si el correo electrónico está registrado, recibirás un código de verificación en breve.',
+            });
+        }
+        catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Error al procesar la solicitud de recuperación.';
+            res.status(500).json({
+                success: false,
+                error: errorMsg,
+            });
+        }
+    }
+    async verifyResetCode(req, res) {
+        try {
+            const { email, code } = req.body;
+            if (!email || !code) {
+                res.status(400).json({
+                    success: false,
+                    error: 'El correo y el código de verificación son requeridos.',
+                });
+                return;
+            }
+            const result = authService.verifyResetCode(email, code);
+            if (!result.valid) {
+                res.status(400).json({
+                    success: false,
+                    error: result.reason || 'El código de verificación es inválido o ha expirado.',
+                });
+                return;
+            }
+            res.status(200).json({
+                success: true,
+                message: 'Código de verificación válido.',
+            });
+        }
+        catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Error al verificar el código.';
+            res.status(400).json({
+                success: false,
+                error: errorMsg,
+            });
+        }
+    }
+    async resetPassword(req, res) {
+        try {
+            const { email, code, newPassword } = req.body;
+            if (!email || !code || !newPassword) {
+                res.status(400).json({
+                    success: false,
+                    error: 'El correo, el código y la nueva contraseña son requeridos.',
+                });
+                return;
+            }
+            if (newPassword.length < 6) {
+                res.status(400).json({
+                    success: false,
+                    error: 'La nueva contraseña debe tener al menos 6 caracteres.',
+                });
+                return;
+            }
+            await authService.resetPasswordWithCode(email, code, newPassword);
+            res.status(200).json({
+                success: true,
+                message: '¡Tu contraseña ha sido restablecida exitosamente! Ya puedes iniciar sesión con tu nueva clave.',
+            });
+        }
+        catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Error al restablecer la contraseña.';
             res.status(400).json({
                 success: false,
                 error: errorMsg,

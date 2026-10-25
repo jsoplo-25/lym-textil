@@ -52,6 +52,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
+  const [designTypes, setDesignTypes] = useState('');
   const [status, setStatus] = useState<MachineStatus>('OPERATIVE');
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
@@ -66,6 +67,11 @@ export const MachineModal: React.FC<MachineModalProps> = ({
       setBrand(editingMachine.brand || '');
       setModel(editingMachine.model || '');
       setSerialNumber(editingMachine.serialNumber || '');
+      setDesignTypes(
+        Array.isArray(editingMachine.designTypes)
+          ? editingMachine.designTypes.join(', ')
+          : (editingMachine.designTypes as string) || ''
+      );
       setStatus(editingMachine.status || 'OPERATIVE');
       setLocation(editingMachine.location || '');
       setNotes(editingMachine.notes || '');
@@ -76,6 +82,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
       setBrand('');
       setModel('');
       setSerialNumber('');
+      setDesignTypes('');
       setStatus('OPERATIVE');
       setLocation('');
       setNotes('');
@@ -107,6 +114,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
         brand: brand.trim() || undefined,
         model: model.trim() || undefined,
         serialNumber: serialNumber.trim() || undefined,
+        designTypes: designTypes.trim() || undefined,
         status,
         location: location.trim() || undefined,
         notes: notes.trim() || undefined,
@@ -147,7 +155,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
           ? `Modifica la información y estado de la máquina [${editingMachine.code}]`
           : 'Ingresa los datos técnicos y ubicación para añadir la máquina al inventario'
       }
-      icon={<Cog className="w-6 h-6 text-emerald-500" />}
+      icon={<Cog className="w-6 h-6 text-primary-500" />}
       size="lg"
       isLoading={isLoading}
       loadingMessage={editingMachine ? 'Actualizando datos de la máquina...' : 'Registrando nueva máquina...'}
@@ -175,7 +183,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="Ej. MQ-001, TEL-02"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-1">Identificador único en planta</p>
@@ -208,7 +216,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej. Remalladora 5 hilos mecatrónica, Tejedora Circular"
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
           </div>
         </div>
@@ -224,7 +232,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               placeholder="Ej. Juki, Brother, Jack"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
           </div>
 
@@ -237,7 +245,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
               value={model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="Ej. MO-6814S"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
           </div>
 
@@ -250,7 +258,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
               value={serialNumber}
               onChange={(e) => setSerialNumber(e.target.value)}
               placeholder="Ej. SN-4910283"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
             />
           </div>
         </div>
@@ -267,7 +275,21 @@ export const MachineModal: React.FC<MachineModalProps> = ({
           />
         </div>
 
-        {/* 5. Ubicación / Área */}
+        {/* 5. Tipos de Diseño */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+            Tipos de Diseño (Separados por coma)
+          </label>
+          <input
+            type="text"
+            value={designTypes}
+            onChange={(e) => setDesignTypes(e.target.value)}
+            placeholder="Ej. Dray, Win, Jersey, Rib"
+            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+          />
+        </div>
+
+        {/* 6. Ubicación / Área */}
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
             Ubicación / Área de Planta
@@ -281,7 +303,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Ej. Línea de Costura 1, Área de Corte, Taller Central"
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
           </div>
         </div>
@@ -297,7 +319,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Detalles sobre accesorios, calibración de aguja o fecha estimada de mantenimiento..."
-            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none"
+            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none"
           />
         </div>
 
@@ -314,7 +336,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+            className="px-5 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>{isLoading ? (editingMachine ? 'Actualizando...' : 'Creando...') : editingMachine ? 'Guardar Cambios' : 'Crear Máquina'}</span>

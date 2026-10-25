@@ -99,7 +99,7 @@ export const SidebarNavigation: React.FC = () => {
             to="/dashboard"
             className={({ isActive }) =>
               `w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative ${isActive
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
+                ? 'bg-accent-500 text-white shadow-md shadow-accent-500/30 scale-105'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
               }`
             }
@@ -116,7 +116,7 @@ export const SidebarNavigation: React.FC = () => {
               to="/production"
               className={({ isActive }) =>
                 `w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative ${isActive || location.pathname.startsWith('/production')
-                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
+                  ? 'bg-accent-500 text-white shadow-md shadow-accent-500/30 scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
                 }`
               }
@@ -134,7 +134,7 @@ export const SidebarNavigation: React.FC = () => {
               <button
                 onClick={() => setIsMaintainersOpen((v) => !v)}
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative cursor-pointer ${isMaintainerActive
-                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
+                  ? 'bg-accent-500 text-white shadow-md shadow-accent-500/30 scale-105'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
                   }`}
                 aria-label="Mantenedores"
@@ -164,7 +164,7 @@ export const SidebarNavigation: React.FC = () => {
                           onClick={() => setIsMaintainersOpen(false)}
                           className={({ isActive }) =>
                             `flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${isActive
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              ? 'bg-accent-500/10 text-accent-600 dark:text-accent-400'
                               : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`
                           }
@@ -185,7 +185,7 @@ export const SidebarNavigation: React.FC = () => {
             to="/profile"
             className={({ isActive }) =>
               `w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 group relative ${isActive
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-105'
+                ? 'bg-accent-500 text-white shadow-md shadow-accent-500/30 scale-105'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
               }`
             }
@@ -251,7 +251,7 @@ export const SidebarNavigation: React.FC = () => {
                   onClick={() => setIsMobileOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 ${isActive
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                      ? 'bg-accent-500 text-white shadow-md shadow-accent-500/30'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`
                   }
@@ -267,7 +267,7 @@ export const SidebarNavigation: React.FC = () => {
                     onClick={() => setIsMobileOpen(false)}
                     className={({ isActive }) =>
                       `flex items-center gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 ${isActive || location.pathname.startsWith('/production')
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                        ? 'bg-accent-500 text-white shadow-md shadow-accent-500/30'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`
                     }
@@ -283,7 +283,7 @@ export const SidebarNavigation: React.FC = () => {
                     <button
                       onClick={() => setIsMobileMaintainersOpen((v) => !v)}
                       className={`w-full flex items-center justify-between gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 cursor-pointer ${isMaintainerActive
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                        ? 'bg-accent-500 text-white shadow-md shadow-accent-500/30'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       aria-expanded={isMobileMaintainersOpen}
@@ -308,7 +308,7 @@ export const SidebarNavigation: React.FC = () => {
                               onClick={() => setIsMobileOpen(false)}
                               className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${isActive
-                                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                                  ? 'text-accent-600 dark:text-accent-400 bg-accent-500/10'
                                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                                 }`
                               }
@@ -328,7 +328,7 @@ export const SidebarNavigation: React.FC = () => {
                   onClick={() => setIsMobileOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-3.5 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 ${isActive
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                      ? 'bg-accent-500 text-white shadow-md shadow-accent-500/30'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`
                   }

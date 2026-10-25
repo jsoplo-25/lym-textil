@@ -46,17 +46,17 @@ export const CookiesInfoModal: React.FC<CookiesInfoModalProps> = ({ isOpen, onCl
       isOpen={isOpen}
       onClose={onClose}
       size="lg"
-      icon={<Cookie className="w-5 h-5 text-emerald-400" />}
+      icon={<Cookie className="w-5 h-5 text-primary-400" />}
       iconVariant="emerald"
       title="Uso de Cookies y Seguridad"
       description="Transparencia en el tratamiento de tu sesión en Textil L&M"
     >
       <div className="space-y-5 text-slate-700 dark:text-slate-300 text-xs sm:text-sm">
         {/* Main notice banner */}
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-slate-800 dark:text-slate-200">
+        <div className="p-4 rounded-2xl bg-primary-500/10 border border-primary-500/20 text-slate-800 dark:text-slate-200">
           <p className="leading-relaxed">
             La plataforma de <strong>Textil L&amp;M</strong> utiliza exclusivamente{' '}
-            <strong className="text-emerald-700 dark:text-emerald-400">cookies técnicas esenciales</strong>{' '}
+            <strong className="text-primary-700 dark:text-primary-400">cookies técnicas esenciales</strong>{' '}
             para autenticar tu cuenta y resguardar la seguridad operativa.
           </p>
         </div>
@@ -64,7 +64,7 @@ export const CookiesInfoModal: React.FC<CookiesInfoModalProps> = ({ isOpen, onCl
         {/* Security pillars */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-2.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+            <ShieldCheck className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-xs text-slate-900 dark:text-white">Protección httpOnly</p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
@@ -74,7 +74,7 @@ export const CookiesInfoModal: React.FC<CookiesInfoModalProps> = ({ isOpen, onCl
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-2.5">
-            <Lock className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+            <Lock className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-xs text-slate-900 dark:text-white">Cifrado de Sesión</p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
@@ -84,7 +84,7 @@ export const CookiesInfoModal: React.FC<CookiesInfoModalProps> = ({ isOpen, onCl
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-2.5">
-            <EyeOff className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+            <EyeOff className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-xs text-slate-900 dark:text-white">Sin Rastreo</p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
@@ -97,7 +97,7 @@ export const CookiesInfoModal: React.FC<CookiesInfoModalProps> = ({ isOpen, onCl
         {/* Detailed table / list of cookies */}
         <div>
           <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2.5 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+            <Sparkles className="w-3.5 h-3.5 text-primary-500" />
             Cookies y elementos utilizados en esta plataforma
           </h4>
 
@@ -108,7 +108,7 @@ export const CookiesInfoModal: React.FC<CookiesInfoModalProps> = ({ isOpen, onCl
                 className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/50"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                  <span className="font-mono font-bold text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <span className="font-mono font-bold text-xs text-primary-700 dark:text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded border border-primary-500/20">
                     {cookie.name}
                   </span>
                   <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">

@@ -155,6 +155,14 @@ export class RolesController {
         },
       });
 
+      // Sincronizar automáticamente el Cargo (jobTitle) en los usuarios que tengan este rol
+      if (description !== undefined) {
+        await prisma.user.updateMany({
+          where: { role: existing.code },
+          data: { jobTitle: String(description).trim() },
+        }).catch(() => null);
+      }
+
       res.status(200).json({
         success: true,
         message: 'Permisos del rol actualizados exitosamente en la base de datos.',

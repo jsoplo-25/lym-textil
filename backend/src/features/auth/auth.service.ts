@@ -170,13 +170,26 @@ export class AuthService {
 
     const finalRole = roleRecord ? roleRecord.code : normalizedRole;
 
+    const count = await prisma.user.count().catch(() => 0);
+    let workerId = `USR-${String(count + 1).padStart(3, '0')}`;
+    let counter = count + 1;
+    while (await prisma.user.findUnique({ where: { workerId } }).catch(() => null)) {
+      counter++;
+      workerId = `USR-${String(counter).padStart(3, '0')}`;
+    }
+
+    const jobTitleFromRole = roleRecord?.description || null;
+
     let newUser = await prisma.user.create({
       data: {
+        workerId,
         email: normalizedEmail,
         passwordHash,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         role: finalRole,
+        jobTitle: jobTitleFromRole,
+        status: 'ACTIVE',
       },
     }).catch(() => null);
 
@@ -184,11 +197,14 @@ export class AuthService {
       const { data: supaUser, error } = await supabaseAdmin
         .from('users')
         .insert([{
+          worker_id: workerId,
           email: normalizedEmail,
           password_hash: passwordHash,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           role: finalRole,
+          job_title: jobTitleFromRole,
+          status: 'ACTIVE',
         }])
         .select()
         .single();
@@ -199,12 +215,17 @@ export class AuthService {
 
       newUser = {
         id: supaUser.id,
+        workerId: supaUser.worker_id || workerId,
         email: supaUser.email,
         passwordHash: supaUser.password_hash,
         firstName: supaUser.first_name,
         lastName: supaUser.last_name,
         role: supaUser.role,
-        avatarUrl: supaUser.avatar_url,
+        status: supaUser.status || 'ACTIVE',
+        phone: supaUser.phone || null,
+        jobTitle: supaUser.job_title || null,
+        avatarUrl: supaUser.avatar_url || null,
+        lastLoginAt: null,
         createdAt: new Date(supaUser.created_at),
         updatedAt: new Date(supaUser.created_at),
       };

@@ -47,17 +47,17 @@ export const AppRouter: React.FC = () => {
   // Loading Screen while verifying session via httpOnly cookie on initial load/F5
   if (!isInitialized) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#F3F4F8] dark:bg-[#0B0F17] transition-colors relative overflow-hidden">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#F6F8FB] dark:bg-[#0B0F17] transition-colors relative overflow-hidden">
         {/* Soft Ambient Glow */}
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-emerald-500/10 dark:bg-emerald-500/08 rounded-full blur-3xl pointer-events-none" />
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-primary-500/10 dark:bg-primary-500/08 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col items-center gap-5 relative z-10 animate-fadeIn">
           <div className="relative">
             <Logo
               size="xl"
-              badgeClassName="w-20 h-20 rounded-3xl shadow-2xl shadow-emerald-600/20 dark:shadow-emerald-500/15 border-2 border-white dark:border-slate-800"
+              badgeClassName="w-20 h-20 rounded-3xl shadow-2xl shadow-primary-600/20 dark:shadow-primary-500/15 border-2 border-white dark:border-slate-800"
             />
-            <div className="absolute -inset-1.5 rounded-3xl bg-emerald-500/20 blur-md -z-10 animate-pulse" />
+            <div className="absolute -inset-1.5 rounded-3xl bg-primary-500/20 blur-md -z-10 animate-pulse" />
           </div>
 
           <div className="text-center space-y-1.5">
@@ -65,7 +65,7 @@ export const AppRouter: React.FC = () => {
               Textil L&amp;M
             </h2>
             <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-primary-500 animate-ping" />
               <span>Verificando sesión segura...</span>
             </div>
           </div>

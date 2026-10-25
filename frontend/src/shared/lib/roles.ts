@@ -8,7 +8,7 @@ let isFetchingRoles = false;
 /**
  * Loads roles from the backend service and updates the in-memory cache.
  */
-export async function refreshRolesCache(): Promise<RoleDefinition[]> {
+async function refreshRolesCache(): Promise<RoleDefinition[]> {
   try {
     isFetchingRoles = true;
     const roles = await rolesService.getRoles();
@@ -34,7 +34,7 @@ export function setCachedRoles(roles: RoleDefinition[]): void {
 /**
  * Returns the currently cached roles list from the database.
  */
-export function getCachedRoles(): RoleDefinition[] {
+function getCachedRoles(): RoleDefinition[] {
   // If cache is empty and not already fetching, fetch asynchronously
   if (cachedRoles.length === 0 && !isFetchingRoles && typeof window !== 'undefined') {
     refreshRolesCache().catch(() => {});

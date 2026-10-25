@@ -15,6 +15,10 @@ const swagger_1 = require("./config/swagger");
 const auth_routes_1 = __importDefault(require("./features/auth/auth.routes"));
 const users_routes_1 = __importDefault(require("./features/users/users.routes"));
 const roles_routes_1 = __importDefault(require("./features/roles/roles.routes"));
+const machines_routes_1 = __importDefault(require("./features/machines/machines.routes"));
+const suppliers_routes_1 = __importDefault(require("./features/suppliers/suppliers.routes"));
+const production_routes_1 = __importDefault(require("./features/production/production.routes"));
+const dashboard_routes_1 = __importDefault(require("./features/dashboard/dashboard.routes"));
 const roleSeed_service_1 = require("./services/roleSeed.service");
 const app = (0, express_1.default)();
 // Global Middlewares
@@ -73,7 +77,6 @@ app.get('/', (_req, res) => {
         status: 'online',
         documentation: `${env_1.env.API_URL}/api-docs`,
         health: `${env_1.env.API_URL}/health`,
-        apiPrefix: '/api/v1',
         environment: env_1.env.NODE_ENV,
     });
 });
@@ -88,14 +91,26 @@ app.get('/health', (_req, res) => {
         documentation: `${env_1.env.API_URL}/api-docs`,
     });
 });
-// Feature API Routes
-app.use('/api/v1/auth', auth_routes_1.default);
-app.use('/api/v1/users', users_routes_1.default);
-app.use('/api/v1/roles', roles_routes_1.default);
+// Feature API Routes (Rutas directas sin versionamiento)
+app.use('/auth', auth_routes_1.default);
+app.use('/users', users_routes_1.default);
+app.use('/roles', roles_routes_1.default);
+app.use('/machines', machines_routes_1.default);
+app.use('/suppliers', suppliers_routes_1.default);
+app.use('/production', production_routes_1.default);
+app.use('/dashboard', dashboard_routes_1.default);
+// Soporte opcional para prefijo /api
+app.use('/api/auth', auth_routes_1.default);
+app.use('/api/users', users_routes_1.default);
+app.use('/api/roles', roles_routes_1.default);
+app.use('/api/machines', machines_routes_1.default);
+app.use('/api/suppliers', suppliers_routes_1.default);
+app.use('/api/production', production_routes_1.default);
+app.use('/api/dashboard', dashboard_routes_1.default);
 // Global Error Handler
 app.use(error_middleware_1.errorHandler);
 // Start Server
-const server = app.listen(env_1.env.PORT, async () => {
+app.listen(env_1.env.PORT, async () => {
     console.log(`
   🚀 Server Textiles L&M API is running!
   📡 URL: http://localhost:${env_1.env.PORT}

@@ -53,8 +53,8 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
           value={isLoading ? '-' : stats?.activeBatches ?? 0}
           subtitle="Órdenes activas para registrar tejido"
           icon={<Factory className="w-6 h-6" />}
-          iconBg="bg-emerald-500/15"
-          iconColor="text-emerald-600 dark:text-emerald-400"
+          iconBg="bg-primary-500/15"
+          iconColor="text-primary-600 dark:text-primary-400"
           badge={{ text: 'Activos', variant: 'emerald' }}
           isLoading={isLoading}
         />
@@ -64,8 +64,8 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
           value={isLoading ? '-' : stats?.rollsByStatus.readyForApproval ?? 0}
           subtitle="Rollos enviados a aprobación"
           icon={<Clock className="w-6 h-6" />}
-          iconBg="bg-amber-500/15"
-          iconColor="text-amber-600 dark:text-amber-400"
+          iconBg="bg-accent-500/15"
+          iconColor="text-accent-600 dark:text-accent-400"
           badge={{
             text: `${stats?.rollsByStatus.readyForApproval ?? 0} por revisar`,
             variant: 'amber',
@@ -104,7 +104,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
-                  <Factory className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <Factory className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   <span>Mis Lotes en Producción</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -113,7 +113,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
               </div>
               <NavLink
                 to="/production"
-                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
               >
                 Ver todos <ArrowRight className="w-3.5 h-3.5" />
               </NavLink>
@@ -127,7 +127,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
               </div>
             ) : activeBatches.length === 0 ? (
               <div className="py-8 text-center">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
+                <CheckCircle2 className="w-10 h-10 text-primary-500 mx-auto mb-2 opacity-80" />
                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
                   No hay lotes en curso
                 </p>
@@ -140,11 +140,11 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
                 {activeBatches.map((batch) => (
                   <div
                     key={batch.id}
-                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between space-y-3"
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 hover:border-primary-500/40 transition-all flex flex-col justify-between space-y-3"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                        <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-primary-500/10 text-primary-700 dark:text-primary-300">
                           {batch.batchNumber}
                         </span>
                         {batch.machineName && (
@@ -165,14 +165,14 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
                     <div>
                       <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mb-2.5">
                         <div
-                          className="h-full rounded-full bg-emerald-500"
+                          className="h-full rounded-full bg-primary-500"
                           style={{ width: `${batch.progressPercent}%` }}
                         />
                       </div>
 
                       <NavLink
                         to={`/production/${batch.id}`}
-                        className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        className="w-full py-2 px-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <span>Abrir Sábana</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -244,7 +244,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
           {/* Guía Visual del Ciclo de Vida del Rollo */}
           <Card variant="glass" padding="lg">
             <h3 className="font-black text-slate-900 dark:text-white text-sm mb-1 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-500" />
+              <Sparkles className="w-4 h-4 text-primary-500" />
               <span>Flujo de Trabajo del Tejedor</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
@@ -267,7 +267,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
               </div>
 
               <div className="flex items-start gap-3 relative">
-                <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-accent-500 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-xs">
                   2
                 </div>
                 <div>
@@ -282,7 +282,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
               </div>
 
               <div className="flex items-start gap-3 relative">
-                <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-xs">
                   3
                 </div>
                 <div>
@@ -324,19 +324,19 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-center">
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono block">
+              <div className="p-3 rounded-xl bg-primary-500/10 border border-primary-500/20">
+                <span className="text-lg font-black text-primary-600 dark:text-primary-400 font-mono block">
                   {stats?.machines.operational ?? 0}
                 </span>
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">
+                <span className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase">
                   Operativas
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <span className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono block">
+              <div className="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
+                <span className="text-lg font-black text-accent-600 dark:text-accent-400 font-mono block">
                   {stats?.machines.maintenance ?? 0}
                 </span>
-                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">
+                <span className="text-[10px] font-bold text-accent-700 dark:text-accent-300 uppercase">
                   Mantenimiento
                 </span>
               </div>

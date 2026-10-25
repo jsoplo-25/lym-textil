@@ -237,7 +237,7 @@ export const ProductionBatchesPage: React.FC = () => {
       {/* Top indeterminate loader when refreshing/updating data */}
       {isLoading && (
         <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+          <div className="h-full bg-primary-500 w-full animate-pulse" />
         </div>
       )}
 
@@ -298,15 +298,15 @@ export const ProductionBatchesPage: React.FC = () => {
         {/* Terminados */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
               Terminados
             </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <span className="text-2xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+            <span className="text-2xl md:text-3xl font-extrabold text-primary-600 dark:text-primary-400 font-mono">
               {stats.completedBatches}
             </span>
             <p className="text-[11px] text-slate-400 mt-0.5">Lotes entregados por completo</p>
@@ -328,7 +328,7 @@ export const ProductionBatchesPage: React.FC = () => {
               {stats.totalRollsProduced}{' '}
               <span className="text-xs font-sans font-bold text-slate-500">rollos</span>
             </span>
-            <p className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+            <p className="text-xs font-mono font-bold text-primary-600 dark:text-primary-400 mt-0.5">
               {stats.totalWeightKg.toLocaleString()} Kg total
             </p>
           </div>
@@ -347,7 +347,7 @@ export const ProductionBatchesPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar por lote, máquina, proveedor o notas..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-100/70 dark:bg-slate-800/70 border border-transparent focus:border-emerald-500/50 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-slate-100/70 dark:bg-slate-800/70 border border-transparent focus:border-primary-500/50 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
           />
         </div>
 
@@ -455,7 +455,7 @@ export const ProductionBatchesPage: React.FC = () => {
                     {/* Cód. Seguimiento ÚNICO con botón para copiar */}
                     <Td>
                       {batch.trackingCode ? (
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/60 border border-primary-200 dark:border-primary-800/80 text-primary-700 dark:text-primary-300">
                           <span className="font-mono text-xs font-black tracking-wide">
                             {batch.trackingCode}
                           </span>
@@ -466,7 +466,7 @@ export const ProductionBatchesPage: React.FC = () => {
                               navigator.clipboard.writeText(batch.trackingCode!);
                               toast.success(`Código de seguimiento [${batch.trackingCode}] copiado.`);
                             }}
-                            className="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors cursor-pointer"
+                            className="p-1 rounded-md text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/60 transition-colors cursor-pointer"
                             title="Copiar código de seguimiento"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -501,10 +501,10 @@ export const ProductionBatchesPage: React.FC = () => {
                             <span
                               key={y.id}
                               className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${y.status === 'READY_FOR_PICKUP'
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                                ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border-primary-300 dark:border-primary-700'
                                 : y.status === 'DELIVERED'
                                   ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700'
-                                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                                  : 'bg-accent-50 dark:bg-accent-950/40 text-accent-700 dark:text-accent-300 border-accent-300 dark:border-accent-700'
                                 }`}
                               title={`Estado: ${y.status}`}
                             >
@@ -550,7 +550,7 @@ export const ProductionBatchesPage: React.FC = () => {
 
                     {/* Peso Total */}
                     <Td>
-                      <span className="font-extrabold font-mono text-emerald-600 dark:text-emerald-400 text-xs">
+                      <span className="font-extrabold font-mono text-primary-600 dark:text-primary-400 text-xs">
                         {(batch.totalWeight || 0).toFixed(2)} Kg
                       </span>
                     </Td>
@@ -569,7 +569,7 @@ export const ProductionBatchesPage: React.FC = () => {
                         <Tooltip content="Ver sábana y rollos">
                           <button
                             onClick={() => navigate(`/production/${batch.id}`)}
-                            className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                            className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -578,7 +578,7 @@ export const ProductionBatchesPage: React.FC = () => {
                           <Tooltip content="Editar lote">
                             <button
                               onClick={(e) => handleOpenEdit(batch, e)}
-                              className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                              className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>

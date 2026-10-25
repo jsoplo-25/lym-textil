@@ -1,12 +1,12 @@
 export type BatchStatus =
-  | 'REQUESTED' // Solicitud registrada
+  | 'REQUESTED' // Solicitado / Solicitud registrada
+  | 'IN_PROGRESS' // En proceso
+  | 'PAUSED' // Pausado (bloquea rollos)
   | 'COMPLETED' // Terminado
-  | 'IN_PROGRESS'
   | 'IN_PREPARATION'
   | 'READY_FOR_PICKUP'
   | 'DELIVERED'
-  | 'DISPATCHED'
-  | 'PAUSED';
+  | 'DISPATCHED';
 
 export type YarnStatus =
   | 'IN_PREPARATION' // En preparación
@@ -74,12 +74,26 @@ export interface ProductionRoll {
   yarnId?: string | null;
   yarnName?: string | null;
   rollNumber: string;
-  startDate?: string | null;
-  startTime?: string | null;
+  startDate: string;
+  startTime: string;
+  startOperatorId: string;
   startOperator?: string | null;
+  startOperatorRel?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    workerId?: string;
+  } | null;
   endDate?: string | null;
   endTime?: string | null;
+  endOperatorId?: string | null;
   endOperator?: string | null;
+  endOperatorRel?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    workerId?: string;
+  } | null;
   weight?: number | null;
   status?: RollStatus;
   observations?: string | null;
@@ -87,21 +101,37 @@ export interface ProductionRoll {
   updatedAt: string;
 }
 
+export interface BatchStatusLog {
+  id: string;
+  batchId: string;
+  status: string;
+  changedByUserId?: string | null;
+  changedByUser?: {
+    id: string;
+    workerId?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
 export interface ProductionBatch {
   id: string;
   batchNumber: string;
   trackingCode?: string | null;
-  machineId?: string | null;
+  machineId: string;
   machineCode?: string | null;
   machineName?: string | null;
-  supplierId?: string | null;
+  supplierId: string;
   supplierName?: string | null;
   supplier?: {
     id: string;
     document: string;
     name: string;
   } | null;
-  startDate?: string | null;
+  startDate: string;
   endDate?: string | null;
   status: BatchStatus;
   notes?: string | null;
@@ -112,6 +142,7 @@ export interface ProductionBatch {
   avgWeight?: number;
   yarns?: BatchYarn[];
   rolls?: ProductionRoll[];
+  statusLogs?: BatchStatusLog[];
 }
 
 export interface BatchTrackingData {
@@ -160,12 +191,13 @@ export interface ProductionStats {
 
 export interface CreateBatchDTO {
   batchNumber: string;
-  machineId?: string;
-  supplierId?: string;
-  startDate?: string;
+  machineId: string;
+  supplierId: string;
+  startDate: string;
   endDate?: string;
   status?: BatchStatus;
   notes?: string;
+  statusNote?: string;
 }
 
 export interface UpdateBatchDTO {
@@ -176,17 +208,20 @@ export interface UpdateBatchDTO {
   endDate?: string;
   status?: BatchStatus;
   notes?: string;
+  statusNote?: string;
 }
 
 export interface CreateRollDTO {
   rollNumber: string;
   yarnId?: string;
-  startDate?: string;
-  startTime?: string;
+  startDate: string;
+  startTime: string;
   startOperator?: string;
+  startOperatorId?: string;
   endDate?: string;
   endTime?: string;
   endOperator?: string;
+  endOperatorId?: string;
   weight?: number | string;
   status?: RollStatus;
   observations?: string;
@@ -198,9 +233,11 @@ export interface UpdateRollDTO {
   startDate?: string;
   startTime?: string;
   startOperator?: string;
+  startOperatorId?: string;
   endDate?: string;
   endTime?: string;
   endOperator?: string;
+  endOperatorId?: string;
   weight?: number | string;
   status?: RollStatus;
   observations?: string;

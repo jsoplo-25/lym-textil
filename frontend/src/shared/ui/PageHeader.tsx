@@ -28,7 +28,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <div className={cn('flex flex-col sm:flex-row sm:items-center justify-between gap-4', className)}>
       <div>
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-1">
           {eyebrowIcon}
           <span>{eyebrow}</span>
         </div>

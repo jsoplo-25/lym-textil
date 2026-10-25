@@ -126,7 +126,7 @@ export const WelcomePortalPage: React.FC = () => {
     switch (status) {
       case 'READY_FOR_PICKUP':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-white shadow-xs animate-pulse">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-primary-500 text-white shadow-xs animate-pulse">
             <Bell className="w-3.5 h-3.5" />
             Listo para recojo
           </span>
@@ -140,8 +140,8 @@ export const WelcomePortalPage: React.FC = () => {
         );
       case 'READY_FOR_APPROVAL':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40">
-            <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-accent-100 dark:bg-accent-500/20 text-accent-800 dark:text-accent-300 border border-accent-300 dark:border-accent-500/40">
+            <Clock className="w-3.5 h-3.5 text-accent-600 dark:text-accent-400" />
             En control de calidad
           </span>
         );
@@ -169,11 +169,11 @@ export const WelcomePortalPage: React.FC = () => {
         isDark
           ? 'dark bg-slate-950 text-white'
           : 'bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900'
-      } flex flex-col justify-between selection:bg-emerald-500 selection:text-white relative overflow-hidden transition-colors duration-300`}
+      } flex flex-col justify-between selection:bg-primary-500 selection:text-white relative overflow-hidden transition-colors duration-300`}
     >
       {/* Background Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[550px] bg-gradient-to-b from-emerald-500/10 via-teal-500/5 to-transparent pointer-events-none blur-3xl -z-10" />
-      <div className="absolute top-1/4 -left-48 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[550px] bg-primary-500/5 pointer-events-none blur-3xl -z-10" />
+      <div className="absolute top-1/4 -left-48 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-1/3 -right-48 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
       {/* 1. Header Superior con Selector de Tema y Acceso Interno */}
@@ -186,7 +186,7 @@ export const WelcomePortalPage: React.FC = () => {
                 <span className="font-black tracking-tight text-lg text-slate-900 dark:text-white">
                   TEXTIL L&amp;M
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider border border-emerald-500/20 dark:border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded-full bg-primary-500/10 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 text-[10px] font-extrabold uppercase tracking-wider border border-primary-500/20 dark:border-primary-500/30">
                   Planta Textil
                 </span>
               </div>
@@ -207,7 +207,7 @@ export const WelcomePortalPage: React.FC = () => {
               aria-label="Cambiar tema de color"
             >
               {isDark ? (
-                <Sun className="w-4 h-4 text-amber-400 animate-spin-once" />
+                <Sun className="w-4 h-4 text-accent-400 animate-spin-once" />
               ) : (
                 <Moon className="w-4 h-4 text-slate-700" />
               )}
@@ -219,7 +219,7 @@ export const WelcomePortalPage: React.FC = () => {
                 to="/dashboard"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition-all flex items-center gap-2 shadow-md shadow-emerald-600/20"
+                className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-extrabold text-xs transition-all flex items-center gap-2 shadow-md shadow-primary-600/20"
               >
                 <span>Ir al Panel ({sessionUser?.name?.split(' ')[0] || 'Usuario'})</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -231,7 +231,7 @@ export const WelcomePortalPage: React.FC = () => {
                 rel="noopener noreferrer"
                 className="px-4 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/15 text-slate-800 dark:text-white font-bold text-xs transition-all border border-slate-200 dark:border-white/15 flex items-center gap-2 shadow-xs"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                 <span>Acceso Interno</span>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               </Link>
@@ -244,13 +244,13 @@ export const WelcomePortalPage: React.FC = () => {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-10 flex-1">
         {/* 2.1 Hero y Buscador Directo para Proveedores */}
         <section className="text-center space-y-4 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold backdrop-blur-md shadow-inner">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-700 dark:text-primary-400 text-xs font-bold backdrop-blur-md shadow-inner">
+            <Sparkles className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
             <span>Portal de Seguimiento de Producción para Proveedores</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-            Bienvenido a <span className="bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent">Textil L&amp;M</span>
+            Bienvenido a <span className="text-primary-600 dark:text-primary-400">Textil L&amp;M</span>
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
@@ -259,7 +259,7 @@ export const WelcomePortalPage: React.FC = () => {
 
           {/* Buscador Central Directo */}
           <form onSubmit={handleSearchSubmit} className="relative max-w-xl mx-auto pt-3">
-            <div className="relative flex items-center shadow-xl dark:shadow-2xl rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/90 backdrop-blur-md focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500 transition-all">
+            <div className="relative flex items-center shadow-xl dark:shadow-2xl rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/90 backdrop-blur-md focus-within:ring-2 focus-within:ring-primary-500/30 focus-within:border-primary-500 transition-all">
               <div className="pl-4 text-slate-400 pointer-events-none">
                 <Search className="w-5 h-5" />
               </div>
@@ -283,7 +283,7 @@ export const WelcomePortalPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading || !searchInput.trim()}
-                className="mr-1.5 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-600/25 shrink-0"
+                className="mr-1.5 px-6 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 active:scale-95 text-white font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-600/25 shrink-0"
               >
                 {isLoading ? (
                   <span>Consultando...</span>
@@ -309,7 +309,7 @@ export const WelcomePortalPage: React.FC = () => {
         {!trackingData && !isLoading && !error && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 max-w-4xl mx-auto">
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 shadow-md dark:shadow-none space-y-2.5 transition-colors">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-2xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold">
                 <Search className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">Búsqueda Directa</h4>
@@ -319,7 +319,7 @@ export const WelcomePortalPage: React.FC = () => {
             </div>
 
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 shadow-md dark:shadow-none space-y-2.5 transition-colors">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-2xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold">
                 <Bell className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">Avisos de Recojo</h4>
@@ -329,7 +329,7 @@ export const WelcomePortalPage: React.FC = () => {
             </div>
 
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 shadow-md dark:shadow-none space-y-2.5 transition-colors">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-2xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold">
                 <Scale className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">Pesaje Oficial</h4>
@@ -348,7 +348,7 @@ export const WelcomePortalPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
                 <div>
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="font-mono text-xs font-black px-3 py-1 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 dark:border-emerald-500/30">
+                    <span className="font-mono text-xs font-black px-3 py-1 rounded-xl bg-primary-500/10 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 border border-primary-500/20 dark:border-primary-500/30">
                       CÓDIGO: {trackingData.trackingCode}
                     </span>
                     <span className="font-mono text-xs font-black px-3 py-1 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-950">
@@ -356,7 +356,7 @@ export const WelcomePortalPage: React.FC = () => {
                     </span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2 flex items-center gap-2.5">
-                    <Building2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                    <Building2 className="w-7 h-7 text-primary-600 dark:text-primary-400" />
                     <span>{trackingData.supplierName}</span>
                   </h2>
                 </div>
@@ -367,7 +367,7 @@ export const WelcomePortalPage: React.FC = () => {
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
                     title="Copiar enlace directo"
                   >
-                    <Share2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <Share2 className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
                     <span>{copied ? '¡Enlace copiado!' : 'Compartir'}</span>
                   </button>
 
@@ -383,7 +383,7 @@ export const WelcomePortalPage: React.FC = () => {
 
               {/* Banner Destacado de Recojo */}
               {trackingData.hasRollsReadyForPickup && (
-                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="p-4 sm:p-5 rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-600/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5">
                     <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0">
                       <Bell className="w-6 h-6 animate-bounce" />
@@ -392,12 +392,12 @@ export const WelcomePortalPage: React.FC = () => {
                       <h4 className="text-base font-black">
                         ¡Tienes {trackingData.counts.readyForPickup} {trackingData.counts.readyForPickup === 1 ? 'rollo listo' : 'rollos listos'} para recoger!
                       </h4>
-                      <p className="text-xs text-emerald-100">
+                      <p className="text-xs text-primary-100">
                         Los rollos ya se encuentran preparados en nuestra planta textil. Puedes enviar a tu transporte o coordinar el despacho.
                       </p>
                     </div>
                   </div>
-                  <span className="px-3.5 py-1.5 rounded-xl bg-white text-emerald-800 text-xs font-black shadow-sm self-start sm:self-auto shrink-0">
+                  <span className="px-3.5 py-1.5 rounded-xl bg-white text-primary-800 text-xs font-black shadow-sm self-start sm:self-auto shrink-0">
                     Listo en Planta
                   </span>
                 </div>
@@ -409,13 +409,13 @@ export const WelcomePortalPage: React.FC = () => {
                   <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Avance de Preparación / Entrega
                   </span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-mono font-black text-sm">
+                  <span className="text-primary-600 dark:text-primary-400 font-mono font-black text-sm">
                     {trackingData.progressPercent}%
                   </span>
                 </div>
                 <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5 border border-slate-200 dark:border-slate-700">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700"
+                    className="h-full rounded-full bg-primary-500 transition-all duration-700"
                     style={{ width: `${Math.max(5, Math.min(100, trackingData.progressPercent))}%` }}
                   />
                 </div>
@@ -433,24 +433,24 @@ export const WelcomePortalPage: React.FC = () => {
                   <p className="text-[10px] text-slate-400">Ingresados en sistema</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 dark:border-amber-500/30 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                <div className="p-4 rounded-2xl bg-accent-500/10 border border-accent-500/20 dark:border-accent-500/30 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-accent-700 dark:text-accent-300">
                     2. En Preparación
                   </span>
-                  <p className="text-2xl font-black font-mono text-amber-800 dark:text-amber-200">
+                  <p className="text-2xl font-black font-mono text-accent-800 dark:text-accent-200">
                     {trackingData.counts.inPreparation}
                   </p>
-                  <p className="text-[10px] text-amber-600 dark:text-amber-400/80">En proceso de tejido</p>
+                  <p className="text-[10px] text-accent-600 dark:text-accent-400/80">En proceso de tejido</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 dark:border-emerald-500/40 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                <div className="p-4 rounded-2xl bg-primary-500/10 dark:bg-primary-500/15 border border-primary-500/25 dark:border-primary-500/40 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary-700 dark:text-primary-300">
                     3. Listos para Recojo
                   </span>
-                  <p className="text-2xl font-black font-mono text-emerald-700 dark:text-emerald-300">
+                  <p className="text-2xl font-black font-mono text-primary-700 dark:text-primary-300">
                     {trackingData.counts.readyForPickup}
                   </p>
-                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400/80">Disponibles en planta</p>
+                  <p className="text-[10px] text-primary-600 dark:text-primary-400/80">Disponibles en planta</p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 dark:border-purple-500/30 space-y-1">
@@ -475,7 +475,7 @@ export const WelcomePortalPage: React.FC = () => {
                   <span>Total Kilos: <strong className="text-slate-900 dark:text-white font-mono">{trackingData.totalWeight.toFixed(2)} Kg</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   <span>Estado Lote: <strong className="text-slate-900 dark:text-white">{trackingData.status === 'COMPLETED' ? 'Terminado' : 'Solicitud registrada'}</strong></span>
                 </div>
               </div>
@@ -519,7 +519,7 @@ export const WelcomePortalPage: React.FC = () => {
                         <tr
                           key={roll.id}
                           className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                            roll.status === 'READY_FOR_PICKUP' ? 'bg-emerald-50/50 dark:bg-emerald-500/5' : ''
+                            roll.status === 'READY_FOR_PICKUP' ? 'bg-primary-50/50 dark:bg-primary-500/5' : ''
                           }`}
                         >
                           <td className="py-3 px-4">
@@ -532,7 +532,7 @@ export const WelcomePortalPage: React.FC = () => {
                           </td>
                           <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
                             {roll.weight !== null && roll.weight !== undefined ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">
+                              <span className="text-primary-600 dark:text-primary-400 font-extrabold">
                                 {roll.weight.toFixed(2)} Kg
                               </span>
                             ) : (

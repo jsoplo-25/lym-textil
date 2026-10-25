@@ -93,26 +93,26 @@ export const LoginForm: React.FC = () => {
         </Button>
 
         {slowNotice && isLoading && (
-          <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs text-center animate-pulse">
+          <div className="p-2.5 rounded-lg bg-accent-50 dark:bg-accent-950/40 border border-accent-200 dark:border-accent-800 text-accent-700 dark:text-accent-300 text-xs text-center animate-pulse">
             El servidor se está reactivando tras un periodo de inactividad. Esto puede tomar unos segundos...
           </div>
         )}
 
         <div className="pt-2 flex flex-col items-center justify-center gap-2.5 text-center text-xs text-slate-400 dark:text-slate-500">
           <div className="flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <ShieldCheck className="w-3.5 h-3.5 text-primary-500 shrink-0" />
             <span>Acceso seguro y protegido para personal autorizado</span>
           </div>
 
           <button
             type="button"
             onClick={() => setIsCookiesModalOpen(true)}
-            className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer group"
+            className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer group"
           >
-            <Cookie className="w-3.5 h-3.5 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform" />
+            <Cookie className="w-3.5 h-3.5 text-primary-500 shrink-0 group-hover:scale-110 transition-transform" />
             <span>
               Esta plataforma utiliza cookies seguras.{' '}
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400 underline underline-offset-2">
+              <span className="font-semibold text-primary-600 dark:text-primary-400 underline underline-offset-2">
                 Ver detalle
               </span>
             </span>

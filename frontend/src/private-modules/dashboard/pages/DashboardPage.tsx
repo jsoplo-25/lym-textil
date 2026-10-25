@@ -10,7 +10,6 @@ import { AdminDashboardView } from '../components/AdminDashboardView';
 import { AssistantDashboardView } from '../components/AssistantDashboardView';
 import { WeaverDashboardView } from '../components/WeaverDashboardView';
 import { Card } from '../../../shared/ui/Card';
-import { hasPermission } from '../../../shared/lib/roles';
 
 export const DashboardPage: React.FC = () => {
   const sessionUser = useSelector((state: RootState) => state.session.user);
@@ -37,7 +36,6 @@ export const DashboardPage: React.FC = () => {
 
   const roleCode = String(sessionUser?.role || 'OPERATOR').toUpperCase().trim();
   const roleName = String(sessionUser?.roleName || '').toUpperCase().trim();
-  const canApprove = hasPermission(sessionUser, 'production:approve');
 
   // Determinación de la vista según el rol del usuario
   const isAdmin =
@@ -71,8 +69,8 @@ export const DashboardPage: React.FC = () => {
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
             <span>{capitalizedDate}</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 text-primary-700 dark:text-primary-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
             <span>Sincronizado en tiempo real</span>
           </span>
         </div>
@@ -81,7 +79,7 @@ export const DashboardPage: React.FC = () => {
           {isWeaver && (
             <NavLink
               to="/production"
-              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
             >
               <Factory className="w-3.5 h-3.5" />
               <span>Ir a Sábana de Producción</span>
@@ -96,7 +94,7 @@ export const DashboardPage: React.FC = () => {
             className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
             title="Actualizar datos del panel"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-emerald-500' : 'text-slate-400'}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-primary-500' : 'text-slate-400'}`} />
             <span>{isLoading ? 'Actualizando...' : 'Actualizar'}</span>
           </button>
         </div>

@@ -12,8 +12,8 @@ interface AlertVariantConfig {
 
 const VARIANTS: Record<AlertVariant, AlertVariantConfig> = {
   success: {
-    container: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300',
-    icon: 'text-emerald-500',
+    container: 'bg-primary-500/10 border-primary-500/20 text-primary-700 dark:text-primary-300',
+    icon: 'text-primary-500',
     Icon: CheckCircle2,
   },
   error: {
@@ -22,8 +22,8 @@ const VARIANTS: Record<AlertVariant, AlertVariantConfig> = {
     Icon: AlertCircle,
   },
   warning: {
-    container: 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300',
-    icon: 'text-amber-500',
+    container: 'bg-accent-500/10 border-accent-500/20 text-accent-700 dark:text-accent-300',
+    icon: 'text-accent-500',
     Icon: AlertTriangle,
   },
   info: {

@@ -11,12 +11,12 @@ export const AppFooter: React.FC = () => {
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1.5">
-          <Cpu className="w-3.5 h-3.5 text-emerald-500" />
+          <Cpu className="w-3.5 h-3.5 text-primary-500" />
           <span>FSD Modular Architecture</span>
         </div>
         <span>•</span>
         <div className="flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+          <ShieldCheck className="w-3.5 h-3.5 text-primary-500" />
           <span>JWT & Supabase Sync</span>
         </div>
       </div>
