@@ -101,7 +101,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
         {/* Columna Izquierda: Lotes Activos para Tejer y Últimos Rollos (3 columnas) */}
         <div className="lg:col-span-3 space-y-6">
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <Factory className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -143,7 +143,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
                     className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 hover:border-primary-500/40 transition-all flex flex-col justify-between space-y-3"
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-1.5">
                         <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-primary-500/10 text-primary-700 dark:text-primary-300">
                           {batch.batchNumber}
                         </span>
@@ -186,7 +186,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
 
           {/* Últimos Rollos Registrados en Vivo */}
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <Layers className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -216,7 +216,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
                     className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
                           Rollo #{roll.rollNumber}
                         </span>
@@ -229,7 +229,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
                       </p>
                     </div>
 
-                    <div className="shrink-0 text-right">
+                    <div className="shrink-0 text-right max-w-[45%]">
                       {getRollStatusBadge(roll.status)}
                     </div>
                   </div>
@@ -313,7 +313,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
 
           {/* Estado de Máquinas */}
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <h3 className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-2">
                 <Cog className="w-4 h-4 text-purple-500" />
                 <span>Máquinas de Tejeduría</span>

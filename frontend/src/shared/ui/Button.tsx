@@ -34,7 +34,7 @@ export const Button: React.FC<ButtonProps> = ({
     md: 'text-sm px-4 py-2.5 rounded-xl gap-2',
     lg: 'text-base px-6 py-3.5 rounded-xl gap-2.5',
     cta: 'text-sm px-5 py-3 rounded-2xl gap-2',
-    icon: 'p-2 rounded-xl',
+    icon: 'p-2.5 sm:p-2 rounded-xl',
   };
 
   return (

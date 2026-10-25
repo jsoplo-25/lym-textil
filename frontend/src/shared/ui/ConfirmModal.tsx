@@ -76,7 +76,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           {description}
         </p>
 
-        <div className="mt-6 flex items-center gap-3 w-full">
+        <div className="mt-6 flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full">
           <button
             type="button"
             onClick={onClose}

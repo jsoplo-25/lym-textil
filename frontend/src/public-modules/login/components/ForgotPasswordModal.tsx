@@ -190,7 +190,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               autoFocus
             />
 
-            <div className="flex items-center justify-end gap-3 pt-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-3 [&>button]:w-full sm:[&>button]:w-auto">
               <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
                 Cancelar
               </Button>
@@ -205,8 +205,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         {/* STEP 2: CODIGO Y NUEVA CONTRASEÑA */}
         {step === 'CODE_AND_PASSWORD' && (
           <form onSubmit={handleResetPassword} className="space-y-4">
-            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 truncate pr-2">
+            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs min-w-0">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
                 <Mail className="w-4 h-4 text-primary-500 shrink-0" />
                 <span className="text-slate-700 dark:text-slate-300 truncate font-medium">{email}</span>
               </div>
@@ -256,7 +256,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               required
             />
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-1">
               <button
                 type="button"
                 onClick={handleResendCode}
@@ -279,7 +279,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               </button>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-3 [&>button]:w-full sm:[&>button]:w-auto">
               <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
                 Cancelar
               </Button>

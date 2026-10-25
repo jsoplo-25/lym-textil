@@ -63,7 +63,7 @@ export const Alert: React.FC<AlertProps> = ({ variant = 'info', size = 'md', tit
       <Icon className={cn(size === 'sm' ? 'w-4 h-4' : 'w-5 h-5', 'shrink-0 mt-0.5', icon)} />
       <div className="flex-1 min-w-0">
         {title && <p className="font-bold mb-0.5">{title}</p>}
-        <span>{children}</span>
+        <span className="break-words">{children}</span>
       </div>
     </div>
   );

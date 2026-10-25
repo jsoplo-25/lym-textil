@@ -53,7 +53,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             <div className="w-10 h-10 rounded-2xl bg-accent-500/20 text-accent-600 dark:text-accent-400 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Rollos esperando visto bueno</span>
                 <span className="px-2 py-0.5 rounded-full text-xs font-black bg-accent-500 text-white">
@@ -139,7 +139,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         <div className="lg:col-span-3 space-y-6">
           {/* Lotes de Producción Activos */}
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <Factory className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -184,12 +184,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     to={`/production/${batch.id}`}
                     className="block p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 hover:bg-primary-500/5 hover:border-primary-500/20 border border-transparent transition-all group"
                   >
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 mb-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <span className="font-mono text-xs font-black px-2 py-0.5 rounded-md bg-primary-500/10 text-primary-700 dark:text-primary-300">
                           {batch.batchNumber}
                         </span>
-                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-xs sm:max-w-sm">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate min-w-0 max-w-[10rem] min-[400px]:max-w-[14rem] sm:max-w-sm">
                           {batch.supplierName || 'Cliente General'}
                         </span>
                       </div>
@@ -203,7 +203,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 text-xs text-slate-500 dark:text-slate-400 mb-1.5">
                       <span>
                         Avance de entrega: <strong>{batch.deliveredRolls}</strong> de{' '}
                         <strong>{batch.totalRolls}</strong> rollos
@@ -227,7 +227,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
           {/* Resumen de Maquinarias en Planta */}
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <Cog className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -245,30 +245,30 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               </NavLink>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-2xl bg-primary-500/10 border border-primary-500/20 text-center">
+            <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-2 sm:gap-3">
+              <div className="p-2.5 sm:p-3.5 min-w-0 rounded-2xl bg-primary-500/10 border border-primary-500/20 text-center">
                 <span className="text-xl font-black text-primary-600 dark:text-primary-400 font-mono block">
                   {stats?.machines.operational ?? 0}
                 </span>
-                <span className="text-[11px] font-bold text-primary-700 dark:text-primary-300 uppercase">
+                <span className="text-[10px] sm:text-[11px] font-bold text-primary-700 dark:text-primary-300 uppercase break-words">
                   Operativas
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-accent-500/10 border border-accent-500/20 text-center">
+              <div className="p-2.5 sm:p-3.5 min-w-0 rounded-2xl bg-accent-500/10 border border-accent-500/20 text-center">
                 <span className="text-xl font-black text-accent-600 dark:text-accent-400 font-mono block">
                   {stats?.machines.maintenance ?? 0}
                 </span>
-                <span className="text-[11px] font-bold text-accent-700 dark:text-accent-300 uppercase">
+                <span className="text-[10px] sm:text-[11px] font-bold text-accent-700 dark:text-accent-300 uppercase break-words">
                   Mantenimiento
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center">
+              <div className="p-2.5 sm:p-3.5 min-w-0 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center">
                 <span className="text-xl font-black text-rose-600 dark:text-rose-400 font-mono block">
                   {stats?.machines.inactive ?? 0}
                 </span>
-                <span className="text-[11px] font-bold text-rose-700 dark:text-rose-300 uppercase">
+                <span className="text-[10px] sm:text-[11px] font-bold text-rose-700 dark:text-rose-300 uppercase break-words">
                   Inactivas
                 </span>
               </div>
@@ -280,7 +280,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         <div className="lg:col-span-2 space-y-6">
           {/* Bandeja de Aprobaciones Inmediatas */}
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent-500" />
@@ -359,7 +359,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {/* Usuarios por Rol */}
           {system && (
             <Card variant="glass" padding="lg">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
                 <h3 className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-primary-500" />
                   <span>Usuarios por Rol</span>
@@ -380,9 +380,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       : 0;
                   return (
                     <div key={role.code}>
-                      <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                        <span>{role.name}</span>
-                        <span className="text-slate-400">
+                      <div className="flex items-center justify-between gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                        <span className="truncate min-w-0">{role.name}</span>
+                        <span className="text-slate-400 shrink-0">
                           {role.count} usuario{role.count === 1 ? '' : 's'}
                         </span>
                       </div>
@@ -402,7 +402,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {/* Usuarios Recientes */}
           {system && (
             <Card variant="glass" padding="lg">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
                 <h3 className="font-black text-slate-900 dark:text-white text-sm">
                   Usuarios Recientes
                 </h3>
@@ -427,7 +427,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 max-w-28 truncate dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                         {getRoleDisplayName(user.role)}
                       </span>
                     </div>

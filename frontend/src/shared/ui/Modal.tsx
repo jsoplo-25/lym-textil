@@ -87,13 +87,13 @@ export const Modal: React.FC<ModalProps> = ({
   const hasHeader = Boolean(title || icon);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-fadeIn overflow-y-auto">
       {/* Backdrop click to close — solo si el modal es descartable y no está cargando */}
       {dismissible && <div className="fixed inset-0" onClick={onClose} />}
 
       <div
         className={cn(
-          'relative z-10 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl transition-all my-8 overflow-hidden',
+          'relative z-10 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-7 shadow-2xl transition-all my-auto overflow-hidden',
           SIZE_STYLES[size],
           className
         )}
@@ -125,8 +125,8 @@ export const Modal: React.FC<ModalProps> = ({
         )}
 
         {hasHeader ? (
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5 min-w-0">
               {icon && (
                 <div
                   className={cn(
@@ -137,7 +137,7 @@ export const Modal: React.FC<ModalProps> = ({
                   {icon}
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 {title && <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>}
                 {desc && <p className="text-xs text-slate-400">{desc}</p>}
               </div>
@@ -146,7 +146,7 @@ export const Modal: React.FC<ModalProps> = ({
             {dismissible && (
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                className="p-2.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                 aria-label="Cerrar modal"
               >
                 <X className="w-5 h-5" />
@@ -157,7 +157,7 @@ export const Modal: React.FC<ModalProps> = ({
           dismissible && (
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer z-10"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer z-10"
               aria-label="Cerrar modal"
             >
               <X className="w-4 h-4" />

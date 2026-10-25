@@ -254,8 +254,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       {isOpen && (
         <div
           className={cn(
-            'absolute top-full mt-2 z-[110] w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-4 animate-in fade-in duration-150 select-none',
-            align === 'right' ? 'right-0' : 'left-0'
+            'fixed inset-x-4 mx-auto max-w-80 sm:absolute sm:inset-x-auto sm:mx-0 sm:top-full mt-2 z-[110] sm:w-80 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-4 animate-in fade-in duration-150 select-none',
+            align === 'right' ? 'sm:right-0' : 'sm:left-0'
           )}
         >
           {/* Calendar Header */}
@@ -263,7 +263,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2 sm:p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Mes anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -277,7 +277,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <button
               type="button"
               onClick={handleNextMonth}
-              className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2 sm:p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Mes siguiente"
             >
               <ChevronRight className="w-4 h-4" />
@@ -325,7 +325,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   disabled={disabledDay}
                   onClick={() => handleSelectDay(day)}
                   className={cn(
-                    'py-2 rounded-xl font-semibold transition-all relative',
+                    'py-2.5 sm:py-2 rounded-xl font-semibold transition-all relative',
                     disabledDay
                       ? 'opacity-30 cursor-not-allowed pointer-events-none'
                       : 'cursor-pointer',

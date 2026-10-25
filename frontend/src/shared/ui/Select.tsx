@@ -70,7 +70,10 @@ export const Select: React.FC<SelectProps> = (props) => {
     const el = triggerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    setCoords({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    const vw = window.innerWidth;
+    const width = Math.min(Math.max(rect.width, 160), vw - 16);
+    const left = Math.max(8, Math.min(rect.left, vw - width - 8));
+    setCoords({ top: rect.bottom + 6, left, width });
   }, []);
 
   useEffect(() => {

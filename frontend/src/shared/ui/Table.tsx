@@ -65,7 +65,7 @@ interface CellProps extends WithChildren {
 }
 
 export const Th: React.FC<CellProps> = ({ children, align = 'left', className }) => (
-  <th className={cn('py-4 px-6', align === 'right' && 'text-right', className)}>{children}</th>
+  <th className={cn('py-3 px-3 sm:py-4 sm:px-6', align === 'right' && 'text-right', className)}>{children}</th>
 );
 
 export const TableBody: React.FC<WithChildren> = ({ children, className }) => (
@@ -91,7 +91,7 @@ export const Td: React.FC<CellProps> = ({ children, align = 'left', className, c
   <td
     colSpan={colSpan}
     onClick={onClick}
-    className={cn('py-4 px-6', align === 'right' && 'text-right', className)}
+    className={cn('py-3 px-3 sm:py-4 sm:px-6', align === 'right' && 'text-right', className)}
   >
     {children}
   </td>

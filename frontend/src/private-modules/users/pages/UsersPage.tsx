@@ -221,7 +221,7 @@ export const UsersPage: React.FC = () => {
 
       {/* Filter and Search Controls */}
       <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
+        <div className="relative w-full sm:w-72 lg:w-80">
           <input
             type="text"
             placeholder="Buscar por nombre o correo..."
@@ -233,7 +233,7 @@ export const UsersPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="w-full sm:w-56">
+          <div className="min-w-0 flex-1 sm:flex-none sm:w-56">
             <Select
               value={selectedRole}
               onChange={setSelectedRole}
@@ -247,7 +247,7 @@ export const UsersPage: React.FC = () => {
             <button
               onClick={loadUsers}
               aria-label="Recargar usuarios"
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
@@ -384,7 +384,7 @@ export const UsersPage: React.FC = () => {
                           <button
                             onClick={() => handleOpenEdit(user)}
                             aria-label="Editar usuario"
-                            className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
+                            className="p-2.5 sm:p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
@@ -395,7 +395,7 @@ export const UsersPage: React.FC = () => {
                           <button
                             onClick={() => handleOpenDelete(user)}
                             aria-label="Eliminar usuario"
-                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            className="p-2.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

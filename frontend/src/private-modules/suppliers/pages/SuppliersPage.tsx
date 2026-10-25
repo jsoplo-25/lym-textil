@@ -235,7 +235,7 @@ export const SuppliersPage: React.FC = () => {
       {/* 3. Search & Filters Bar */}
       <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center gap-3">
         {/* Search */}
-        <div className="relative flex-1 w-full">
+        <div className="relative flex-1 w-full min-w-0">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <Search className="w-4 h-4" />
           </div>
@@ -263,7 +263,7 @@ export const SuppliersPage: React.FC = () => {
           <button
             onClick={loadSuppliers}
             aria-label="Recargar proveedores"
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 self-end md:self-auto"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -273,7 +273,7 @@ export const SuppliersPage: React.FC = () => {
       {/* 4. Suppliers Table Card */}
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center justify-between gap-4">
                 <Skeleton className="h-10 w-44 rounded-xl" />
@@ -284,7 +284,7 @@ export const SuppliersPage: React.FC = () => {
             ))}
           </div>
         ) : suppliers.length === 0 ? (
-          <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
+          <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-3">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
               <Truck className="w-8 h-8" />
             </div>
@@ -336,7 +336,7 @@ export const SuppliersPage: React.FC = () => {
                         {supplier.address && (
                           <p className="text-[11px] text-slate-400 flex items-center gap-1">
                             <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span className="truncate max-w-xs">{supplier.address}</span>
+                            <span className="truncate max-w-[12rem] sm:max-w-xs">{supplier.address}</span>
                           </p>
                         )}
                       </div>
@@ -391,7 +391,7 @@ export const SuppliersPage: React.FC = () => {
                             <Tooltip content="Editar proveedor">
                               <button
                                 onClick={() => handleOpenEdit(supplier)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                                className="p-2.5 sm:p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 transition-colors cursor-pointer"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
@@ -401,7 +401,7 @@ export const SuppliersPage: React.FC = () => {
                             <Tooltip content="Eliminar proveedor">
                               <button
                                 onClick={() => handleOpenDelete(supplier)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                className="p-2.5 sm:p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

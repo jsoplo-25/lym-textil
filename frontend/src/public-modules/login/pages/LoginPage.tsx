@@ -40,7 +40,7 @@ export const LoginPage: React.FC = () => {
       </aside>
 
       {/* Form panel */}
-      <main className="flex-1 flex items-center justify-center p-6 sm:p-10 relative bg-[#F8F9FC] dark:bg-slate-950">
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-10 relative bg-[#F8F9FC] dark:bg-slate-950">
         <div className="w-full max-w-sm">
           <Logo
             size="md"

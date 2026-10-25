@@ -362,7 +362,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
@@ -373,7 +373,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold flex items-center gap-2 shadow-sm shadow-primary-600/30 transition-all cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-primary-600/30 transition-all cursor-pointer disabled:opacity-50"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : editingUser ? <Save className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
             <span>{editingUser ? 'Guardar Cambios' : 'Crear Usuario'}</span>
