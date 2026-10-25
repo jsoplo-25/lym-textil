@@ -23,14 +23,27 @@ const authenticateJwt = (req, res, next) => {
     }
     try {
         const decoded = (0, jwt_1.verifyToken)(token);
-        // Validar que la sesión no haya sido reemplazada por otro login (en otra pestaña o en otra PC)
-        if (decoded.sessionId && !session_manager_1.sessionManager.isValidSession(decoded.id, decoded.sessionId)) {
-            res.status(401).json({
-                success: false,
-                code: 'SESSION_SUPERSEDED',
-                error: 'Tu sesión ha sido iniciada en otro dispositivo o pestaña. La sesión actual se ha cerrado automáticamente.',
-            });
-            return;
+        // Validar que la sesión no haya sido reemplazada ni haya expirado por inactividad
+        if (decoded.sessionId) {
+            const validation = session_manager_1.sessionManager.validateSession(decoded.id, decoded.sessionId);
+            if (!validation.valid) {
+                if (validation.reason === 'SUPERSEDED') {
+                    res.status(401).json({
+                        success: false,
+                        code: 'SESSION_SUPERSEDED',
+                        error: 'Tu sesión ha sido iniciada en otro dispositivo o pestaña. La sesión actual se ha cerrado automáticamente.',
+                    });
+                    return;
+                }
+                else {
+                    res.status(401).json({
+                        success: false,
+                        code: 'SESSION_EXPIRED',
+                        error: 'Tu sesión ha expirado por inactividad (15 minutos). Inicia sesión nuevamente.',
+                    });
+                    return;
+                }
+            }
         }
         session_manager_1.sessionManager.touchSession(decoded.id);
         req.user = decoded;

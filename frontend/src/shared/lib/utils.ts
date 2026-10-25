@@ -38,6 +38,15 @@ export const getTotalSessionTimeoutMs = (): number => {
   return TOTAL_SESSION_TIMEOUT_MS;
 };
 
+/**
+ * Comprueba si la sesión ha expirado por inactividad (superó los 15 minutos + gracia).
+ */
+export const isSessionTimedOut = (): boolean => {
+  const last = getLastActivity();
+  if (!last) return false;
+  return Date.now() - last >= TOTAL_SESSION_TIMEOUT_MS;
+};
+
 // Full Session Clear
 export const clearStoredSession = (): void => {
   localStorage.removeItem('access_token');

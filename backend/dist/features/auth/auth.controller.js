@@ -93,10 +93,14 @@ class AuthController {
             });
         }
         catch (error) {
+            (0, cookies_1.clearAuthCookies)(res);
             const errorMsg = error instanceof Error ? error.message : 'Token de refresco inválido o expirado.';
+            const isSuperseded = errorMsg.includes('SESSION_SUPERSEDED');
+            const isExpired = errorMsg.includes('SESSION_EXPIRED');
             res.status(401).json({
                 success: false,
-                error: errorMsg,
+                code: isSuperseded ? 'SESSION_SUPERSEDED' : isExpired ? 'SESSION_EXPIRED' : 'INVALID_REFRESH_TOKEN',
+                error: errorMsg.replace(/^(SESSION_SUPERSEDED|SESSION_EXPIRED):\s*/, ''),
             });
         }
     }

@@ -9,6 +9,13 @@ interface SessionData {
 
 type SessionSubscriber = (event: { type: 'SESSION_SUPERSEDED'; newSessionId: string }) => void;
 
+export const MAX_SESSION_INACTIVITY_MS = 17 * 60 * 1000; // 15 minutos + 2 min de gracia
+
+export interface SessionValidationResult {
+  valid: boolean;
+  reason?: 'SUPERSEDED' | 'EXPIRED';
+}
+
 class SessionManager {
   // Mapa de userId -> Sesión activa actual
   private activeSessions = new Map<string, SessionData>();
@@ -37,22 +44,34 @@ class SessionManager {
   }
 
   /**
-   * Verifica si la sesión consultada sigue siendo la única sesión activa para este usuario.
+   * Valida minuciosamente si la sesión está vigente tanto en concurrencia como en tiempo de inactividad.
    */
-  isValidSession(userId: string, sessionId?: string): boolean {
-    if (!sessionId) return true; // Retrocompatibilidad si no vino sessionId
+  validateSession(userId: string, sessionId?: string): SessionValidationResult {
+    if (!sessionId) return { valid: true };
+
     const current = this.activeSessions.get(userId);
     if (!current) {
-      // Si el servidor se reinició y la sesión no estaba en memoria, la registramos como activa
-      this.activeSessions.set(userId, {
-        sessionId,
-        userId,
-        createdAt: Date.now(),
-        lastActive: Date.now(),
-      });
-      return true;
+      return { valid: false, reason: 'EXPIRED' };
     }
-    return current.sessionId === sessionId;
+
+    if (current.sessionId !== sessionId) {
+      return { valid: false, reason: 'SUPERSEDED' };
+    }
+
+    const elapsed = Date.now() - current.lastActive;
+    if (elapsed > MAX_SESSION_INACTIVITY_MS) {
+      this.activeSessions.delete(userId);
+      return { valid: false, reason: 'EXPIRED' };
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Verifica si la sesión consultada sigue siendo la única sesión activa y no ha expirado.
+   */
+  isValidSession(userId: string, sessionId?: string): boolean {
+    return this.validateSession(userId, sessionId).valid;
   }
 
   /**
@@ -61,6 +80,10 @@ class SessionManager {
   touchSession(userId: string): void {
     const current = this.activeSessions.get(userId);
     if (current) {
+      if (Date.now() - current.lastActive > MAX_SESSION_INACTIVITY_MS) {
+        this.activeSessions.delete(userId);
+        return;
+      }
       current.lastActive = Date.now();
     }
   }
