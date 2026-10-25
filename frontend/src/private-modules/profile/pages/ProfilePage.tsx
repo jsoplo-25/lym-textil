@@ -136,7 +136,7 @@ export const ProfilePage: React.FC = () => {
   const getRoleBadgeColor = (role?: string) => {
     switch (role) {
       case 'ADMINISTRADOR':
-        return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+        return 'bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-500/20';
       case 'MANAGER':
       case 'SUPERVISOR':
         return 'bg-slate-900/6 text-slate-700 dark:bg-white/10 dark:text-slate-200 border-slate-900/10 dark:border-white/15';
@@ -150,11 +150,11 @@ export const ProfilePage: React.FC = () => {
       {/* Header Profile Hero Card */}
       <div className="relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden">
         {/* Decorative Top Textile Pattern Banner */}
-        <div className="h-36 sm:h-44 w-full bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-900 relative overflow-hidden">
+        <div className="h-36 sm:h-44 w-full bg-primary-600 relative overflow-hidden">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
-          <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-primary-400/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute top-4 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-md text-white text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+            <Sparkles className="w-3.5 h-3.5 text-primary-300" />
             <span>Textil L&M Security Verified</span>
           </div>
         </div>
@@ -177,7 +177,7 @@ export const ProfilePage: React.FC = () => {
                 <span
                   role="img"
                   aria-label="Cuenta verificada"
-                  className="w-6 h-6 bg-emerald-500 border-4 border-white dark:border-slate-900 rounded-full flex items-center justify-center shadow"
+                  className="w-6 h-6 bg-primary-500 border-4 border-white dark:border-slate-900 rounded-full flex items-center justify-center shadow"
                 >
                   <Check className="w-3 h-3 text-white stroke-[3]" />
                 </span>
@@ -208,7 +208,7 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('info')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'info'
-              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
@@ -219,7 +219,7 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('security')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'security'
-              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
@@ -230,7 +230,7 @@ export const ProfilePage: React.FC = () => {
           <button
             onClick={() => setActiveTab('permissions')}
             className={`py-4 px-2 sm:px-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${activeTab === 'permissions'
-              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
           >
@@ -276,7 +276,7 @@ export const ProfilePage: React.FC = () => {
                   onChange={(e) => setFirstName(e.target.value)}
                   required
                   placeholder="Ej. Jhon Anderson"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm transition-all"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white text-sm transition-all"
                 />
               </div>
 
@@ -290,7 +290,7 @@ export const ProfilePage: React.FC = () => {
                   onChange={(e) => setLastName(e.target.value)}
                   required
                   placeholder="Ej. Soplopuco Lavado"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm transition-all"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white text-sm transition-all"
                 />
               </div>
 
@@ -304,7 +304,7 @@ export const ProfilePage: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="tu@email.com"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm transition-all"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white text-sm transition-all"
                 />
               </div>
 
@@ -316,7 +316,7 @@ export const ProfilePage: React.FC = () => {
                   <Avatar firstName={firstName} lastName={lastName} size="sm" />
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Iniciales en el sistema:{' '}
-                    <strong className="text-emerald-600 dark:text-emerald-400 text-sm">
+                    <strong className="text-primary-600 dark:text-primary-400 text-sm">
                       {firstName && lastName ? `${firstName.trim().charAt(0)}${lastName.trim().charAt(0)}`.toUpperCase() : 'JS'}
                     </strong>
                   </span>
@@ -326,7 +326,7 @@ export const ProfilePage: React.FC = () => {
 
             {/* Role Notice Card */}
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3">
-              <Shield className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+              <Shield className="w-5 h-5 text-primary-500 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   Nivel de Autorización: {getRoleDisplayName(sessionUser)}
@@ -383,7 +383,7 @@ export const ProfilePage: React.FC = () => {
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white text-sm"
                 />
                 <button
                   type="button"
@@ -408,7 +408,7 @@ export const ProfilePage: React.FC = () => {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white text-sm"
                 />
                 <button
                   type="button"
@@ -433,7 +433,7 @@ export const ProfilePage: React.FC = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   placeholder="Repite la nueva contraseña"
-                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white text-sm"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white text-sm"
                 />
                 <button
                   type="button"
@@ -472,17 +472,17 @@ export const ProfilePage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Dashboard Capability */}
             <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-              <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+              <div className="flex items-center gap-2.5 text-primary-600 dark:text-primary-400 font-bold text-sm">
                 <Layers className="w-4 h-4" />
                 <span>Panel Principal (Dashboard)</span>
               </div>
               <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                   <span>Acceso al Dashboard general del sistema</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                   <span>Visualización de métricas e indicadores de producción</span>
                 </li>
               </ul>
@@ -490,18 +490,18 @@ export const ProfilePage: React.FC = () => {
 
             {/* Profile Capability */}
             <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-              <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+              <div className="flex items-center gap-2.5 text-primary-600 dark:text-primary-400 font-bold text-sm">
                 <User className="w-4 h-4" />
                 <span>Mi Perfil de Usuario</span>
               </div>
               <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                   <span>Consulta de datos personales y facultades asignadas</span>
                 </li>
                 {hasPermission(sessionUser, 'profile:edit') && (
                   <li className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                     <span>Actualización de información de contacto y contraseña</span>
                   </li>
                 )}
@@ -511,30 +511,30 @@ export const ProfilePage: React.FC = () => {
             {/* Users Capability */}
             {hasPermission(sessionUser, 'users:read') ? (
               <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-                <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                <div className="flex items-center gap-2.5 text-primary-600 dark:text-primary-400 font-bold text-sm">
                   <Users className="w-4 h-4" />
                   <span>Mantenedor de Usuarios</span>
                 </div>
                 <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
                   <li className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                     <span>Consulta de colaboradores y estados de cuenta</span>
                   </li>
                   {hasPermission(sessionUser, 'users:create') && (
                     <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                       <span>Registro y alta de nuevos colaboradores</span>
                     </li>
                   )}
                   {hasPermission(sessionUser, 'users:edit') && (
                     <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                       <span>Edición de datos y credenciales de colaboradores</span>
                     </li>
                   )}
                   {hasPermission(sessionUser, 'users:delete') && (
                     <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                       <span>Baja y eliminación de cuentas</span>
                     </li>
                   )}
@@ -545,30 +545,30 @@ export const ProfilePage: React.FC = () => {
             {/* Roles Capability */}
             {hasPermission(sessionUser, 'roles:read') ? (
               <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
-                <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                <div className="flex items-center gap-2.5 text-primary-600 dark:text-primary-400 font-bold text-sm">
                   <Key className="w-4 h-4" />
                   <span>Mantenedor de Roles y Permisos</span>
                 </div>
                 <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
                   <li className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                     <span>Consulta de matriz de roles y facultades</span>
                   </li>
                   {hasPermission(sessionUser, 'roles:create') && (
                     <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                       <span>Creación de nuevos roles de trabajo</span>
                     </li>
                   )}
                   {hasPermission(sessionUser, 'roles:edit') && (
                     <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                       <span>Configuración y edición de privilegios</span>
                     </li>
                   )}
                   {hasPermission(sessionUser, 'roles:delete') && (
                     <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                       <span>Eliminación de roles personalizados</span>
                     </li>
                   )}

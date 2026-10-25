@@ -1,71 +1,55 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
-const supabase_1 = require("../../config/supabase");
 const prisma_1 = require("../../config/prisma");
 const password_1 = require("../../shared/utils/password");
 class UsersController {
     async getUsers(req, res) {
-        const { q, role } = req.query;
+        const { q, role, status } = req.query;
         let usersList = [];
-        // 1. Try Prisma Primary Query
         try {
             const whereClause = {};
             if (role && role !== 'ALL') {
                 whereClause.role = role;
+            }
+            if (status && status !== 'ALL') {
+                whereClause.status = status;
             }
             if (q) {
                 whereClause.OR = [
                     { email: { contains: q, mode: 'insensitive' } },
                     { firstName: { contains: q, mode: 'insensitive' } },
                     { lastName: { contains: q, mode: 'insensitive' } },
+                    { workerId: { contains: q, mode: 'insensitive' } },
+                    { phone: { contains: q, mode: 'insensitive' } },
+                    { jobTitle: { contains: q, mode: 'insensitive' } },
                 ];
             }
             const dbUsers = await prisma_1.prisma.user.findMany({
                 where: whereClause,
-                orderBy: { createdAt: 'desc' },
+                include: { roleDefinition: true },
+                orderBy: [{ workerId: 'asc' }, { createdAt: 'desc' }],
             });
             if (dbUsers) {
                 usersList = dbUsers.map((u) => ({
                     id: u.id,
+                    workerId: u.workerId,
                     email: u.email,
                     firstName: u.firstName,
                     lastName: u.lastName,
                     role: u.role,
+                    roleName: u.roleDefinition?.name || u.role,
                     avatarUrl: u.avatarUrl || undefined,
-                    status: 'ACTIVE',
+                    status: u.status || 'ACTIVE',
+                    phone: u.phone || undefined,
+                    jobTitle: u.jobTitle || u.roleDefinition?.description || undefined,
+                    lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : undefined,
                     createdAt: u.createdAt.toISOString(),
                 }));
             }
         }
-        catch {
-            // 2. Supabase Fallback Query if Prisma fails
-            try {
-                let query = supabase_1.supabaseAdmin
-                    .from('users')
-                    .select('id, email, first_name, last_name, role, avatar_url, created_at')
-                    .order('created_at', { ascending: false });
-                if (role && role !== 'ALL') {
-                    query = query.eq('role', role);
-                }
-                if (q) {
-                    query = query.or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
-                }
-                const { data: supaUsers, error } = await query;
-                if (!error && supaUsers) {
-                    usersList = supaUsers.map((u) => ({
-                        id: u.id,
-                        email: u.email,
-                        firstName: u.first_name || '',
-                        lastName: u.last_name || '',
-                        role: u.role,
-                        avatarUrl: u.avatar_url || undefined,
-                        status: 'ACTIVE',
-                        createdAt: u.created_at,
-                    }));
-                }
-            }
-            catch { }
+        catch (err) {
+            console.error('Error al consultar usuarios en Prisma:', err);
         }
         const response = {
             success: true,
@@ -76,70 +60,79 @@ class UsersController {
     async getUserById(req, res) {
         const id = String(req.params.id);
         try {
-            const dbUser = await prisma_1.prisma.user.findUnique({ where: { id } });
+            const dbUser = await prisma_1.prisma.user.findUnique({
+                where: { id },
+                include: { roleDefinition: true },
+            });
             if (dbUser) {
+                const userObj = {
+                    id: dbUser.id,
+                    workerId: dbUser.workerId,
+                    email: dbUser.email,
+                    firstName: dbUser.firstName,
+                    lastName: dbUser.lastName,
+                    role: dbUser.role,
+                    roleName: dbUser.roleDefinition?.name || dbUser.role,
+                    avatarUrl: dbUser.avatarUrl || undefined,
+                    status: dbUser.status || 'ACTIVE',
+                    phone: dbUser.phone || undefined,
+                    jobTitle: dbUser.jobTitle || dbUser.roleDefinition?.description || undefined,
+                    lastLoginAt: dbUser.lastLoginAt ? dbUser.lastLoginAt.toISOString() : undefined,
+                    createdAt: dbUser.createdAt.toISOString(),
+                };
                 res.status(200).json({
                     success: true,
-                    data: {
-                        id: dbUser.id,
-                        email: dbUser.email,
-                        firstName: dbUser.firstName,
-                        lastName: dbUser.lastName,
-                        role: dbUser.role,
-                        avatarUrl: dbUser.avatarUrl || undefined,
-                        status: 'ACTIVE',
-                        createdAt: dbUser.createdAt.toISOString(),
-                    },
+                    data: userObj,
                 });
                 return;
             }
         }
-        catch { }
-        try {
-            const { data: supaUser } = await supabase_1.supabaseAdmin
-                .from('users')
-                .select('*')
-                .eq('id', id)
-                .single();
-            if (supaUser) {
-                const row = supaUser;
-                res.status(200).json({
-                    success: true,
-                    data: {
-                        id: row.id,
-                        email: row.email,
-                        firstName: row.first_name || '',
-                        lastName: row.last_name || '',
-                        role: row.role,
-                        avatarUrl: row.avatar_url || undefined,
-                        status: 'ACTIVE',
-                        createdAt: row.created_at,
-                    },
-                });
-                return;
-            }
+        catch (err) {
+            console.error('Error al obtener usuario por id:', err);
         }
-        catch { }
-        res.status(404).json({ success: false, error: 'Usuario no encontrado en la base de datos.' });
+        res.status(404).json({ success: false, error: 'Usuario no encontrado.' });
     }
     async createUser(req, res) {
         try {
-            const { email, password, firstName, lastName, role, avatarUrl } = req.body;
+            const { email, password, firstName, lastName, role, workerId, phone, jobTitle, status, avatarUrl } = req.body;
             if (!email || !password || !firstName || !lastName || !role) {
                 res.status(400).json({
                     success: false,
-                    error: 'Email, contraseña, nombres, apellidos y rol son requeridos.',
+                    error: 'Faltan campos obligatorios (email, password, firstName, lastName, role).',
                 });
                 return;
             }
+            const cleanEmail = String(email).trim().toLowerCase();
             // Check for existing user in database
-            const existingUser = await prisma_1.prisma.user.findUnique({ where: { email } }).catch(() => null);
+            const existingUser = await prisma_1.prisma.user.findUnique({ where: { email: cleanEmail } });
             if (existingUser) {
                 res.status(400).json({
                     success: false,
-                    error: `Ya existe un usuario registrado con el correo ${email}.`,
+                    error: `Ya existe un usuario registrado con el correo ${cleanEmail}.`,
                 });
                 return;
+            }
+            // Validar o generar workerId
+            let finalWorkerId = workerId ? String(workerId).trim().toUpperCase() : '';
+            if (!finalWorkerId) {
+                const count = await prisma_1.prisma.user.count();
+                finalWorkerId = `USR-${String(count + 1).padStart(3, '0')}`;
+                // Si ya existiera ese USR-XXX generado, buscar uno libre
+                let counter = count + 1;
+                while (await prisma_1.prisma.user.findUnique({ where: { workerId: finalWorkerId } })) {
+                    counter++;
+                    finalWorkerId = `USR-${String(counter).padStart(3, '0')}`;
+                }
+            }
+            else {
+                const existingWorker = await prisma_1.prisma.user.findUnique({ where: { workerId: finalWorkerId } });
+                if (existingWorker) {
+                    res.status(400).json({
+                        success: false,
+                        error: `El ID de trabajador "${finalWorkerId}" ya está asignado a otro usuario.`,
+                    });
+                    return;
+                }
             }
             // Validar que el rol exista en la base de datos (tabla roles)
             const normalizedRole = String(role).toUpperCase().trim();
@@ -151,72 +144,42 @@ class UsersController {
             if (!roleExists) {
                 res.status(400).json({
                     success: false,
-                    error: `El rol [${role}] no existe en la tabla de Roles. Crea primero el rol o utiliza uno existente.`,
+                    error: `El rol [${role}] no existe en la tabla de Roles.`,
                 });
                 return;
             }
             const passwordHash = await (0, password_1.hashPassword)(password);
-            let createdUser = null;
-            // 1. Try Prisma
-            try {
-                const newUser = await prisma_1.prisma.user.create({
-                    data: {
-                        email,
-                        passwordHash,
-                        firstName: firstName.trim(),
-                        lastName: lastName.trim(),
-                        role: roleExists.code,
-                        avatarUrl,
-                    },
-                });
-                createdUser = {
-                    id: newUser.id,
-                    email: newUser.email,
-                    firstName: newUser.firstName,
-                    lastName: newUser.lastName,
-                    role: newUser.role,
-                    avatarUrl: newUser.avatarUrl || undefined,
-                    status: 'ACTIVE',
-                    createdAt: newUser.createdAt.toISOString(),
-                };
-            }
-            catch {
-                // 2. Try Supabase fallback
-                const { data: supaUser, error } = await supabase_1.supabaseAdmin
-                    .from('users')
-                    .insert([
-                    {
-                        email,
-                        password_hash: passwordHash,
-                        first_name: firstName.trim(),
-                        last_name: lastName.trim(),
-                        role,
-                        avatar_url: avatarUrl,
-                    },
-                ])
-                    .select()
-                    .single();
-                if (!error && supaUser) {
-                    const row = supaUser;
-                    createdUser = {
-                        id: row.id,
-                        email: row.email,
-                        firstName: row.first_name || '',
-                        lastName: row.last_name || '',
-                        role: row.role,
-                        avatarUrl: row.avatar_url || undefined,
-                        status: 'ACTIVE',
-                        createdAt: row.created_at,
-                    };
-                }
-            }
-            if (!createdUser) {
-                res.status(500).json({
-                    success: false,
-                    error: 'No se pudo guardar el usuario en la base de datos.',
-                });
-                return;
-            }
+            // Cargar Cargo desde la descripción de funciones del rol
+            const finalJobTitle = (jobTitle && String(jobTitle).trim()) || roleExists.description || null;
+            const newUser = await prisma_1.prisma.user.create({
+                data: {
+                    workerId: finalWorkerId,
+                    email: cleanEmail,
+                    passwordHash,
+                    firstName: firstName.trim(),
+                    lastName: lastName.trim(),
+                    role: roleExists.code,
+                    phone: phone ? String(phone).trim() : null,
+                    jobTitle: finalJobTitle,
+                    status: status || 'ACTIVE',
+                    avatarUrl: avatarUrl ? String(avatarUrl).trim() : null,
+                },
+                include: { roleDefinition: true },
+            });
+            const createdUser = {
+                id: newUser.id,
+                workerId: newUser.workerId,
+                email: newUser.email,
+                firstName: newUser.firstName,
+                lastName: newUser.lastName,
+                role: newUser.role,
+                roleName: newUser.roleDefinition?.name || roleExists.name,
+                avatarUrl: newUser.avatarUrl || undefined,
+                status: newUser.status || 'ACTIVE',
+                phone: newUser.phone || undefined,
+                jobTitle: newUser.jobTitle || undefined,
+                createdAt: newUser.createdAt.toISOString(),
+            };
             res.status(201).json({
                 success: true,
                 message: 'Usuario creado exitosamente.',
@@ -234,8 +197,12 @@ class UsersController {
     async updateUser(req, res) {
         try {
             const id = String(req.params.id);
-            const { email, firstName, lastName, role, avatarUrl, status } = req.body;
-            let updatedUser = null;
+            const { email, firstName, lastName, role, workerId, phone, jobTitle, status, avatarUrl } = req.body;
+            const existingUser = await prisma_1.prisma.user.findUnique({ where: { id } });
+            if (!existingUser) {
+                res.status(404).json({ success: false, error: 'Usuario no encontrado.' });
+                return;
+            }
             let validatedRoleCode = undefined;
             if (role) {
                 const normalizedRole = String(role).toUpperCase().trim();
@@ -253,61 +220,79 @@ class UsersController {
                 }
                 validatedRoleCode = roleExists.code;
             }
-            // 1. Try Prisma
-            try {
-                const updated = await prisma_1.prisma.user.update({
-                    where: { id },
-                    data: {
-                        ...(email && { email: email.trim() }),
-                        ...(firstName && { firstName: firstName.trim() }),
-                        ...(lastName && { lastName: lastName.trim() }),
-                        ...(validatedRoleCode && { role: validatedRoleCode }),
-                        ...(avatarUrl !== undefined && { avatarUrl }),
-                    },
-                });
-                updatedUser = {
-                    id: updated.id,
-                    email: updated.email,
-                    firstName: updated.firstName,
-                    lastName: updated.lastName,
-                    role: updated.role,
-                    avatarUrl: updated.avatarUrl || undefined,
-                    status: status || 'ACTIVE',
-                    createdAt: updated.createdAt.toISOString(),
-                };
+            const dataToUpdate = {};
+            if (email !== undefined) {
+                const cleanEmail = String(email).trim().toLowerCase();
+                if (!cleanEmail) {
+                    res.status(400).json({ success: false, error: 'El correo electrónico no puede estar vacío.' });
+                    return;
+                }
+                if (cleanEmail !== existingUser.email) {
+                    const duplicate = await prisma_1.prisma.user.findUnique({ where: { email: cleanEmail } });
+                    if (duplicate && duplicate.id !== id) {
+                        res.status(400).json({ success: false, error: `El correo ${cleanEmail} ya está en uso.` });
+                        return;
+                    }
+                }
+                dataToUpdate.email = cleanEmail;
             }
-            catch {
-                // 2. Try Supabase fallback
-                const { data: supaUpdated, error } = await supabase_1.supabaseAdmin
-                    .from('users')
-                    .update({
-                    ...(email && { email: email.trim() }),
-                    ...(firstName && { first_name: firstName.trim() }),
-                    ...(lastName && { last_name: lastName.trim() }),
-                    ...(role && { role }),
-                    ...(avatarUrl !== undefined && { avatar_url: avatarUrl }),
-                })
-                    .eq('id', id)
-                    .select()
-                    .single();
-                if (!error && supaUpdated) {
-                    const row = supaUpdated;
-                    updatedUser = {
-                        id: row.id,
-                        email: row.email,
-                        firstName: row.first_name || '',
-                        lastName: row.last_name || '',
-                        role: row.role,
-                        avatarUrl: row.avatar_url || undefined,
-                        status: status || 'ACTIVE',
-                        createdAt: row.created_at,
-                    };
+            if (workerId !== undefined) {
+                const cleanWorkerId = String(workerId).trim().toUpperCase();
+                if (!cleanWorkerId) {
+                    res.status(400).json({ success: false, error: 'El ID de trabajador no puede estar vacío.' });
+                    return;
+                }
+                if (cleanWorkerId !== existingUser.workerId) {
+                    const duplicate = await prisma_1.prisma.user.findUnique({ where: { workerId: cleanWorkerId } });
+                    if (duplicate && duplicate.id !== id) {
+                        res.status(400).json({ success: false, error: `El ID de trabajador ${cleanWorkerId} ya está en uso.` });
+                        return;
+                    }
+                }
+                dataToUpdate.workerId = cleanWorkerId;
+            }
+            if (firstName !== undefined)
+                dataToUpdate.firstName = String(firstName).trim();
+            if (lastName !== undefined)
+                dataToUpdate.lastName = String(lastName).trim();
+            if (validatedRoleCode) {
+                dataToUpdate.role = validatedRoleCode;
+            }
+            if (phone !== undefined)
+                dataToUpdate.phone = phone ? String(phone).trim() : null;
+            if (jobTitle !== undefined) {
+                dataToUpdate.jobTitle = jobTitle ? String(jobTitle).trim() : null;
+            }
+            else if (validatedRoleCode) {
+                const targetRole = await prisma_1.prisma.roleDefinition.findFirst({ where: { code: validatedRoleCode } });
+                if (targetRole?.description) {
+                    dataToUpdate.jobTitle = targetRole.description;
                 }
             }
-            if (!updatedUser) {
-                res.status(404).json({ success: false, error: 'Usuario no encontrado para actualizar.' });
-                return;
-            }
+            if (status !== undefined)
+                dataToUpdate.status = status;
+            if (avatarUrl !== undefined)
+                dataToUpdate.avatarUrl = avatarUrl ? String(avatarUrl).trim() : null;
+            const updated = await prisma_1.prisma.user.update({
+                where: { id },
+                data: dataToUpdate,
+                include: { roleDefinition: true },
+            });
+            const updatedUser = {
+                id: updated.id,
+                workerId: updated.workerId,
+                email: updated.email,
+                firstName: updated.firstName,
+                lastName: updated.lastName,
+                role: updated.role,
+                roleName: updated.roleDefinition?.name || updated.role,
+                avatarUrl: updated.avatarUrl || undefined,
+                status: updated.status || 'ACTIVE',
+                phone: updated.phone || undefined,
+                jobTitle: updated.jobTitle || undefined,
+                lastLoginAt: updated.lastLoginAt ? updated.lastLoginAt.toISOString() : undefined,
+                createdAt: updated.createdAt.toISOString(),
+            };
             res.status(200).json({
                 success: true,
                 message: 'Usuario actualizado exitosamente.',
@@ -316,10 +301,7 @@ class UsersController {
         }
         catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Error al actualizar usuario.';
-            res.status(400).json({
-                success: false,
-                error: errorMsg,
-            });
+            res.status(500).json({ success: false, error: errorMsg });
         }
     }
     async deleteUser(req, res) {
@@ -333,40 +315,38 @@ class UsersController {
                 });
                 return;
             }
-            let deleted = false;
-            // Try Prisma
-            try {
-                await prisma_1.prisma.user.delete({ where: { id } });
-                deleted = true;
+            const existingUser = await prisma_1.prisma.user.findUnique({
+                where: { id },
+                include: {
+                    _count: {
+                        select: {
+                            startedRolls: true,
+                            endedRolls: true,
+                        },
+                    },
+                },
+            });
+            if (!existingUser) {
+                res.status(404).json({ success: false, error: 'Usuario no encontrado.' });
+                return;
             }
-            catch { }
-            // Try Supabase
-            if (!deleted) {
-                try {
-                    const { error } = await supabase_1.supabaseAdmin.from('users').delete().eq('id', id);
-                    if (!error)
-                        deleted = true;
-                }
-                catch { }
-            }
-            if (!deleted) {
-                res.status(404).json({
+            const totalRolls = (existingUser._count?.startedRolls || 0) + (existingUser._count?.endedRolls || 0);
+            if (totalRolls > 0) {
+                res.status(400).json({
                     success: false,
-                    error: 'El usuario no existe o ya fue eliminado.',
+                    error: `No se puede eliminar el usuario [${existingUser.firstName} ${existingUser.lastName}] porque tiene ${totalRolls} rollos vinculados como operario. Puede cambiar su estado a "Inactivo" o "Suspendido" en su lugar.`,
                 });
                 return;
             }
+            await prisma_1.prisma.user.delete({ where: { id } });
             res.status(200).json({
                 success: true,
-                message: 'Usuario eliminado correctamente de la base de datos.',
+                message: 'Usuario eliminado exitosamente de la base de datos.',
             });
         }
         catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Error al eliminar usuario.';
-            res.status(400).json({
-                success: false,
-                error: errorMsg,
-            });
+            res.status(500).json({ success: false, error: errorMsg });
         }
     }
 }

@@ -15,7 +15,7 @@ export interface CreateSupplierDTO {
   phone?: string;
   email?: string;
   address?: string;
-  yarnTypes?: string;
+  yarnTypes?: string[] | string;
   status?: string;
   notes?: string;
 }
@@ -26,9 +26,22 @@ export interface UpdateSupplierDTO {
   phone?: string;
   email?: string;
   address?: string;
-  yarnTypes?: string;
+  yarnTypes?: string[] | string;
   status?: string;
   notes?: string;
+}
+
+function normalizeYarnTypes(val: unknown): string[] {
+  if (Array.isArray(val)) {
+    return val.map((item) => String(item).trim()).filter(Boolean);
+  }
+  if (typeof val === 'string' && val.trim()) {
+    return val
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
 }
 
 export class SuppliersController {
@@ -50,9 +63,9 @@ export class SuppliersController {
         whereClause.OR = [
           { name: { contains: q, mode: 'insensitive' } },
           { document: { contains: q, mode: 'insensitive' } },
-          { yarnTypes: { contains: q, mode: 'insensitive' } },
           { email: { contains: q, mode: 'insensitive' } },
           { phone: { contains: q, mode: 'insensitive' } },
+          { yarnTypes: { has: q } },
         ];
       }
 
@@ -160,7 +173,7 @@ export class SuppliersController {
           phone: phone ? String(phone).trim() : null,
           email: email ? String(email).trim().toLowerCase() : null,
           address: address ? String(address).trim() : null,
-          yarnTypes: yarnTypes ? String(yarnTypes).trim() : null,
+          yarnTypes: normalizeYarnTypes(yarnTypes),
           status: status || 'ACTIVE',
           notes: notes ? String(notes).trim() : null,
         },
@@ -237,7 +250,7 @@ export class SuppliersController {
       if (phone !== undefined) dataToUpdate.phone = phone ? String(phone).trim() : null;
       if (email !== undefined) dataToUpdate.email = email ? String(email).trim().toLowerCase() : null;
       if (address !== undefined) dataToUpdate.address = address ? String(address).trim() : null;
-      if (yarnTypes !== undefined) dataToUpdate.yarnTypes = yarnTypes ? String(yarnTypes).trim() : null;
+      if (yarnTypes !== undefined) dataToUpdate.yarnTypes = normalizeYarnTypes(yarnTypes);
       if (status !== undefined) dataToUpdate.status = status;
       if (notes !== undefined) dataToUpdate.notes = notes ? String(notes).trim() : null;
 

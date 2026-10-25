@@ -13,7 +13,7 @@ const generateToken = (payload) => {
 };
 exports.generateToken = generateToken;
 const generateRefreshToken = (payload) => {
-    return jsonwebtoken_1.default.sign({ id: payload.id, email: payload.email }, env_1.env.JWT_REFRESH_SECRET, {
+    return jsonwebtoken_1.default.sign({ id: payload.id, email: payload.email, sessionId: payload.sessionId }, env_1.env.JWT_REFRESH_SECRET, {
         expiresIn: (env_1.env.JWT_REFRESH_EXPIRES_IN || '7d'),
     });
 };

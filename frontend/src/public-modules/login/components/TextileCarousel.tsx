@@ -106,12 +106,8 @@ export const TextileCarousel: React.FC<TextileCarouselProps> = ({ onSlideChange,
         );
       })}
 
-      {/* Layer 1: Emerald/Green Brand Overlay with deep contrast gradients */}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-emerald-950/80 to-slate-950/65 z-10" />
-
-      {/* Layer 2: Radial Emerald Glow accents */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(16,185,129,0.38),transparent_60%),radial-gradient(ellipse_at_bottom_right,rgba(5,150,105,0.30),transparent_55%)] z-10" />
-
+      {/* Layer 1: Brand overlay */}
+      <div className="absolute inset-0 bg-primary-950/85 z-10" />
       {/* Layer 3: Subtle textile weave mesh texture */}
       <div
         className="absolute inset-0 opacity-[0.07] z-10 pointer-events-none"
@@ -128,7 +124,7 @@ export const TextileCarousel: React.FC<TextileCarouselProps> = ({ onSlideChange,
         {/* Lower info: slide copy + pagination + legal line, all grouped at the bottom */}
         <div className="max-w-lg space-y-6">
           <div className="space-y-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-300">
               {currentSlide.stage}
             </span>
 
@@ -151,7 +147,7 @@ export const TextileCarousel: React.FC<TextileCarouselProps> = ({ onSlideChange,
                   onClick={() => goToSlide(idx)}
                   aria-label={`Ir a la imagen ${idx + 1}`}
                   className={`h-1.5 rounded-full transition-all duration-500 ${
-                    isActive ? 'w-8 bg-emerald-400' : 'w-4 bg-white/30 hover:bg-white/60'
+                    isActive ? 'w-8 bg-primary-400' : 'w-4 bg-white/30 hover:bg-white/60'
                   }`}
                 />
               );

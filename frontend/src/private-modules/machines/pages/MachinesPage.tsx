@@ -191,7 +191,7 @@ export const MachinesPage: React.FC = () => {
       {/* Top indeterminate loader when refreshing/updating data */}
       {isLoading && (
         <div className="fixed top-0 left-0 right-0 h-1 z-[999] overflow-hidden bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 w-full animate-pulse" />
+          <div className="h-full bg-primary-500 w-full animate-pulse" />
         </div>
       )}
 
@@ -234,15 +234,15 @@ export const MachinesPage: React.FC = () => {
         {/* Operativas */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
               Operativas
             </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <span className="text-2xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+            <span className="text-2xl md:text-3xl font-extrabold text-primary-600 dark:text-primary-400 font-mono">
               {stats.operative}
             </span>
             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -254,15 +254,15 @@ export const MachinesPage: React.FC = () => {
         {/* En Mantenimiento */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-accent-600 dark:text-accent-400 uppercase tracking-wider">
               Mantenimiento
             </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-accent-500/10 text-accent-600 dark:text-accent-400 flex items-center justify-center">
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <span className="text-2xl md:text-3xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">
+            <span className="text-2xl md:text-3xl font-extrabold text-accent-600 dark:text-accent-400 font-mono">
               {stats.maintenance}
             </span>
             <p className="text-[11px] text-slate-400 mt-0.5">En servicio técnico o calibración</p>
@@ -300,7 +300,7 @@ export const MachinesPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar por código (ej. MQ-001), nombre, marca, serie, ubicación..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
           />
         </div>
 
@@ -435,7 +435,7 @@ export const MachinesPage: React.FC = () => {
                   <Td>
                     {machine.location ? (
                       <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0" />
                         <span>{machine.location}</span>
                       </div>
                     ) : (
@@ -468,7 +468,7 @@ export const MachinesPage: React.FC = () => {
                           <Tooltip content="Editar máquina">
                             <button
                               onClick={() => handleOpenEdit(machine)}
-                              className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                              className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>

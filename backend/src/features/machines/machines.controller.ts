@@ -10,6 +10,19 @@ export interface MachineStats {
   outOfService: number;
 }
 
+function normalizeDesignTypes(val: unknown): string[] {
+  if (Array.isArray(val)) {
+    return val.map((item) => String(item).trim()).filter(Boolean);
+  }
+  if (typeof val === 'string' && val.trim()) {
+    return val
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 export class MachinesController {
   /**
    * Obtener lista de máquinas con filtros de búsqueda y estadísticas
@@ -38,6 +51,7 @@ export class MachinesController {
           { model: { contains: q, mode: 'insensitive' } },
           { serialNumber: { contains: q, mode: 'insensitive' } },
           { location: { contains: q, mode: 'insensitive' } },
+          { designTypes: { has: q } },
         ];
       }
 
@@ -101,15 +115,10 @@ export class MachinesController {
    */
   async createMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { code, name, type, brand, model, serialNumber, status, location, notes } = req.body;
+      const { code, name, type, brand, model, serialNumber, status, designTypes, location, notes } = req.body;
 
       if (!code || typeof code !== 'string' || !code.trim()) {
         res.status(400).json({ success: false, error: 'El código de la máquina es obligatorio.' });
-        return;
-      }
-
-      if (!name || typeof name !== 'string' || !name.trim()) {
-        res.status(400).json({ success: false, error: 'El nombre/descripción de la máquina es obligatorio.' });
         return;
       }
 
@@ -134,12 +143,13 @@ export class MachinesController {
       const newMachine = await prisma.machine.create({
         data: {
           code: normalizedCode,
-          name: name.trim(),
+          name: name && typeof name === 'string' && name.trim() ? name.trim() : normalizedCode,
           type: type && typeof type === 'string' ? type.trim() : 'Costura',
           brand: brand && typeof brand === 'string' ? brand.trim() : null,
           model: model && typeof model === 'string' ? model.trim() : null,
           serialNumber: serialNumber && typeof serialNumber === 'string' ? serialNumber.trim() : null,
           status: finalStatus,
+          designTypes: normalizeDesignTypes(designTypes),
           location: location && typeof location === 'string' ? location.trim() : null,
           notes: notes && typeof notes === 'string' ? notes.trim() : null,
         },
@@ -162,7 +172,7 @@ export class MachinesController {
   async updateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const id = String(req.params.id);
-      const { code, name, type, brand, model, serialNumber, status, location, notes } = req.body;
+      const { code, name, type, brand, model, serialNumber, status, designTypes, location, notes } = req.body;
 
       const existingMachine = await prisma.machine.findUnique({
         where: { id },
@@ -198,12 +208,7 @@ export class MachinesController {
       }
 
       if (name !== undefined) {
-        const trimmedName = String(name).trim();
-        if (!trimmedName) {
-          res.status(400).json({ success: false, error: 'El nombre no puede estar vacío.' });
-          return;
-        }
-        dataToUpdate.name = trimmedName;
+        dataToUpdate.name = String(name).trim() || existingMachine.name;
       }
 
       if (type !== undefined) {
@@ -227,6 +232,10 @@ export class MachinesController {
         if (validStatuses.includes(status)) {
           dataToUpdate.status = status;
         }
+      }
+
+      if (designTypes !== undefined) {
+        dataToUpdate.designTypes = normalizeDesignTypes(designTypes);
       }
 
       if (location !== undefined) {

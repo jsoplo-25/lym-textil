@@ -207,7 +207,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2 truncate pr-2">
-                <Mail className="w-4 h-4 text-emerald-500 shrink-0" />
+                <Mail className="w-4 h-4 text-primary-500 shrink-0" />
                 <span className="text-slate-700 dark:text-slate-300 truncate font-medium">{email}</span>
               </div>
               <button
@@ -217,7 +217,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   setError(null);
                   setSuccessMsg(null);
                 }}
-                className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold text-[11px] shrink-0 cursor-pointer"
+                className="text-primary-600 dark:text-primary-400 hover:underline font-semibold text-[11px] shrink-0 cursor-pointer"
               >
                 Cambiar
               </button>
@@ -261,7 +261,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                 type="button"
                 onClick={handleResendCode}
                 disabled={countdown > 0 || isLoading}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                 <span>
@@ -294,7 +294,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         {/* STEP 3: ÉXITO */}
         {step === 'SUCCESS' && (
           <div className="py-4 flex flex-col items-center text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center ring-8 ring-emerald-50 dark:ring-emerald-900/30">
+            <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-950/80 text-primary-600 dark:text-primary-400 flex items-center justify-center ring-8 ring-primary-50 dark:ring-primary-900/30">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 

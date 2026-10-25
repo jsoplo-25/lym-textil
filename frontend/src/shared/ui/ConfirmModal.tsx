@@ -21,12 +21,12 @@ const VARIANT_ICON = { danger: 'red', primary: 'emerald' } as const;
 
 const VARIANT_BUTTON = {
   danger: 'bg-red-600 hover:bg-red-500 shadow-red-600/25',
-  primary: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/25',
+  primary: 'bg-primary-600 hover:bg-primary-500 shadow-primary-600/25',
 } as const;
 
 const VARIANT_GLOW = {
   danger: 'bg-red-500/10 dark:bg-red-500/15',
-  primary: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+  primary: 'bg-primary-500/10 dark:bg-primary-500/15',
 } as const;
 
 /**

@@ -48,7 +48,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         'relative inline-flex items-center justify-center rounded-full overflow-hidden select-none shrink-0 shadow-sm ring-2 ring-white/80 dark:ring-slate-800/80',
         showPhoto && src
           ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold'
-          : 'bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 text-white font-black',
+          : 'bg-primary-600 text-white font-black',
         sizes[size],
         className
       )}

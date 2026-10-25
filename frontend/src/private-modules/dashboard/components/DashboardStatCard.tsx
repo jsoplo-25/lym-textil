@@ -23,8 +23,8 @@ export const DashboardStatCard: React.FC<DashboardStatCardProps> = ({
   value,
   subtitle,
   icon,
-  iconBg = 'bg-emerald-500/15',
-  iconColor = 'text-emerald-600 dark:text-emerald-400',
+  iconBg = 'bg-primary-500/15',
+  iconColor = 'text-primary-600 dark:text-primary-400',
   badge,
   isLoading = false,
   onClick,
@@ -34,7 +34,7 @@ export const DashboardStatCard: React.FC<DashboardStatCardProps> = ({
       variant="glass"
       padding="lg"
       onClick={onClick}
-      className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-emerald-500/30 flex flex-col justify-between ${
+      className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-primary-500/30 flex flex-col justify-between ${
         onClick ? 'cursor-pointer active:scale-[0.99]' : ''
       }`}
     >

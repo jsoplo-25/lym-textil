@@ -134,20 +134,20 @@ export const SessionTimeoutModal: React.FC = () => {
     // Sin `onClose`: es un modal forzado — no se descarta con Escape, click afuera ni botón X.
     <Modal isOpen={isOpen} size="md" className="p-6 sm:p-8">
       {/* Ambient Top Glow */}
-      <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-teal-500/15 dark:bg-teal-500/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -top-12 -right-12 w-40 h-40 bg-primary-500/15 dark:bg-primary-500/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-accent-500/15 dark:bg-accent-500/20 rounded-full blur-2xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center text-center">
         {/* Animated Icon Badge */}
         <div className="relative mb-5">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-            <ShieldAlert className="w-8 h-8 animate-pulse text-emerald-600 dark:text-emerald-400" />
+          <div className="w-16 h-16 rounded-2xl bg-primary-500/10 dark:bg-primary-500/20 border border-primary-500/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
+            <ShieldAlert className="w-8 h-8 animate-pulse text-primary-600 dark:text-primary-400" />
           </div>
           <Tooltip content="Sesión por expirar" position="right" className="absolute -bottom-1 -right-1">
             <span
               role="img"
               aria-label="Sesión por expirar"
-              className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-slate-900"
+              className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-slate-900"
             >
               <Clock className="w-3 h-3" />
             </span>
@@ -169,14 +169,14 @@ export const SessionTimeoutModal: React.FC = () => {
           <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-400 mb-1">
             Tiempo restante para cierre automático
           </span>
-          <span className="text-4xl font-extrabold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+          <span className="text-4xl font-extrabold font-mono tracking-tight text-primary-600 dark:text-primary-400">
             {formattedTime}
           </span>
 
           {/* Countdown Progress Bar */}
           <div className="w-full bg-slate-200 dark:bg-slate-700/80 h-1.5 rounded-full mt-3 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-1000 ease-linear rounded-full"
+              className="h-full bg-primary-600 transition-all duration-1000 ease-linear rounded-full"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -197,7 +197,7 @@ export const SessionTimeoutModal: React.FC = () => {
             onClick={handleExtendSession}
             disabled={isExtending}
             type="button"
-            className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {isExtending ? (
               <>

@@ -139,14 +139,14 @@ export const TimePicker: React.FC<TimePickerProps> = ({
         }}
         className={cn(
           'w-full bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl px-3.5 py-2.5 transition-all duration-200 flex items-center justify-between outline-none cursor-pointer select-none shadow-xs',
-          isOpen && 'ring-2 ring-emerald-500/20 border-emerald-500 dark:border-emerald-500',
+          isOpen && 'ring-2 ring-primary-500/20 border-primary-500 dark:border-primary-500',
           disabled && 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800',
           error && 'border-red-500 focus:border-red-500 text-red-900 dark:text-red-200'
         )}
       >
         <div className="flex items-center gap-2.5 truncate">
           <div className="text-slate-400 dark:text-slate-500 flex items-center justify-center shrink-0">
-            {leftIcon || <Clock className="w-4 h-4 text-emerald-500" />}
+            {leftIcon || <Clock className="w-4 h-4 text-primary-500" />}
           </div>
           <span
             className={cn(
@@ -188,7 +188,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Seleccionar Hora
             </span>
-            <span className="text-base font-black font-mono text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg bg-emerald-500/10">
+            <span className="text-base font-black font-mono text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-lg bg-primary-500/10">
               {selectedHour}:{selectedMinute}
             </span>
           </div>
@@ -200,7 +200,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
                 type="button"
                 key={q.value}
                 onClick={() => handleQuickPreset(q.value)}
-                className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors shrink-0 cursor-pointer"
+                className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-primary-500/10 hover:text-primary-600 dark:hover:text-primary-400 transition-colors shrink-0 cursor-pointer"
               >
                 {q.label}
               </button>
@@ -223,7 +223,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
                     className={cn(
                       'w-full py-1.5 rounded-lg text-xs font-mono font-bold transition-all text-center cursor-pointer',
                       selectedHour === h
-                        ? 'bg-emerald-600 text-white shadow-xs'
+                        ? 'bg-primary-600 text-white shadow-xs'
                         : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     )}
                   >
@@ -247,7 +247,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
                     className={cn(
                       'w-full py-1.5 rounded-lg text-xs font-mono font-bold transition-all text-center cursor-pointer',
                       selectedMinute === m
-                        ? 'bg-emerald-600 text-white shadow-xs'
+                        ? 'bg-primary-600 text-white shadow-xs'
                         : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     )}
                   >
@@ -263,7 +263,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
             <button
               type="button"
               onClick={handleSetNow}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-500/10 transition-colors cursor-pointer text-[11px]"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-primary-600 dark:text-primary-400 font-bold hover:bg-primary-500/10 transition-colors cursor-pointer text-[11px]"
             >
               <RotateCcw className="w-3 h-3" />
               <span>Hora Actual</span>
@@ -272,7 +272,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-500 transition-colors cursor-pointer text-[11px] shadow-xs"
+              className="flex items-center gap-1 px-3 py-1 rounded-lg bg-primary-600 text-white font-bold hover:bg-primary-500 transition-colors cursor-pointer text-[11px] shadow-xs"
             >
               <Check className="w-3 h-3" />
               <span>Listo</span>

@@ -41,7 +41,11 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       setPhone(editingSupplier.phone || '');
       setEmail(editingSupplier.email || '');
       setAddress(editingSupplier.address || '');
-      setYarnTypes(editingSupplier.yarnTypes || '');
+      setYarnTypes(
+        Array.isArray(editingSupplier.yarnTypes)
+          ? editingSupplier.yarnTypes.join(', ')
+          : editingSupplier.yarnTypes || ''
+      );
       setStatus(editingSupplier.status || 'ACTIVE');
       setNotes(editingSupplier.notes || '');
     } else {
@@ -119,7 +123,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
           ? `Modifica los datos del proveedor [${editingSupplier.document} - ${editingSupplier.name}]`
           : 'Ingresa la información comercial y tipos de hilado que provee a la empresa'
       }
-      icon={<Truck className="w-6 h-6 text-emerald-500" />}
+      icon={<Truck className="w-6 h-6 text-primary-500" />}
       size="lg"
       isLoading={isLoading}
       loadingMessage={editingSupplier ? 'Actualizando datos del proveedor...' : 'Creando nuevo proveedor...'}
@@ -147,7 +151,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
                 value={document}
                 onChange={(e) => setDocument(e.target.value)}
                 placeholder="Ej. 20601234567"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
               />
             </div>
           </div>
@@ -162,7 +166,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej. INLOTEX S.A.C., SANDRO TEXTIL"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
           </div>
         </div>
@@ -179,7 +183,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Ej. +51 987 654 321"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
             />
           </div>
 
@@ -193,7 +197,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="contacto@inlotex.com"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
           </div>
         </div>
@@ -210,7 +214,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
               value={yarnTypes}
               onChange={(e) => setYarnTypes(e.target.value)}
               placeholder="Ej. Algodón 30/1, Poliéster, Lycra, Viscosa"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
           </div>
 
@@ -237,7 +241,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Ej. Av. Nicolás de Ayllón 1234, Ate, Lima"
-            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
           />
         </div>
 
@@ -252,7 +256,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Ej. Cliente frecuente de servicio de tejeduría, despacho prioritario..."
-            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none"
+            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none"
           />
         </div>
 
@@ -269,7 +273,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+            className="px-5 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>{isLoading ? (editingSupplier ? 'Actualizando...' : 'Creando...') : editingSupplier ? 'Guardar Cambios' : 'Crear Proveedor'}</span>

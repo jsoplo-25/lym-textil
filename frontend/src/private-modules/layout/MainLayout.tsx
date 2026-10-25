@@ -17,9 +17,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   showFooter = true,
 }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#DFE3ED] via-[#F1F3F8] to-[#D7DBE7] dark:from-[#0B0F17] dark:via-[#131A29] dark:to-[#0A0E16] text-slate-800 dark:text-slate-100 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-[#F6F8FB] dark:bg-[#0F1522] text-slate-800 dark:text-slate-100 relative overflow-hidden transition-colors duration-300">
       {/* Soft Ambient Glows */}
-      <div className="fixed top-1/3 -right-20 w-[550px] h-[550px] bg-emerald-500/08 dark:bg-emerald-500/05 rounded-full blur-3xl pointer-events-none z-0" />
+      <div className="fixed top-1/3 -right-20 w-[550px] h-[550px] bg-primary-500/08 dark:bg-primary-500/05 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="fixed -bottom-24 left-1/3 w-[450px] h-[450px] bg-blue-500/06 dark:bg-blue-500/04 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="fixed -top-24 -left-24 w-[500px] h-[500px] bg-purple-500/06 dark:bg-purple-500/04 rounded-full blur-3xl pointer-events-none z-0" />
 

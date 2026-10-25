@@ -1,6 +1,6 @@
 import { prisma } from '../config/prisma';
 
-export const INITIAL_SYSTEM_ROLES = [
+const INITIAL_SYSTEM_ROLES = [
   {
     code: 'ADMINISTRADOR',
     name: 'Administrador del Sistema',

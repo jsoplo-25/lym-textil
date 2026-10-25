@@ -9,9 +9,9 @@ import type { AlertVariant } from './Alert';
 const TOAST_DURATION_MS = 3500;
 
 const VARIANT_STYLES: Record<AlertVariant, { container: string; Icon: React.ElementType }> = {
-  success: { container: 'bg-emerald-600', Icon: CheckCircle2 },
+  success: { container: 'bg-primary-600', Icon: CheckCircle2 },
   error: { container: 'bg-red-600', Icon: AlertCircle },
-  warning: { container: 'bg-amber-500', Icon: AlertTriangle },
+  warning: { container: 'bg-accent-500', Icon: AlertTriangle },
   info: { container: 'bg-slate-800', Icon: Info },
 };
 

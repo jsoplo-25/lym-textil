@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
-import { prisma, ProductionBatch, ProductionRoll, BatchYarn } from '../../config/prisma';
+import { prisma, ProductionBatch, BatchYarn } from '../../config/prisma';
 
-export async function generateUniqueTrackingCode(): Promise<string> {
+async function generateUniqueTrackingCode(): Promise<string> {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   for (let attempt = 0; attempt < 10; attempt++) {
     let random = '';
@@ -21,7 +21,7 @@ export async function generateUniqueTrackingCode(): Promise<string> {
   return `TRK-${Date.now().toString(36).toUpperCase()}`;
 }
 
-export function parseBatchDate(dateVal: unknown): Date | null {
+function parseBatchDate(dateVal: unknown): Date | null {
   if (!dateVal) return null;
   if (typeof dateVal === 'string') {
     const trimmed = dateVal.trim();
@@ -39,12 +39,29 @@ export function parseBatchDate(dateVal: unknown): Date | null {
   return null;
 }
 
+export interface BatchStatusLogItem {
+  id: string;
+  batchId: string;
+  status: string;
+  changedByUserId?: string | null;
+  changedByUser?: {
+    id: string;
+    workerId?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+  notes?: string | null;
+  createdAt: Date | string;
+}
+
 export interface BatchSummary extends ProductionBatch {
   totalRolls: number;
   totalWeight: number;
   avgWeight: number;
-  rolls?: ProductionRoll[];
+  rolls?: any[];
   yarns?: BatchYarn[];
+  statusLogs?: BatchStatusLogItem[];
   supplier?: { id: string; document: string; name: string } | null;
 }
 
@@ -54,6 +71,43 @@ export interface ProductionStats {
   completedBatches: number;
   totalRollsProduced: number;
   totalWeightKg: number;
+}
+
+async function resolveOperator(operatorIdOrName?: string | null): Promise<{ id: string; name: string } | null> {
+  if (!operatorIdOrName || !String(operatorIdOrName).trim()) return null;
+  const trimmed = String(operatorIdOrName).trim();
+
+  // 1. Buscar por UUID
+  let user = await prisma.user.findUnique({ where: { id: trimmed } });
+
+  // 2. Buscar por workerId
+  if (!user) {
+    user = await prisma.user.findUnique({ where: { workerId: trimmed } });
+  }
+
+  // 3. Buscar por nombre y apellido
+  if (!user) {
+    const allUsers = await prisma.user.findMany({
+      select: { id: true, firstName: true, lastName: true },
+    });
+    const found = allUsers.find(
+      (u) =>
+        `${u.firstName} ${u.lastName}`.trim().toLowerCase() === trimmed.toLowerCase() ||
+        u.firstName.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (found) {
+      user = found as any;
+    }
+  }
+
+  if (user) {
+    return {
+      id: user.id,
+      name: `${user.firstName} ${user.lastName}`.trim(),
+    };
+  }
+
+  return null;
 }
 
 export class ProductionController {
@@ -224,7 +278,23 @@ export class ProductionController {
             orderBy: [{ createdAt: 'asc' }],
           },
           rolls: {
+            include: {
+              startOperatorRel: {
+                select: { id: true, firstName: true, lastName: true, workerId: true },
+              },
+              endOperatorRel: {
+                select: { id: true, firstName: true, lastName: true, workerId: true },
+              },
+            },
             orderBy: [{ createdAt: 'asc' }],
+          },
+          statusLogs: {
+            include: {
+              changedByUser: {
+                select: { id: true, firstName: true, lastName: true, email: true, workerId: true },
+              },
+            },
+            orderBy: [{ createdAt: 'desc' }],
           },
         },
       });
@@ -268,6 +338,7 @@ export class ProductionController {
         avgWeight,
         yarns: batch.yarns,
         rolls: batch.rolls,
+        statusLogs: batch.statusLogs,
       };
 
       res.status(200).json({ success: true, data: responseData });
@@ -282,30 +353,53 @@ export class ProductionController {
    */
   async createBatch(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { batchNumber, machineId, supplierId, startDate, endDate, status, notes } = req.body;
+      const { batchNumber, machineId, supplierId, startDate, endDate, status, notes, statusNote } = req.body;
 
       if (!batchNumber || typeof batchNumber !== 'string' || !batchNumber.trim()) {
-        res.status(400).json({ success: false, error: 'El número o código de lote es obligatorio.' });
+        res.status(400).json({ success: false, error: 'El identificador o código de lote es obligatorio.' });
         return;
       }
 
-      let machineCode: string | null = null;
-      let machineName: string | null = null;
-      let supplierName: string | null = null;
+      const normalizedBatchNumber = batchNumber.trim().toUpperCase();
 
-      if (machineId) {
-        const machine = await prisma.machine.findUnique({ where: { id: machineId } });
-        if (machine) {
-          machineCode = machine.code;
-          machineName = machine.name;
-        }
+      // Verificar unicidad de número de lote
+      const existingBatch = await prisma.productionBatch.findUnique({
+        where: { batchNumber: normalizedBatchNumber },
+      });
+      if (existingBatch) {
+        res.status(400).json({
+          success: false,
+          error: `Ya existe un lote registrado con el identificador "${normalizedBatchNumber}".`,
+        });
+        return;
       }
 
-      if (supplierId) {
-        const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
-        if (supplier) {
-          supplierName = supplier.name;
-        }
+      if (!supplierId || !String(supplierId).trim()) {
+        res.status(400).json({ success: false, error: 'El proveedor / cliente del hilado es obligatorio.' });
+        return;
+      }
+
+      const supplier = await prisma.supplier.findUnique({ where: { id: String(supplierId).trim() } });
+      if (!supplier) {
+        res.status(400).json({ success: false, error: 'El proveedor especificado no existe.' });
+        return;
+      }
+
+      if (!machineId || !String(machineId).trim()) {
+        res.status(400).json({ success: false, error: 'La máquina de producción es obligatoria.' });
+        return;
+      }
+
+      const machine = await prisma.machine.findUnique({ where: { id: String(machineId).trim() } });
+      if (!machine) {
+        res.status(400).json({ success: false, error: 'La máquina de producción especificada no existe.' });
+        return;
+      }
+
+      const parsedStartDate = parseBatchDate(startDate);
+      if (!parsedStartDate) {
+        res.status(400).json({ success: false, error: 'La fecha de inicio del lote es obligatoria y debe ser una fecha válida (YYYY-MM-DD).' });
+        return;
       }
 
       if (status === 'COMPLETED') {
@@ -331,19 +425,31 @@ export class ProductionController {
 
       const newBatch = await prisma.productionBatch.create({
         data: {
-          batchNumber: batchNumber.trim().toUpperCase(),
+          batchNumber: normalizedBatchNumber,
           trackingCode,
-          machineId: machineId || null,
-          machineCode,
-          machineName,
-          supplierId: supplierId || null,
-          supplierName,
-          startDate: parseBatchDate(startDate) || new Date(),
+          machineId: machine.id,
+          machineCode: machine.code,
+          machineName: machine.name,
+          supplierId: supplier.id,
+          supplierName: supplier.name,
+          startDate: parsedStartDate,
           endDate: parseBatchDate(endDate),
           status: finalStatus,
           notes: notes && typeof notes === 'string' ? notes.trim() : null,
         },
       });
+
+      // Si se crea en estado PAUSED o viene statusNote, registrar en log de auditoría
+      if (finalStatus === 'PAUSED' || statusNote) {
+        await prisma.batchStatusLog.create({
+          data: {
+            batchId: newBatch.id,
+            status: finalStatus,
+            changedByUserId: req.user?.id || null,
+            notes: statusNote || (finalStatus === 'PAUSED' ? 'Lote creado en pausa' : null),
+          },
+        });
+      }
 
       res.status(201).json({
         success: true,
@@ -362,7 +468,7 @@ export class ProductionController {
   async updateBatch(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const id = String(req.params.id);
-      const { batchNumber, machineId, supplierId, startDate, endDate, status, notes } = req.body;
+      const { batchNumber, machineId, supplierId, startDate, endDate, status, notes, statusNote } = req.body;
 
       const existingBatch = await prisma.productionBatch.findUnique({
         where: { id },
@@ -378,43 +484,69 @@ export class ProductionController {
       if (batchNumber !== undefined) {
         const trimmed = String(batchNumber).trim().toUpperCase();
         if (!trimmed) {
-          res.status(400).json({ success: false, error: 'El número de lote no puede estar vacío.' });
+          res.status(400).json({ success: false, error: 'El identificador de lote no puede estar vacío.' });
           return;
+        }
+
+        if (trimmed !== existingBatch.batchNumber) {
+          const duplicate = await prisma.productionBatch.findUnique({
+            where: { batchNumber: trimmed },
+          });
+          if (duplicate && duplicate.id !== id) {
+            res.status(400).json({
+              success: false,
+              error: `El identificador de lote "${trimmed}" ya está en uso por otro lote.`,
+            });
+            return;
+          }
         }
         dataToUpdate.batchNumber = trimmed;
       }
 
       if (machineId !== undefined) {
-        if (machineId) {
-          const machine = await prisma.machine.findUnique({ where: { id: machineId } });
-          dataToUpdate.machine = { connect: { id: machineId } };
-          dataToUpdate.machineCode = machine?.code || null;
-          dataToUpdate.machineName = machine?.name || null;
-        } else {
-          dataToUpdate.machine = { disconnect: true };
-          dataToUpdate.machineCode = null;
-          dataToUpdate.machineName = null;
+        if (!machineId || !String(machineId).trim()) {
+          res.status(400).json({ success: false, error: 'La máquina de producción no puede estar vacía.' });
+          return;
         }
+        const machine = await prisma.machine.findUnique({ where: { id: String(machineId).trim() } });
+        if (!machine) {
+          res.status(400).json({ success: false, error: 'La máquina de producción especificada no existe.' });
+          return;
+        }
+        dataToUpdate.machine = { connect: { id: machine.id } };
+        dataToUpdate.machineCode = machine.code;
+        dataToUpdate.machineName = machine.name;
       }
 
       if (supplierId !== undefined) {
-        if (supplierId) {
-          const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
-          dataToUpdate.supplier = { connect: { id: supplierId } };
-          dataToUpdate.supplierName = supplier?.name || null;
-        } else {
-          dataToUpdate.supplier = { disconnect: true };
-          dataToUpdate.supplierName = null;
+        if (!supplierId || !String(supplierId).trim()) {
+          res.status(400).json({ success: false, error: 'El proveedor / cliente del hilado no puede estar vacío.' });
+          return;
         }
+        const supplier = await prisma.supplier.findUnique({ where: { id: String(supplierId).trim() } });
+        if (!supplier) {
+          res.status(400).json({ success: false, error: 'El proveedor especificado no existe.' });
+          return;
+        }
+        dataToUpdate.supplier = { connect: { id: supplier.id } };
+        dataToUpdate.supplierName = supplier.name;
       }
 
       if (startDate !== undefined) {
-        dataToUpdate.startDate = parseBatchDate(startDate);
+        const parsedStart = parseBatchDate(startDate);
+        if (!parsedStart) {
+          res.status(400).json({ success: false, error: 'La fecha de inicio debe ser una fecha válida (YYYY-MM-DD).' });
+          return;
+        }
+        dataToUpdate.startDate = parsedStart;
       }
 
       if (endDate !== undefined) {
         dataToUpdate.endDate = parseBatchDate(endDate);
       }
+
+      let isStatusChanging = false;
+      let targetStatus = existingBatch.status;
 
       if (status !== undefined) {
         if (status === 'COMPLETED') {
@@ -457,6 +589,10 @@ export class ProductionController {
         ];
         if (validStatuses.includes(status)) {
           dataToUpdate.status = status;
+          if (status !== existingBatch.status) {
+            isStatusChanging = true;
+            targetStatus = status;
+          }
         }
       }
 
@@ -468,6 +604,18 @@ export class ProductionController {
         where: { id },
         data: dataToUpdate,
       });
+
+      // Si el estado cambió (o se pasó a PAUSED, o viene statusNote), registrar en batchStatusLog
+      if (isStatusChanging || statusNote) {
+        await prisma.batchStatusLog.create({
+          data: {
+            batchId: id,
+            status: targetStatus,
+            changedByUserId: req.user?.id || null,
+            notes: statusNote || (targetStatus === 'PAUSED' ? notes || 'Lote pausado' : notes || null),
+          },
+        });
+      }
 
       res.status(200).json({
         success: true,
@@ -525,9 +673,11 @@ export class ProductionController {
         startDate,
         startTime,
         startOperator,
+        startOperatorId,
         endDate,
         endTime,
         endOperator,
+        endOperatorId,
         weight,
         status,
         observations,
@@ -547,19 +697,90 @@ export class ProductionController {
         return;
       }
 
-      const parsedWeight = weight !== undefined && weight !== null && weight !== '' ? parseFloat(String(weight)) : null;
+      // Regla de negocio: Bloqueo de rollos si el lote está PAUSADO
+      if (batch.status === 'PAUSED') {
+        res.status(400).json({
+          success: false,
+          error: 'El lote se encuentra PAUSADO. No se pueden registrar nuevos rollos mientras la producción esté detenida.',
+        });
+        return;
+      }
+
+      const normalizedRollNumber = rollNumber.trim();
+
+      // Validar unicidad del número de rollo dentro del lote
+      const existingRoll = await prisma.productionRoll.findUnique({
+        where: {
+          batchId_rollNumber: {
+            batchId,
+            rollNumber: normalizedRollNumber,
+          },
+        },
+      });
+      if (existingRoll) {
+        res.status(400).json({
+          success: false,
+          error: `Ya existe un rollo registrado con el número "${normalizedRollNumber}" en este lote.`,
+        });
+        return;
+      }
+
+      // Validar operario de inicio obligatorio
+      const operatorInput = startOperatorId || startOperator;
+      if (!operatorInput) {
+        res.status(400).json({ success: false, error: 'El operario de inicio es obligatorio.' });
+        return;
+      }
+
+      const resolvedStartOperator = await resolveOperator(operatorInput);
+      if (!resolvedStartOperator) {
+        res.status(400).json({
+          success: false,
+          error: 'El operario de inicio especificado no es válido o no existe en el sistema.',
+        });
+        return;
+      }
+
+      // Validar fecha y hora de inicio obligatorios
+      if (!startDate || !String(startDate).trim()) {
+        res.status(400).json({ success: false, error: 'La fecha de inicio del rollo es obligatoria (YYYY-MM-DD).' });
+        return;
+      }
+
+      if (!startTime || !String(startTime).trim()) {
+        res.status(400).json({ success: false, error: 'La hora de inicio del rollo es obligatoria (HH:MM).' });
+        return;
+      }
+
+      // Operario de término (opcional)
+      let resolvedEndOperator: { id: string; name: string } | null = null;
+      if (endOperatorId || endOperator) {
+        resolvedEndOperator = await resolveOperator(endOperatorId || endOperator);
+      }
+
+      let parsedWeight: number | null = null;
+      if (weight !== undefined && weight !== null && weight !== '') {
+        const num = parseFloat(String(weight));
+        if (isNaN(num) || num < 0) {
+          res.status(400).json({ success: false, error: 'El peso en kg debe ser un número decimal mayor o igual a cero.' });
+          return;
+        }
+        parsedWeight = num;
+      }
 
       const newRoll = await prisma.productionRoll.create({
         data: {
           batchId,
-          rollNumber: rollNumber.trim(),
-          startDate: startDate ? String(startDate).trim() : null,
-          startTime: startTime ? String(startTime).trim() : null,
-          startOperator: startOperator ? String(startOperator).trim() : null,
+          rollNumber: normalizedRollNumber,
+          startDate: String(startDate).trim(),
+          startTime: String(startTime).trim(),
+          startOperatorId: resolvedStartOperator.id,
+          startOperator: resolvedStartOperator.name,
           endDate: endDate ? String(endDate).trim() : null,
           endTime: endTime ? String(endTime).trim() : null,
-          endOperator: endOperator ? String(endOperator).trim() : null,
-          weight: isNaN(parsedWeight as number) ? null : parsedWeight,
+          endOperatorId: resolvedEndOperator?.id || null,
+          endOperator: resolvedEndOperator?.name || (endOperator ? String(endOperator).trim() : null),
+          weight: parsedWeight,
           status: status || 'REGISTERED',
           observations: observations ? String(observations).trim() : null,
         },
@@ -595,9 +816,11 @@ export class ProductionController {
         startDate,
         startTime,
         startOperator,
+        startOperatorId,
         endDate,
         endTime,
         endOperator,
+        endOperatorId,
         weight,
         status,
         observations,
@@ -605,10 +828,20 @@ export class ProductionController {
 
       const existingRoll = await prisma.productionRoll.findUnique({
         where: { id: rollId },
+        include: { batch: { select: { status: true } } },
       });
 
       if (!existingRoll) {
         res.status(404).json({ success: false, error: 'Rollo no encontrado.' });
+        return;
+      }
+
+      // Regla de negocio: Bloqueo de rollos si el lote está PAUSADO
+      if (existingRoll.batch?.status === 'PAUSED') {
+        res.status(400).json({
+          success: false,
+          error: 'El lote se encuentra PAUSADO. No se pueden modificar rollos mientras la producción esté detenida.',
+        });
         return;
       }
 
@@ -620,22 +853,90 @@ export class ProductionController {
           res.status(400).json({ success: false, error: 'El número de rollo no puede estar vacío.' });
           return;
         }
+
+        if (trimmed !== existingRoll.rollNumber) {
+          const duplicate = await prisma.productionRoll.findUnique({
+            where: {
+              batchId_rollNumber: {
+                batchId: existingRoll.batchId,
+                rollNumber: trimmed,
+              },
+            },
+          });
+          if (duplicate && duplicate.id !== rollId) {
+            res.status(400).json({
+              success: false,
+              error: `Ya existe otro rollo con el número "${trimmed}" en este lote.`,
+            });
+            return;
+          }
+        }
         dataToUpdate.rollNumber = trimmed;
       }
 
-      if (startDate !== undefined) dataToUpdate.startDate = startDate ? String(startDate).trim() : null;
-      if (startTime !== undefined) dataToUpdate.startTime = startTime ? String(startTime).trim() : null;
-      if (startOperator !== undefined) dataToUpdate.startOperator = startOperator ? String(startOperator).trim() : null;
+      if (startDate !== undefined) {
+        const val = String(startDate).trim();
+        if (!val) {
+          res.status(400).json({ success: false, error: 'La fecha de inicio no puede quedar vacía.' });
+          return;
+        }
+        dataToUpdate.startDate = val;
+      }
+
+      if (startTime !== undefined) {
+        const val = String(startTime).trim();
+        if (!val) {
+          res.status(400).json({ success: false, error: 'La hora de inicio no puede quedar vacía.' });
+          return;
+        }
+        dataToUpdate.startTime = val;
+      }
+
+      if (startOperatorId !== undefined || startOperator !== undefined) {
+        const opVal = startOperatorId || startOperator;
+        if (!opVal || !String(opVal).trim()) {
+          res.status(400).json({ success: false, error: 'El operario de inicio no puede quedar vacío.' });
+          return;
+        }
+        const resolved = await resolveOperator(opVal);
+        if (!resolved) {
+          res.status(400).json({ success: false, error: 'El operario de inicio especificado no es válido.' });
+          return;
+        }
+        dataToUpdate.startOperatorRel = { connect: { id: resolved.id } };
+        dataToUpdate.startOperator = resolved.name;
+      }
+
       if (endDate !== undefined) dataToUpdate.endDate = endDate ? String(endDate).trim() : null;
       if (endTime !== undefined) dataToUpdate.endTime = endTime ? String(endTime).trim() : null;
-      if (endOperator !== undefined) dataToUpdate.endOperator = endOperator ? String(endOperator).trim() : null;
+
+      if (endOperatorId !== undefined || endOperator !== undefined) {
+        const opVal = endOperatorId || endOperator;
+        if (opVal && String(opVal).trim()) {
+          const resolved = await resolveOperator(opVal);
+          if (resolved) {
+            dataToUpdate.endOperatorRel = { connect: { id: resolved.id } };
+            dataToUpdate.endOperator = resolved.name;
+          } else {
+            dataToUpdate.endOperatorRel = { disconnect: true };
+            dataToUpdate.endOperator = String(opVal).trim();
+          }
+        } else {
+          dataToUpdate.endOperatorRel = { disconnect: true };
+          dataToUpdate.endOperator = null;
+        }
+      }
 
       if (weight !== undefined) {
         if (weight === null || weight === '') {
           dataToUpdate.weight = null;
         } else {
           const parsed = parseFloat(String(weight));
-          dataToUpdate.weight = isNaN(parsed) ? null : parsed;
+          if (isNaN(parsed) || parsed < 0) {
+            res.status(400).json({ success: false, error: 'El peso en kg debe ser un número decimal mayor o igual a cero.' });
+            return;
+          }
+          dataToUpdate.weight = parsed;
         }
       }
 
@@ -814,6 +1115,14 @@ export class ProductionController {
         return;
       }
 
+      if (existingRoll.batch?.status === 'PAUSED') {
+        res.status(400).json({
+          success: false,
+          error: 'El lote se encuentra PAUSADO. No se pueden aprobar rollos mientras la producción esté detenida.',
+        });
+        return;
+      }
+
       const updatedRoll = await prisma.productionRoll.update({
         where: { id: rollId },
         data: {
@@ -910,10 +1219,19 @@ export class ProductionController {
 
       const existingRoll = await prisma.productionRoll.findUnique({
         where: { id: rollId },
+        include: { batch: { select: { status: true } } },
       });
 
       if (!existingRoll) {
         res.status(404).json({ success: false, error: 'Rollo no encontrado.' });
+        return;
+      }
+
+      if (existingRoll.batch?.status === 'PAUSED') {
+        res.status(400).json({
+          success: false,
+          error: 'El lote se encuentra PAUSADO. No se pueden eliminar rollos mientras la producción esté detenida.',
+        });
         return;
       }
 

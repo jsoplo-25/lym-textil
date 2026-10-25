@@ -20,6 +20,7 @@ export interface Machine {
   model?: string | null;
   serialNumber?: string | null;
   status: MachineStatus;
+  designTypes?: string[] | string | null;
   location?: string | null;
   notes?: string | null;
   createdAt: string;
@@ -35,12 +36,13 @@ export interface MachineStats {
 
 export interface CreateMachineDTO {
   code: string;
-  name: string;
-  type: string;
+  name?: string;
+  type?: string;
   brand?: string;
   model?: string;
   serialNumber?: string;
-  status: MachineStatus;
+  status?: MachineStatus;
+  designTypes?: string[] | string;
   location?: string;
   notes?: string;
 }
@@ -53,6 +55,7 @@ export interface UpdateMachineDTO {
   model?: string;
   serialNumber?: string;
   status?: MachineStatus;
+  designTypes?: string[] | string;
   location?: string;
   notes?: string;
 }
