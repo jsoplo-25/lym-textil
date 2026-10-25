@@ -10,6 +10,7 @@ import {
   getLastActivity,
   setLastActivity,
   getStoredRefreshToken,
+  clearStoredSession,
 } from '../../lib/utils';
 import { axiosInstance } from '../../api/axiosInstance';
 import { loginService } from '../../../public-modules/login/services/login.service';
@@ -26,12 +27,12 @@ export const SessionTimeoutModal: React.FC = () => {
 
   const lastActivityUpdateRef = useRef<number>(Date.now());
 
-  // Handle Logout (Recarga completa y purga de memoria)
   const handleLogout = useCallback(async () => {
     setIsOpen(false);
-    await loginService.logout();
+    clearStoredSession();
+    await loginService.logout().catch(() => {});
     dispatch(logout());
-    window.location.href = '/login';
+    window.location.href = '/login?reason=timeout';
   }, [dispatch]);
 
   // Handle Extending Session
@@ -70,6 +71,14 @@ export const SessionTimeoutModal: React.FC = () => {
 
     const handleUserActivity = () => {
       const now = Date.now();
+      const lastActivity = getLastActivity();
+
+      // Si ya se superó el tiempo máximo de inactividad, NO actualizar actividad: cerrar sesión inmediatamente
+      if (lastActivity && now - lastActivity >= getTotalSessionTimeoutMs()) {
+        handleLogout();
+        return;
+      }
+
       // Throttle localStorage writes to at most once every 3 seconds
       if (now - lastActivityUpdateRef.current > 3000) {
         lastActivityUpdateRef.current = now;
@@ -77,17 +86,36 @@ export const SessionTimeoutModal: React.FC = () => {
       }
     };
 
+    // Al despertar la laptop o volver a la pestaña, comprobar de inmediato sin esperar el intervalo
+    const handleWakeUpOrFocus = () => {
+      const last = getLastActivity();
+      if (last && Date.now() - last >= getTotalSessionTimeoutMs()) {
+        handleLogout();
+      }
+    };
+
     const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
     events.forEach((event) => window.addEventListener(event, handleUserActivity, { passive: true }));
+    document.addEventListener('visibilitychange', handleWakeUpOrFocus);
+    window.addEventListener('focus', handleWakeUpOrFocus);
 
     return () => {
       events.forEach((event) => window.removeEventListener(event, handleUserActivity));
+      document.removeEventListener('visibilitychange', handleWakeUpOrFocus);
+      window.removeEventListener('focus', handleWakeUpOrFocus);
     };
-  }, [isAuthenticated, isOpen]);
+  }, [isAuthenticated, isOpen, handleLogout]);
 
   // Inactivity & Countdown Checker Interval
   useEffect(() => {
     if (!isAuthenticated) return;
+
+    // Chequeo inmediato al montar
+    const initialLast = getLastActivity();
+    if (initialLast && Date.now() - initialLast >= getTotalSessionTimeoutMs()) {
+      handleLogout();
+      return;
+    }
 
     const checkInterval = setInterval(() => {
       const lastActivity = getLastActivity();

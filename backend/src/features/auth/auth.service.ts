@@ -265,8 +265,12 @@ export class AuthService {
       throw new Error('El Refresh Token ha expirado o es inválido.');
     }
 
-    if (decoded.sessionId && !sessionManager.isValidSession(decoded.id, decoded.sessionId)) {
-      throw new Error('Tu sesión ha sido iniciada en otro dispositivo o pestaña.');
+    const validation = sessionManager.validateSession(decoded.id, decoded.sessionId);
+    if (!validation.valid) {
+      if (validation.reason === 'SUPERSEDED') {
+        throw new Error('SESSION_SUPERSEDED: Tu sesión ha sido iniciada en otro dispositivo o pestaña.');
+      }
+      throw new Error('SESSION_EXPIRED: Tu sesión ha expirado por inactividad. Inicia sesión nuevamente.');
     }
 
     let userRow: {

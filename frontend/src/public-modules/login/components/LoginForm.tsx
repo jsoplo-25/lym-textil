@@ -37,6 +37,12 @@ export const LoginForm: React.FC = () => {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-5">
+        {new URLSearchParams(window.location.search).get('reason') === 'timeout' && !error && (
+          <Alert variant="warning" size="sm">
+            Tu sesión expiró por inactividad (15 minutos). Ingresa tus credenciales para continuar.
+          </Alert>
+        )}
+
         {error && (
           <Alert variant="error" size="sm">
             {error}

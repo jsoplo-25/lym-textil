@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { store } from '../../app/store';
 import { updateTokens, logout } from '../../entities/session/sessionSlice';
-import { setLastActivity } from '../lib/utils';
+import { setLastActivity, isSessionTimedOut, clearStoredSession } from '../lib/utils';
 
 const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 // Remove trailing slash if present
@@ -62,6 +62,7 @@ axiosInstance.interceptors.response.use(
 
     // Si la sesión fue superada en otro dispositivo/pestaña, cerrar inmediatamente sin reintentar refresh
     if (error.response?.status === 401 && error.response?.data?.code === 'SESSION_SUPERSEDED') {
+      clearStoredSession();
       store.dispatch(logout());
       window.dispatchEvent(
         new CustomEvent('session_superseded', {
@@ -72,6 +73,16 @@ axiosInstance.interceptors.response.use(
           },
         })
       );
+      return Promise.reject(error);
+    }
+
+    // Si la sesión expiró por inactividad (15 min) o en el backend, cerrar inmediatamente sin reintentar refresh
+    if (
+      (error.response?.status === 401 && error.response?.data?.code === 'SESSION_EXPIRED') ||
+      isSessionTimedOut()
+    ) {
+      clearStoredSession();
+      store.dispatch(logout());
       return Promise.reject(error);
     }
 
