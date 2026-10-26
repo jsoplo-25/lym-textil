@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Save, Lock, Mail, User, Shield, Eye, EyeOff, Phone, Briefcase, Hash, Loader2 } from 'lucide-react';
-import type { ManagedUser, CreateUserDTO, UpdateUserDTO, UserStatus } from '../types/users.types';
+import { UserPlus, Save, Lock, Mail, User, Shield, Eye, EyeOff, Phone, Briefcase, FileText, CreditCard, Loader2 } from 'lucide-react';
+import type { ManagedUser, CreateUserDTO, UpdateUserDTO, UserStatus, PeruDocumentType } from '../types/users.types';
 import type { UserProfile } from '../../../entities/session/sessionTypes';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { Modal } from '../../../shared/ui/Modal';
@@ -12,6 +12,13 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'ACTIVE', label: 'Activo' },
   { value: 'INACTIVE', label: 'Inactivo' },
   { value: 'SUSPENDED', label: 'Suspendido' },
+];
+
+const DOCUMENT_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'DNI', label: 'DNI - Doc. Nacional de Identidad' },
+  { value: 'CE', label: 'CE - Carné de Extranjería' },
+  { value: 'PASAPORTE', label: 'Pasaporte' },
+  { value: 'RUC', label: 'RUC - Persona Natural' },
 ];
 
 interface UserModalProps {
@@ -29,7 +36,8 @@ export const UserModal: React.FC<UserModalProps> = ({
   editingUser,
   availableRoles,
 }) => {
-  const [workerId, setWorkerId] = useState('');
+  const [documentType, setDocumentType] = useState<PeruDocumentType>('DNI');
+  const [documentNumber, setDocumentNumber] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -68,14 +76,15 @@ export const UserModal: React.FC<UserModalProps> = ({
             );
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [availableRoles, isOpen]);
 
   useEffect(() => {
     if (editingUser) {
       const matched = rawRoles.find((r) => r.code === editingUser.role || r.id === editingUser.role);
-      setWorkerId(editingUser.workerId || '');
+      setDocumentType((editingUser.documentType as PeruDocumentType) || 'DNI');
+      setDocumentNumber(editingUser.documentNumber || '');
       setFirstName(editingUser.firstName);
       setLastName(editingUser.lastName);
       setEmail(editingUser.email);
@@ -88,7 +97,8 @@ export const UserModal: React.FC<UserModalProps> = ({
     } else {
       const defaultRole = availableRoles?.[0]?.code || roleOptions?.[0]?.value || '';
       const matched = rawRoles.find((r) => r.code === defaultRole || r.id === defaultRole);
-      setWorkerId('');
+      setDocumentType('DNI');
+      setDocumentNumber('');
       setFirstName('');
       setLastName('');
       setEmail('');
@@ -112,9 +122,39 @@ export const UserModal: React.FC<UserModalProps> = ({
     }
   };
 
+  const handleDocumentNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (documentType === 'DNI' || documentType === 'RUC') {
+      setDocumentNumber(val.replace(/\D/g, ''));
+    } else {
+      setDocumentNumber(val.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validación de documento peruano
+    const cleanDoc = documentNumber.trim();
+    if (cleanDoc) {
+      if (documentType === 'DNI' && !/^\d{8}$/.test(cleanDoc)) {
+        setError('El DNI debe contener exactamente 8 dígitos numéricos.');
+        return;
+      }
+      if (documentType === 'RUC' && !/^\d{11}$/.test(cleanDoc)) {
+        setError('El RUC debe contener exactamente 11 dígitos numéricos.');
+        return;
+      }
+      if (documentType === 'CE' && !/^[A-Za-z0-9]{8,12}$/.test(cleanDoc)) {
+        setError('El Carné de Extranjería (CE) debe contener entre 8 y 12 caracteres alfanuméricos.');
+        return;
+      }
+      if (documentType === 'PASAPORTE' && !/^[A-Za-z0-9]{6,12}$/.test(cleanDoc)) {
+        setError('El Pasaporte debe contener entre 6 y 12 caracteres alfanuméricos.');
+        return;
+      }
+    }
 
     if (!editingUser && !password) {
       setError('La contraseña es obligatoria para nuevos usuarios.');
@@ -132,7 +172,8 @@ export const UserModal: React.FC<UserModalProps> = ({
       if (editingUser) {
         await onSave(
           {
-            workerId: workerId.trim() || undefined,
+            documentType,
+            documentNumber: cleanDoc || undefined,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: email.trim().toLowerCase(),
@@ -146,7 +187,8 @@ export const UserModal: React.FC<UserModalProps> = ({
         );
       } else {
         await onSave({
-          workerId: workerId.trim() || undefined,
+          documentType,
+          documentNumber: cleanDoc || undefined,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim().toLowerCase(),
@@ -159,7 +201,8 @@ export const UserModal: React.FC<UserModalProps> = ({
         });
       }
       if (!editingUser) {
-        setWorkerId('');
+        setDocumentType('DNI');
+        setDocumentNumber('');
         setFirstName('');
         setLastName('');
         setEmail('');
@@ -197,43 +240,50 @@ export const UserModal: React.FC<UserModalProps> = ({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* ID Trabajador y Cargo */}
+        {/* Documento de Identidad (Perú) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-              ID Trabajador (Opcional, autogenerado)
+              Tipo de Documento *
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={workerId}
-                onChange={(e) => setWorkerId(e.target.value.toUpperCase())}
-                placeholder="Ej. USR-008"
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-primary-500 focus:outline-none uppercase"
-              />
-              <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
-            </div>
+            <Select
+              options={DOCUMENT_TYPE_OPTIONS}
+              value={documentType}
+              onChange={(val) => {
+                setDocumentType(val as PeruDocumentType);
+                setDocumentNumber('');
+              }}
+              leftIcon={<FileText className="w-4 h-4 text-slate-400" />}
+            />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center justify-between">
-              <span>Cargo / Función</span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
-                <Lock className="w-3 h-3 text-slate-400" />
-                Bloqueado (Desde Roles)
+              <span>N° de Documento</span>
+              <span className="text-[10px] text-slate-400 font-normal">
+                {documentType === 'DNI'
+                  ? '8 dígitos'
+                  : documentType === 'RUC'
+                  ? '11 dígitos'
+                  : '8-12 caracteres'}
               </span>
             </label>
             <div className="relative">
               <input
                 type="text"
-                value={jobTitle}
-                readOnly
-                tabIndex={-1}
-                placeholder="Se carga desde la descripción del rol..."
-                title="Este campo está bloqueado porque se gestiona desde el módulo de Roles."
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-medium cursor-not-allowed select-none focus:outline-none"
+                value={documentNumber}
+                onChange={handleDocumentNumberChange}
+                maxLength={documentType === 'DNI' ? 8 : documentType === 'RUC' ? 11 : 12}
+                placeholder={
+                  documentType === 'DNI'
+                    ? 'Ej. 71234567'
+                    : documentType === 'RUC'
+                    ? 'Ej. 10712345678'
+                    : 'Ej. 001234567'
+                }
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none"
               />
-              <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+              <CreditCard className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -335,7 +385,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           </div>
         )}
 
-        {/* Rol y Estado */}
+        {/* Rol y Cargo (el cargo depende del rol) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
@@ -351,6 +401,27 @@ export const UserModal: React.FC<UserModalProps> = ({
           </div>
 
           <div>
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+              <span>Cargo / Función</span>
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={jobTitle}
+                readOnly
+                tabIndex={-1}
+                placeholder="Se carga desde la descripción del rol..."
+                title="Este campo está bloqueado porque se gestiona desde el módulo de Roles."
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-medium cursor-not-allowed select-none focus:outline-none"
+              />
+              <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Estado (solo al editar; un usuario nuevo siempre se crea Activo) */}
+        {editingUser && (
+          <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
               Estado de la Cuenta *
             </label>
@@ -360,7 +431,7 @@ export const UserModal: React.FC<UserModalProps> = ({
               onChange={(val) => setStatus(val as UserStatus)}
             />
           </div>
-        </div>
+        )}
 
         <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
           <button

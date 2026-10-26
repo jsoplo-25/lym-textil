@@ -46,7 +46,7 @@ export interface BatchStatusLogItem {
   changedByUserId?: string | null;
   changedByUser?: {
     id: string;
-    workerId?: string;
+    workerId?: string | null;
     firstName: string;
     lastName: string;
     email: string;

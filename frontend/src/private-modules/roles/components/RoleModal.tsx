@@ -225,7 +225,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
         {/* Permissions Matrix */}
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
-            Matriz de Permisos Operacionales ({selectedPermissions.length} seleccionados)
+            Matriz de Permisos Operacionales ({selectedPermissions.length} Seleccionados)
           </label>
 
           <div className="space-y-4 max-h-72 overflow-y-auto pr-1">

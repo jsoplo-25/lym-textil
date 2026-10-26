@@ -216,6 +216,8 @@ export class AuthService {
       newUser = {
         id: supaUser.id,
         workerId: supaUser.worker_id || workerId,
+        documentType: supaUser.document_type || 'DNI',
+        documentNumber: supaUser.document_number || null,
         email: supaUser.email,
         passwordHash: supaUser.password_hash,
         firstName: supaUser.first_name,
@@ -229,6 +231,10 @@ export class AuthService {
         createdAt: new Date(supaUser.created_at),
         updatedAt: new Date(supaUser.created_at),
       };
+    }
+
+    if (!newUser) {
+      throw new Error('Error al registrar usuario en la base de datos.');
     }
 
     const sessionId = randomUUID();

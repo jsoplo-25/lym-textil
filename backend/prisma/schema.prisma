@@ -31,7 +31,9 @@ model RoleDefinition {
 
 model User {
   id             String          @id @default(uuid())
-  workerId       String          @unique @map("worker_id")
+  workerId       String?         @unique @map("worker_id")
+  documentType   String          @default("DNI") @map("document_type")
+  documentNumber String?         @map("document_number")
   email          String          @unique
   passwordHash   String          @map("password_hash")
   firstName      String          @map("first_name")

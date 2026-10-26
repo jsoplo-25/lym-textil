@@ -3,6 +3,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const prisma_1 = require("../../config/prisma");
 const password_1 = require("../../shared/utils/password");
+function validatePeruDocument(docType, docNumber) {
+    const cleanNumber = docNumber.trim();
+    if (docType === 'DNI') {
+        if (!/^\d{8}$/.test(cleanNumber)) {
+            return 'El DNI debe contener exactamente 8 dígitos numéricos.';
+        }
+    }
+    else if (docType === 'RUC') {
+        if (!/^\d{11}$/.test(cleanNumber)) {
+            return 'El RUC debe contener exactamente 11 dígitos numéricos.';
+        }
+    }
+    else if (docType === 'CE') {
+        if (!/^[A-Za-z0-9]{8,12}$/.test(cleanNumber)) {
+            return 'El Carné de Extranjería (CE) debe contener entre 8 y 12 caracteres alfanuméricos.';
+        }
+    }
+    else if (docType === 'PASAPORTE') {
+        if (!/^[A-Za-z0-9]{6,12}$/.test(cleanNumber)) {
+            return 'El Pasaporte debe contener entre 6 y 12 caracteres alfanuméricos.';
+        }
+    }
+    return null;
+}
 class UsersController {
     async getUsers(req, res) {
         const { q, role, status } = req.query;
@@ -21,6 +45,7 @@ class UsersController {
                     { firstName: { contains: q, mode: 'insensitive' } },
                     { lastName: { contains: q, mode: 'insensitive' } },
                     { workerId: { contains: q, mode: 'insensitive' } },
+                    { documentNumber: { contains: q, mode: 'insensitive' } },
                     { phone: { contains: q, mode: 'insensitive' } },
                     { jobTitle: { contains: q, mode: 'insensitive' } },
                 ];
@@ -28,12 +53,14 @@ class UsersController {
             const dbUsers = await prisma_1.prisma.user.findMany({
                 where: whereClause,
                 include: { roleDefinition: true },
-                orderBy: [{ workerId: 'asc' }, { createdAt: 'desc' }],
+                orderBy: [{ createdAt: 'desc' }],
             });
             if (dbUsers) {
                 usersList = dbUsers.map((u) => ({
                     id: u.id,
-                    workerId: u.workerId,
+                    workerId: u.workerId || undefined,
+                    documentType: u.documentType || 'DNI',
+                    documentNumber: u.documentNumber || undefined,
                     email: u.email,
                     firstName: u.firstName,
                     lastName: u.lastName,
@@ -67,7 +94,9 @@ class UsersController {
             if (dbUser) {
                 const userObj = {
                     id: dbUser.id,
-                    workerId: dbUser.workerId,
+                    workerId: dbUser.workerId || undefined,
+                    documentType: dbUser.documentType || 'DNI',
+                    documentNumber: dbUser.documentNumber || undefined,
                     email: dbUser.email,
                     firstName: dbUser.firstName,
                     lastName: dbUser.lastName,
@@ -94,7 +123,7 @@ class UsersController {
     }
     async createUser(req, res) {
         try {
-            const { email, password, firstName, lastName, role, workerId, phone, jobTitle, status, avatarUrl } = req.body;
+            const { email, password, firstName, lastName, role, documentType, documentNumber, workerId, phone, jobTitle, status, avatarUrl, } = req.body;
             if (!email || !password || !firstName || !lastName || !role) {
                 res.status(400).json({
                     success: false,
@@ -112,7 +141,29 @@ class UsersController {
                 });
                 return;
             }
-            // Validar o generar workerId
+            // Validar tipo y número de documento (Perú)
+            const finalDocType = documentType ? String(documentType).trim().toUpperCase() : 'DNI';
+            let finalDocNumber = null;
+            if (documentNumber) {
+                const cleanDoc = String(documentNumber).trim();
+                const docError = validatePeruDocument(finalDocType, cleanDoc);
+                if (docError) {
+                    res.status(400).json({ success: false, error: docError });
+                    return;
+                }
+                const existingDoc = await prisma_1.prisma.user.findFirst({
+                    where: { documentNumber: cleanDoc },
+                });
+                if (existingDoc) {
+                    res.status(400).json({
+                        success: false,
+                        error: `El número de documento "${cleanDoc}" ya se encuentra registrado para otro usuario.`,
+                    });
+                    return;
+                }
+                finalDocNumber = cleanDoc;
+            }
+            // Validar o generar workerId en segundo plano
             let finalWorkerId = workerId ? String(workerId).trim().toUpperCase() : '';
             if (!finalWorkerId) {
                 const count = await prisma_1.prisma.user.count();
@@ -154,6 +205,8 @@ class UsersController {
             const newUser = await prisma_1.prisma.user.create({
                 data: {
                     workerId: finalWorkerId,
+                    documentType: finalDocType,
+                    documentNumber: finalDocNumber,
                     email: cleanEmail,
                     passwordHash,
                     firstName: firstName.trim(),
@@ -168,7 +221,9 @@ class UsersController {
             });
             const createdUser = {
                 id: newUser.id,
-                workerId: newUser.workerId,
+                workerId: newUser.workerId || undefined,
+                documentType: newUser.documentType || 'DNI',
+                documentNumber: newUser.documentNumber || undefined,
                 email: newUser.email,
                 firstName: newUser.firstName,
                 lastName: newUser.lastName,
@@ -197,7 +252,7 @@ class UsersController {
     async updateUser(req, res) {
         try {
             const id = String(req.params.id);
-            const { email, firstName, lastName, role, workerId, phone, jobTitle, status, avatarUrl } = req.body;
+            const { email, firstName, lastName, role, documentType, documentNumber, workerId, phone, jobTitle, status, avatarUrl, } = req.body;
             const existingUser = await prisma_1.prisma.user.findUnique({ where: { id } });
             if (!existingUser) {
                 res.status(404).json({ success: false, error: 'Usuario no encontrado.' });
@@ -221,6 +276,37 @@ class UsersController {
                 validatedRoleCode = roleExists.code;
             }
             const dataToUpdate = {};
+            // Tipo de documento
+            const targetDocType = documentType !== undefined
+                ? String(documentType).trim().toUpperCase()
+                : (existingUser.documentType || 'DNI');
+            if (documentType !== undefined) {
+                dataToUpdate.documentType = targetDocType;
+            }
+            // Número de documento
+            if (documentNumber !== undefined) {
+                const cleanDoc = documentNumber ? String(documentNumber).trim() : null;
+                if (cleanDoc) {
+                    const docError = validatePeruDocument(targetDocType, cleanDoc);
+                    if (docError) {
+                        res.status(400).json({ success: false, error: docError });
+                        return;
+                    }
+                    if (cleanDoc !== existingUser.documentNumber) {
+                        const duplicate = await prisma_1.prisma.user.findFirst({
+                            where: { documentNumber: cleanDoc },
+                        });
+                        if (duplicate && duplicate.id !== id) {
+                            res.status(400).json({
+                                success: false,
+                                error: `El número de documento "${cleanDoc}" ya se encuentra registrado para otro usuario.`,
+                            });
+                            return;
+                        }
+                    }
+                }
+                dataToUpdate.documentNumber = cleanDoc;
+            }
             if (email !== undefined) {
                 const cleanEmail = String(email).trim().toLowerCase();
                 if (!cleanEmail) {
@@ -280,7 +366,9 @@ class UsersController {
             });
             const updatedUser = {
                 id: updated.id,
-                workerId: updated.workerId,
+                workerId: updated.workerId || undefined,
+                documentType: updated.documentType || 'DNI',
+                documentNumber: updated.documentNumber || undefined,
                 email: updated.email,
                 firstName: updated.firstName,
                 lastName: updated.lastName,

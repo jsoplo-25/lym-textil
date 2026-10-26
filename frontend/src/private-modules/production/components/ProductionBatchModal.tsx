@@ -226,7 +226,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
         {/* 1. N° Lote y Proveedor */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
               Identificador de Lote <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
@@ -295,7 +295,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
         {/* Campo condicional: Motivo de pausa */}
         {status === 'PAUSED' && (
           <div>
-            <label className="block text-xs font-bold text-accent-600 dark:text-accent-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <label className="block text-xs font-semibold text-accent-600 dark:text-accent-400 mb-2 flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" />
               Motivo u Observación de la Pausa *
             </label>
@@ -312,7 +312,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
 
         {/* 4. Observaciones / Especificaciones */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-slate-400" />
             Notas / Especificaciones
           </label>

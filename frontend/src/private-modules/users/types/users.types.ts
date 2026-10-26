@@ -2,9 +2,13 @@ import type { UserProfile } from '../../../entities/session/sessionTypes';
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
+export type PeruDocumentType = 'DNI' | 'CE' | 'PASAPORTE' | 'RUC';
+
 export interface ManagedUser {
   id: string;
-  workerId: string;
+  workerId?: string;
+  documentType?: PeruDocumentType | string;
+  documentNumber?: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -24,6 +28,8 @@ export interface CreateUserDTO {
   firstName: string;
   lastName: string;
   role: UserProfile['role'];
+  documentType?: PeruDocumentType | string;
+  documentNumber?: string;
   workerId?: string;
   phone?: string;
   jobTitle?: string;
@@ -36,9 +42,12 @@ export interface UpdateUserDTO {
   firstName?: string;
   lastName?: string;
   role?: UserProfile['role'];
+  documentType?: PeruDocumentType | string;
+  documentNumber?: string;
   workerId?: string;
   phone?: string;
   jobTitle?: string;
   status?: UserStatus;
   avatarUrl?: string;
 }
+

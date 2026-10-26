@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -12,6 +12,9 @@ export const MODAL_ICON_VARIANT_STYLES: Record<ModalIconVariant, string> = {
   amber: 'bg-accent-500/10 dark:bg-accent-500/20 text-accent-500 dark:text-accent-400 border border-accent-500/30',
   slate: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20',
 };
+
+/** Debe coincidir con la duración de modalZoomOut / modalFadeOut en index.css. */
+const MODAL_EXIT_MS = 200;
 
 const SIZE_STYLES = {
   sm: 'max-w-sm',
@@ -82,18 +85,34 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, dismissible, onClose]);
 
-  if (!isOpen) return null;
+  // Mantiene el modal montado mientras corre la animación de salida (zoom out).
+  const [rendered, setRendered] = useState(isOpen);
+  if (isOpen && !rendered) setRendered(true);
+
+  useEffect(() => {
+    if (isOpen || !rendered) return;
+    const timer = setTimeout(() => setRendered(false), MODAL_EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [isOpen, rendered]);
+
+  if (!rendered) return null;
 
   const hasHeader = Boolean(title || icon);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-fadeIn overflow-y-auto">
+    <div
+      className={cn(
+        'fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md overflow-y-auto',
+        isOpen ? 'animate-modal-backdrop-in' : 'animate-modal-backdrop-out pointer-events-none'
+      )}
+    >
       {/* Backdrop click to close — solo si el modal es descartable y no está cargando */}
       {dismissible && <div className="fixed inset-0" onClick={onClose} />}
 
       <div
         className={cn(
-          'relative z-10 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-7 shadow-2xl transition-all my-auto overflow-hidden',
+          'relative z-10 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-7 shadow-2xl my-auto overflow-hidden',
+          isOpen ? 'animate-modal-zoom-in' : 'animate-modal-zoom-out',
           SIZE_STYLES[size],
           className
         )}
