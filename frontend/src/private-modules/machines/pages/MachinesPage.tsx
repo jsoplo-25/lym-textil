@@ -44,15 +44,7 @@ const STATUS_FILTERS: SelectOption[] = [
 
 const TYPE_FILTERS: SelectOption[] = [
   { value: 'ALL', label: 'Todos los procesos' },
-  { value: 'Costura', label: 'Costura' },
-  { value: 'Corte', label: 'Corte' },
   { value: 'Tejido', label: 'Tejido' },
-  { value: 'Estampado', label: 'Estampado' },
-  { value: 'Bordado', label: 'Bordado' },
-  { value: 'Planchado', label: 'Planchado' },
-  { value: 'Acabado', label: 'Acabado' },
-  { value: 'Tintorería', label: 'Tintorería' },
-  { value: 'Otro', label: 'Otro' },
 ];
 
 export const MachinesPage: React.FC = () => {
