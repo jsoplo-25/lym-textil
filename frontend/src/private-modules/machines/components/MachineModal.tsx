@@ -23,15 +23,7 @@ interface MachineModalProps {
 }
 
 const TYPE_OPTIONS: SelectOption[] = [
-  { value: 'Costura', label: 'Costura' },
-  { value: 'Corte', label: 'Corte' },
   { value: 'Tejido', label: 'Tejido' },
-  { value: 'Estampado', label: 'Estampado' },
-  { value: 'Bordado', label: 'Bordado' },
-  { value: 'Planchado', label: 'Planchado' },
-  { value: 'Acabado', label: 'Acabado' },
-  { value: 'Tintorería', label: 'Tintorería' },
-  { value: 'Otro', label: 'Otro' },
 ];
 
 const STATUS_OPTIONS: SelectOption[] = [
@@ -48,7 +40,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
 }) => {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
-  const [type, setType] = useState('Costura');
+  const [type, setType] = useState('Tejido');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
@@ -63,7 +55,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
     if (editingMachine) {
       setCode(editingMachine.code || '');
       setName(editingMachine.name || '');
-      setType(editingMachine.type || 'Costura');
+      setType('Tejido');
       setBrand(editingMachine.brand || '');
       setModel(editingMachine.model || '');
       setSerialNumber(editingMachine.serialNumber || '');
@@ -78,7 +70,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
     } else {
       setCode('');
       setName('');
-      setType('Costura');
+      setType('Tejido');
       setBrand('');
       setModel('');
       setSerialNumber('');
@@ -124,7 +116,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
       if (!editingMachine) {
         setCode('');
         setName('');
-        setType('Costura');
+        setType('Tejido');
         setBrand('');
         setModel('');
         setSerialNumber('');

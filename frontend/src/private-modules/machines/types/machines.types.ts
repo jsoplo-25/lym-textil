@@ -1,15 +1,6 @@
 export type MachineStatus = 'OPERATIVE' | 'MAINTENANCE' | 'OUT_OF_SERVICE';
 
-export type MachineType =
-  | 'Costura'
-  | 'Corte'
-  | 'Tejido'
-  | 'Estampado'
-  | 'Bordado'
-  | 'Planchado'
-  | 'Acabado'
-  | 'Tintorería'
-  | 'Otro';
+export type MachineType = 'Tejido';
 
 export interface Machine {
   id: string;
