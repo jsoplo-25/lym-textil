@@ -8,6 +8,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 2. MODIFICACIONES EN TABLA USERS
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS worker_id VARCHAR(50);
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS document_type VARCHAR(20) NOT NULL DEFAULT 'DNI';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS document_number VARCHAR(20);
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS job_title VARCHAR(150);
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE';
@@ -23,9 +25,9 @@ SET worker_id = 'USR-' || LPAD(r.row_num::text, 3, '0')
 FROM ranked_users r
 WHERE u.id = r.id AND (u.worker_id IS NULL OR u.worker_id = '');
 
--- Restricciones worker_id
-ALTER TABLE public.users ALTER COLUMN worker_id SET NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_worker_id ON public.users(worker_id);
+-- Restricciones worker_id y document_number
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_worker_id ON public.users(worker_id) WHERE worker_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_document_number ON public.users(document_number) WHERE document_number IS NOT NULL AND document_number <> '';
 
 -- Backfill para job_title (Cargo) a partir de description de la tabla roles
 UPDATE public.users u
@@ -81,6 +83,17 @@ WHERE start_date IS NULL;
 ALTER TABLE public.production_batches ALTER COLUMN supplier_id SET NOT NULL;
 ALTER TABLE public.production_batches ALTER COLUMN machine_id SET NOT NULL;
 ALTER TABLE public.production_batches ALTER COLUMN start_date SET NOT NULL;
+
+-- Asegurar que las llaves foráneas reflejen ON DELETE RESTRICT en lugar de SET NULL
+ALTER TABLE public.production_batches
+  DROP CONSTRAINT IF EXISTS production_batches_machine_id_fkey,
+  ADD CONSTRAINT production_batches_machine_id_fkey
+    FOREIGN KEY (machine_id) REFERENCES public.machines(id) ON DELETE RESTRICT;
+
+ALTER TABLE public.production_batches
+  DROP CONSTRAINT IF EXISTS production_batches_supplier_id_fkey,
+  ADD CONSTRAINT production_batches_supplier_id_fkey
+    FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE RESTRICT;
 
 -- 6. TABLA DE TRACKING DE ESTADOS DE LOTE (PAUSAS, AUDITORÍA)
 -- Nota: id de production_batches y users son de tipo TEXT en Prisma

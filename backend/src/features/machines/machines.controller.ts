@@ -271,10 +271,23 @@ export class MachinesController {
 
       const existingMachine = await prisma.machine.findUnique({
         where: { id },
+        include: {
+          _count: {
+            select: { productionBatches: true },
+          },
+        },
       });
 
       if (!existingMachine) {
         res.status(404).json({ success: false, error: 'Máquina no encontrada.' });
+        return;
+      }
+
+      if (existingMachine._count.productionBatches > 0) {
+        res.status(400).json({
+          success: false,
+          error: `No se puede eliminar la máquina [${existingMachine.code} - ${existingMachine.name}] porque tiene ${existingMachine._count.productionBatches} lote(s) de producción asociado(s). Puede cambiar su estado a "FUERA DE SERVICIO" o "MANTENIMIENTO" en su lugar.`,
+        });
         return;
       }
 
@@ -287,7 +300,11 @@ export class MachinesController {
         message: `Máquina [${existingMachine.code}] eliminada exitosamente.`,
       });
     } catch (error: unknown) {
-      const errorMsg = error instanceof Error ? error.message : 'Error al eliminar máquina.';
+      console.error('Error al eliminar máquina:', error);
+      const isPrismaFk = (error as { code?: string })?.code === 'P2003';
+      const errorMsg = isPrismaFk
+        ? 'No se puede eliminar la máquina porque tiene registros vinculados en el sistema.'
+        : error instanceof Error ? error.message : 'Error al eliminar máquina.';
       res.status(500).json({ success: false, error: errorMsg });
     }
   }

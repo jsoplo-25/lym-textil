@@ -75,7 +75,7 @@ export const LoginForm: React.FC = () => {
           <Checkbox
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            label="Recordar sesión"
+            label="Recordar Sesión"
           />
           <Button
             type="button"

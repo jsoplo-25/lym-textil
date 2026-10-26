@@ -881,7 +881,7 @@ export const ProductionDetailPage: React.FC = () => {
             {/* Fila 1: N° Rollo e Inicio */}
             <div className="relative z-30 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-end">
               <div className="md:col-span-2">
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                   N° Rollo <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -957,7 +957,7 @@ export const ProductionDetailPage: React.FC = () => {
               </div>
 
               <div className="md:col-span-1">
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                   Peso (Kg)
                 </label>
                 <input
@@ -971,7 +971,7 @@ export const ProductionDetailPage: React.FC = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                   Observaciones
                 </label>
                 <input

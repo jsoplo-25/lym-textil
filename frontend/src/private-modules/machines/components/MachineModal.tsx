@@ -170,7 +170,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
         {/* 1. Código y Tipo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
               Código de Máquina <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
@@ -203,7 +203,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
 
         {/* 2. Nombre / Descripción */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Nombre / Descripción de la Máquina <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
@@ -224,7 +224,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
         {/* 3. Marca, Modelo y Serie */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
               Marca
             </label>
             <input
@@ -237,7 +237,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
               Modelo
             </label>
             <input
@@ -250,7 +250,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
               N° de Serie
             </label>
             <input
@@ -277,7 +277,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
 
         {/* 5. Tipos de Diseño */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Tipos de Diseño (Separados por coma)
           </label>
           <input
@@ -291,7 +291,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
 
         {/* 6. Ubicación / Área */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Ubicación / Área de Planta
           </label>
           <div className="relative">
@@ -310,7 +310,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
 
         {/* 6. Observaciones / Notas */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-slate-400" />
             Observaciones / Notas de Mantenimiento
           </label>

@@ -224,7 +224,7 @@ export const UsersPage: React.FC = () => {
         <div className="relative w-full sm:w-72 lg:w-80">
           <input
             type="text"
-            placeholder="Buscar por nombre o correo..."
+            placeholder="Buscar por nombre, correo o documento..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -259,7 +259,8 @@ export const UsersPage: React.FC = () => {
       <TableContainer>
         <Table>
           <TableHead>
-            <Th>ID</Th>
+            <Th>Tipo Doc.</Th>
+            <Th>N° Documento</Th>
             <Th>Colaborador</Th>
             <Th>Cargo / Contacto</Th>
             <Th>Rol en Planta</Th>
@@ -272,7 +273,10 @@ export const UsersPage: React.FC = () => {
               Array.from({ length: 5 }).map((_, i) => (
                 <Tr key={i}>
                   <Td>
-                    <Skeleton className="h-5 w-16 rounded-md" />
+                    <Skeleton className="h-5 w-12 rounded-md" />
+                  </Td>
+                  <Td>
+                    <Skeleton className="h-5 w-20 rounded-md" />
                   </Td>
                   <Td>
                     <div className="flex items-center gap-3">
@@ -304,16 +308,23 @@ export const UsersPage: React.FC = () => {
                 </Tr>
               ))
             ) : users.length === 0 ? (
-              <TableEmptyRow colSpan={7}>
+              <TableEmptyRow colSpan={8}>
                 No se encontraron usuarios con los filtros seleccionados.
               </TableEmptyRow>
             ) : (
               users.map((user) => (
                 <Tr key={user.id}>
-                  {/* Worker ID */}
+                  {/* Tipo de Documento */}
                   <Td>
-                    <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                      {user.workerId || '-'}
+                    <span className="font-bold text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      {user.documentType || 'DNI'}
+                    </span>
+                  </Td>
+
+                  {/* N° Documento */}
+                  <Td>
+                    <span className="font-mono font-semibold text-xs text-slate-800 dark:text-slate-200">
+                      {user.documentNumber || '-'}
                     </span>
                   </Td>
 

@@ -267,7 +267,7 @@ export const ProfilePage: React.FC = () => {
           <form onSubmit={handleUpdateProfile} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                   Nombres
                 </label>
                 <input
@@ -281,7 +281,7 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                   Apellidos
                 </label>
                 <input
@@ -295,7 +295,7 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                   Correo Electrónico
                 </label>
                 <input
@@ -309,7 +309,7 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                   Identificador Visual (Iniciales)
                 </label>
                 <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
@@ -373,7 +373,7 @@ export const ProfilePage: React.FC = () => {
 
           <form onSubmit={handleChangePassword} className="space-y-5 max-w-lg">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                 Contraseña Actual
               </label>
               <div className="relative flex items-center">
@@ -398,7 +398,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                 Nueva Contraseña
               </label>
               <div className="relative flex items-center">
@@ -423,7 +423,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                 Confirmar Nueva Contraseña
               </label>
               <div className="relative flex items-center">

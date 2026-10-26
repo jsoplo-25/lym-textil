@@ -224,7 +224,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             </div>
 
             <Input
-              label="Código de Verificación (6 dígitos)"
+              label="Código de Verificación (6 Dígitos)"
               type="text"
               placeholder="Ej. 123456"
               value={code}

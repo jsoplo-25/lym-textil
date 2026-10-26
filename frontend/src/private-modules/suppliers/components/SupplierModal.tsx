@@ -138,7 +138,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
         {/* 1. Documento y Razón Social */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
               RUC / Documento <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
@@ -157,7 +157,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
               Razón Social / Nombre <span className="text-rose-500">*</span>
             </label>
             <input
@@ -174,7 +174,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
         {/* 2. Contacto: Teléfono y Correo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
               <Phone className="w-3.5 h-3.5 text-slate-400" />
               Teléfono / WhatsApp
             </label>
@@ -188,7 +188,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-slate-400" />
               Correo Electrónico
             </label>
@@ -205,7 +205,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
         {/* 3. Tipos de Hilado y Estado */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-slate-400" />
               Tipos de Hilado Suministrados
             </label>
@@ -232,7 +232,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
 
         {/* 4. Dirección / Planta */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-slate-400" />
             Dirección / Planta / Almacén
           </label>
@@ -247,7 +247,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
 
         {/* 5. Notas Adicionales */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-slate-400" />
             Notas Comerciales / Especificaciones
           </label>
