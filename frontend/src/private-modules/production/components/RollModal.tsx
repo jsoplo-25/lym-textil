@@ -232,6 +232,7 @@ export const RollModal: React.FC<RollModalProps> = ({
       description="Detalle de turno, horarios, operarios y peso del rollo de tela"
       icon={<Layers className="w-6 h-6 text-primary-500" />}
       size="2xl"
+      className="max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
       isLoading={isLoading}
       loadingMessage={editingRoll ? 'Actualizando datos del rollo...' : 'Registrando rollo en producción...'}
     >
