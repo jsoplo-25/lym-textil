@@ -38,6 +38,7 @@ export interface ModalProps {
   iconVariant?: ModalIconVariant;
   children?: React.ReactNode;
   className?: string;
+  contentClassName?: string;
   isLoading?: boolean;
   loadingMessage?: string;
 }
@@ -60,6 +61,7 @@ export const Modal: React.FC<ModalProps> = ({
   iconVariant = 'emerald',
   children,
   className,
+  contentClassName,
   isLoading = false,
   loadingMessage,
 }) => {
@@ -184,7 +186,7 @@ export const Modal: React.FC<ModalProps> = ({
           )
         )}
 
-        <div className={hasHeader ? 'mt-5' : undefined}>{children}</div>
+        <div className={cn(hasHeader && 'mt-5', contentClassName)}>{children}</div>
       </div>
     </div>,
     document.body
