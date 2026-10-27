@@ -4,6 +4,7 @@ import { Input } from '../../../shared/ui/Input';
 import { Button } from '../../../shared/ui/Button';
 import { Alert } from '../../../shared/ui/Alert';
 import { Checkbox } from '../../../shared/ui/Checkbox';
+import { Turnstile, type TurnstileRef, } from '../../../shared/ui/Turnstile';
 import { useLogin } from '../hooks/useLogin';
 import { CookiesInfoModal } from './CookiesInfoModal';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
@@ -12,6 +13,8 @@ export const LoginForm: React.FC = () => {
   const [isCookiesModalOpen, setIsCookiesModalOpen] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [slowNotice, setSlowNotice] = useState(false);
+  const turnstileRef = React.useRef<TurnstileRef>(null);
+
   const {
     email,
     password,
@@ -21,6 +24,7 @@ export const LoginForm: React.FC = () => {
     setEmail,
     setPassword,
     setRememberMe,
+    setTurnstileToken,
     handleSubmit,
   } = useLogin();
 
@@ -34,9 +38,15 @@ export const LoginForm: React.FC = () => {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
+  const onFormSubmit = (e: React.FormEvent) => {
+    handleSubmit(e, () => {
+      turnstileRef.current?.reset();
+    });
+  };
+
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={onFormSubmit} className="space-y-5">
         {new URLSearchParams(window.location.search).get('reason') === 'timeout' && !error && (
           <Alert variant="warning" size="sm">
             Tu sesión expiró por inactividad (15 minutos). Ingresa tus credenciales para continuar.
@@ -87,11 +97,20 @@ export const LoginForm: React.FC = () => {
           </Button>
         </div>
 
+        <div className="flex justify-center pt-1 pb-1">
+          <Turnstile
+            ref={turnstileRef}
+            onVerify={(token) => setTurnstileToken(token)}
+            onExpire={() => setTurnstileToken('')}
+            onError={() => setTurnstileToken('')}
+          />
+        </div>
+
         <Button
           type="submit"
           variant="secondary"
           size="lg"
-          className="w-full font-semibold group mt-2 shadow-lg"
+          className="w-full font-semibold group shadow-lg"
           isLoading={isLoading}
         >
           <span>Iniciar Sesión</span>

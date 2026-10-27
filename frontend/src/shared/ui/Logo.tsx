@@ -48,8 +48,13 @@ export const Logo: React.FC<LogoProps> = ({
       </div>
 
       {showText && (
-        <div className={cn('flex flex-col', textClassName)}>
-          <span className="font-black text-slate-900 dark:text-white tracking-tight leading-tight text-base sm:text-lg">
+        <div className="flex flex-col">
+          <span
+            className={cn(
+              'font-black text-slate-900 dark:text-white tracking-tight leading-tight text-base sm:text-lg',
+              textClassName
+            )}
+          >
             Textil L&amp;M
           </span>
           {subtitle && (

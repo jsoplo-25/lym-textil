@@ -24,6 +24,8 @@ export const useLogin = (initialEmail = '') => {
     error: null,
   });
 
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+
   const setEmail = (email: string) => setState((prev) => ({ ...prev, email, error: null }));
   const setPassword = (password: string) => setState((prev) => ({ ...prev, password, error: null }));
   
@@ -35,8 +37,18 @@ export const useLogin = (initialEmail = '') => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, onFailed?: () => void) => {
     e.preventDefault();
+
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+    if (siteKey && !turnstileToken) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Por favor completa la verificación de seguridad antes de continuar.',
+      }));
+      return;
+    }
+
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -44,6 +56,7 @@ export const useLogin = (initialEmail = '') => {
         email: state.email,
         password: state.password,
         rememberMe: state.rememberMe,
+        turnstileToken,
       });
 
       if (!data || !data.user) {
@@ -101,6 +114,8 @@ export const useLogin = (initialEmail = '') => {
         }
       }
 
+      setTurnstileToken('');
+      onFailed?.();
       setState((prev) => ({ ...prev, error: errorMessage }));
     } finally {
       setState((prev) => ({ ...prev, isLoading: false }));
@@ -111,11 +126,13 @@ export const useLogin = (initialEmail = '') => {
     email: state.email,
     password: state.password,
     rememberMe: state.rememberMe,
+    turnstileToken,
     isLoading: state.isLoading,
     error: state.error,
     setEmail,
     setPassword,
     setRememberMe,
+    setTurnstileToken,
     handleSubmit,
   };
 };
