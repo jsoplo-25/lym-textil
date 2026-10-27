@@ -4,6 +4,7 @@ export interface LoginCredentials {
   email: string;
   password: string;
   rememberMe?: boolean;
+  turnstileToken?: string;
 }
 
 export interface LoginResponseData {

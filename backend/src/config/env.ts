@@ -27,5 +27,6 @@ export const env = {
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
   EMAIL_FROM: process.env.EMAIL_FROM || 'Textiles L&M <no-reply@textileslym.com>',
+  CLOUDFLARE_TURNSTILE_SECRET_KEY: process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || '',
 };
 

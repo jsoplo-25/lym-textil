@@ -7,6 +7,7 @@ export const loginService = {
       email: credentials.email,
       password: credentials.password,
       rememberMe: credentials.rememberMe,
+      turnstileToken: credentials.turnstileToken,
     });
 
     if (!response.data || typeof response.data !== 'object' || !response.data.data) {
