@@ -164,9 +164,9 @@ export class DashboardController {
       // 3. Estadísticas de máquinas
       const [totalMachines, opMachines, maintMachines, inactMachines] = await Promise.all([
         prisma.machine.count(),
-        prisma.machine.count({ where: { status: 'OPERATIONAL' } }),
+        prisma.machine.count({ where: { status: 'OPERATIVE' } }),
         prisma.machine.count({ where: { status: 'MAINTENANCE' } }),
-        prisma.machine.count({ where: { status: 'INACTIVE' } }),
+        prisma.machine.count({ where: { status: 'OUT_OF_SERVICE' } }),
       ]);
 
       // 4. Estadísticas de proveedores

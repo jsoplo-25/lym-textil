@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -38,7 +38,7 @@ import { Tooltip } from '../../../shared/ui/Tooltip';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useToast } from '../../../shared/hooks/useToast';
 import { hasPermission } from '../../../shared/lib/roles';
-import { formatLocalDate, getTodayLocalDate } from '../../../shared/lib/utils';
+import { formatLocalDate, getTodayLocalDate, toDatePickerValue } from '../../../shared/lib/utils';
 import { DatePicker } from '../../../shared/ui/DatePicker';
 import { TimePicker } from '../../../shared/ui/TimePicker';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
@@ -78,6 +78,7 @@ export const ProductionDetailPage: React.FC = () => {
   const [quickWeight, setQuickWeight] = useState('');
   const [quickObservations, setQuickObservations] = useState('');
   const [isQuickAdding, setIsQuickAdding] = useState(false);
+  const lastQuickDefaultKeyRef = useRef<string | null | undefined>(undefined);
 
   // Row and action loaders
   const [updatingRollId, setUpdatingRollId] = useState<string | null>(null);
@@ -109,6 +110,24 @@ export const ProductionDetailPage: React.FC = () => {
       const data = await productionService.getBatchById(id);
       if (data) {
         setBatch(data);
+
+        const latestBatchRoll = data.rolls?.[data.rolls.length - 1];
+        const latestRollKey = latestBatchRoll
+          ? `${latestBatchRoll.id}|${latestBatchRoll.endOperator || ''}|${latestBatchRoll.endDate || ''}|${latestBatchRoll.endTime || ''}`
+          : null;
+
+        if (lastQuickDefaultKeyRef.current !== latestRollKey) {
+          lastQuickDefaultKeyRef.current = latestRollKey;
+          if (latestBatchRoll?.endDate && latestBatchRoll.endTime) {
+            setQuickStartOperator(latestBatchRoll.endOperator || '');
+            setQuickStartDate(toDatePickerValue(latestBatchRoll.endDate));
+            setQuickStartTime(latestBatchRoll.endTime);
+          } else {
+            setQuickStartOperator('');
+            setQuickStartDate(getTodayLocalDate());
+            setQuickStartTime('');
+          }
+        }
       }
     } catch (err) {
       console.error('Error cargando detalle del lote:', err);
@@ -119,6 +138,7 @@ export const ProductionDetailPage: React.FC = () => {
   };
 
   useEffect(() => {
+    lastQuickDefaultKeyRef.current = undefined;
     loadOperators();
     loadBatch();
     setQuickStartDate(getTodayLocalDate());
@@ -272,6 +292,8 @@ export const ProductionDetailPage: React.FC = () => {
   }
 
   const rolls = batch.rolls || [];
+  const latestRoll = rolls[rolls.length - 1];
+  const hasLatestRollEnd = Boolean(latestRoll?.endDate && latestRoll?.endTime);
   const totalRolls = rolls.length;
   const totalWeight = rolls.reduce((sum, r) => sum + (r.weight || 0), 0);
   const avgWeight = totalRolls > 0 ? totalWeight / totalRolls : 0;
@@ -1185,6 +1207,9 @@ export const ProductionDetailPage: React.FC = () => {
         onSave={handleSaveRoll}
         editingRoll={editingRoll}
         suggestedRollNumber={String((rolls[rolls.length - 1] ? parseInt(rolls[rolls.length - 1].rollNumber, 10) + 1 : 1) || '')}
+        suggestedStartOperator={hasLatestRollEnd ? latestRoll.endOperator || undefined : undefined}
+        suggestedStartDate={hasLatestRollEnd ? toDatePickerValue(latestRoll.endDate) : undefined}
+        suggestedStartTime={hasLatestRollEnd ? latestRoll.endTime || undefined : undefined}
       />
 
       <ProductionBatchModal

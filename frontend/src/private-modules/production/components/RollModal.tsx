@@ -18,6 +18,9 @@ interface RollModalProps {
   onSave: (data: CreateRollDTO | UpdateRollDTO, id?: string) => Promise<void>;
   editingRoll?: ProductionRoll | null;
   suggestedRollNumber?: string;
+  suggestedStartOperator?: string;
+  suggestedStartDate?: string;
+  suggestedStartTime?: string;
 }
 
 export const ROLL_STATUS_OPTIONS: SelectOption[] = [
@@ -34,6 +37,9 @@ export const RollModal: React.FC<RollModalProps> = ({
   onSave,
   editingRoll,
   suggestedRollNumber,
+  suggestedStartOperator,
+  suggestedStartDate,
+  suggestedStartTime,
 }) => {
   const currentUser = useSelector((state: RootState) => state.session.user);
   const canApprove = hasPermission(currentUser, 'production:approve');
@@ -86,9 +92,9 @@ export const RollModal: React.FC<RollModalProps> = ({
       setObservations(editingRoll.observations || '');
     } else {
       setRollNumber(suggestedRollNumber || '');
-      setStartOperator('');
-      setStartDate(getTodayLocalDate());
-      setStartTime('');
+      setStartOperator(suggestedStartOperator || '');
+      setStartDate(suggestedStartDate ? toDatePickerValue(suggestedStartDate) : getTodayLocalDate());
+      setStartTime(suggestedStartTime || '');
       setEndOperator('');
       setEndDate(getTodayLocalDate());
       setEndTime('');
@@ -97,7 +103,7 @@ export const RollModal: React.FC<RollModalProps> = ({
       setObservations('');
     }
     setError(null);
-  }, [editingRoll, isOpen, suggestedRollNumber]);
+  }, [editingRoll, isOpen, suggestedRollNumber, suggestedStartOperator, suggestedStartDate, suggestedStartTime]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
