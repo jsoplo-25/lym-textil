@@ -206,7 +206,9 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
       title={editingBatch ? `Editar Lote [${editingBatch.batchNumber}]` : 'Nuevo Lote de Producción'}
       description="Identificador único, proveedor/cliente, máquina y orden de producción"
       icon={<Layers className="w-6 h-6 text-primary-500" />}
-      size="lg"
+      size="xl"
+      className="max-h-[calc(100dvh-2rem)] flex flex-col"
+      contentClassName="min-h-0 overflow-y-auto overscroll-contain pr-1 sm:pr-2"
       isLoading={isLoading}
       loadingMessage={editingBatch ? 'Actualizando datos del lote...' : 'Registrando lote de producción...'}
     >
