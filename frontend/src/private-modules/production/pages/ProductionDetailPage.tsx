@@ -256,8 +256,9 @@ export const ProductionDetailPage: React.FC = () => {
     try {
       const data = await productionService.getBatchById(id);
       if (data) {
-        const hasRollsInPrep = data.rolls?.some((r) =>
-          ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'].includes(r.status)
+        const hasRollsInPrep = data.rolls?.some(
+          (r) =>
+            Boolean(r.status && ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'].includes(r.status))
         );
         if (data.status === 'REQUESTED' && hasRollsInPrep) {
           data.status = 'IN_PROGRESS';
@@ -524,8 +525,12 @@ export const ProductionDetailPage: React.FC = () => {
         IN_PROGRESS: 'En proceso',
         PAUSED: 'Pausado',
         COMPLETED: 'Terminado (todos los rollos entregados)',
+        IN_PREPARATION: 'En preparación',
+        READY_FOR_PICKUP: 'Listo para recojo',
+        DELIVERED: 'Entregado',
+        DISPATCHED: 'Despachado',
       };
-      toast.success(`Lote actualizado a "${statusLabels[newStatus]}".`);
+      toast.success(`Lote actualizado a "${statusLabels[newStatus] || newStatus}".`);
       await loadBatch();
       window.dispatchEvent(new CustomEvent('production:rolls-updated'));
     } catch (err: unknown) {
