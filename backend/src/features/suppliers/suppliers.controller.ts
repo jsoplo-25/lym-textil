@@ -152,6 +152,7 @@ export class SuppliersController {
       }
 
       const cleanDoc = document.trim().toUpperCase();
+      const cleanName = name.trim();
 
       // Verificar unicidad de documento
       const existing = await prisma.supplier.findUnique({
@@ -159,11 +160,32 @@ export class SuppliersController {
       });
 
       if (existing) {
-        res.status(400).json({
+        res.status(409).json({
           success: false,
           error: `Ya existe un proveedor registrado con el documento ${cleanDoc} (${existing.name}).`,
         });
         return;
+      }
+
+      // Verificar unicidad de Razón Social / Nombre
+      const existingName = await prisma.supplier.findFirst({
+        where: { name: { equals: cleanName, mode: 'insensitive' } },
+      });
+
+      if (existingName) {
+        res.status(409).json({
+          success: false,
+          error: `Ya existe un proveedor registrado con la Razón Social "${cleanName}".`,
+        });
+        return;
+      }
+
+      if (email && typeof email === 'string' && email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+          res.status(400).json({ success: false, error: 'El formato del correo electrónico es inválido.' });
+          return;
+        }
       }
 
       const newSupplier = await prisma.supplier.create({
@@ -234,21 +256,49 @@ export class SuppliersController {
       }
 
       if (name !== undefined) {
-        if (!name.trim()) {
+        const cleanName = name.trim();
+        if (!cleanName) {
           res.status(400).json({ success: false, error: 'La Razón Social o nombre no puede quedar vacía.' });
           return;
         }
-        dataToUpdate.name = name.trim();
+
+        if (cleanName.toLowerCase() !== existingSupplier.name.toLowerCase()) {
+          const duplicateName = await prisma.supplier.findFirst({
+            where: {
+              name: { equals: cleanName, mode: 'insensitive' },
+              id: { not: id },
+            },
+          });
+          if (duplicateName) {
+            res.status(409).json({
+              success: false,
+              error: `La Razón Social "${cleanName}" ya está registrada por otro proveedor.`,
+            });
+            return;
+          }
+        }
+
+        dataToUpdate.name = cleanName;
 
         // Actualizar el nombre desnormalizado en los lotes asociados
         await prisma.productionBatch.updateMany({
           where: { supplierId: id },
-          data: { supplierName: name.trim() },
+          data: { supplierName: cleanName },
         });
       }
 
       if (phone !== undefined) dataToUpdate.phone = phone ? String(phone).trim() : null;
-      if (email !== undefined) dataToUpdate.email = email ? String(email).trim().toLowerCase() : null;
+      if (email !== undefined) {
+        const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+        if (cleanEmail) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(cleanEmail)) {
+            res.status(400).json({ success: false, error: 'El formato del correo electrónico es inválido.' });
+            return;
+          }
+        }
+        dataToUpdate.email = cleanEmail;
+      }
       if (address !== undefined) dataToUpdate.address = address ? String(address).trim() : null;
       if (yarnTypes !== undefined) dataToUpdate.yarnTypes = normalizeYarnTypes(yarnTypes);
       if (status !== undefined) dataToUpdate.status = status;

@@ -10,7 +10,7 @@ import type {
 } from '../types/production.types';
 import { machinesService } from '../../machines/services/machines.service';
 import { suppliersService } from '../../suppliers/services/suppliers.service';
-import { Layers, Activity, FileText, Cog, Truck, AlertTriangle } from 'lucide-react';
+import { Layers, Activity, FileText, Cog, Truck, AlertTriangle, AlertCircle } from 'lucide-react';
 import { getTodayLocalDate, toDatePickerValue } from '../../../shared/lib/utils';
 
 interface ProductionBatchModalProps {
@@ -18,6 +18,7 @@ interface ProductionBatchModalProps {
   onClose: () => void;
   onSave: (data: CreateBatchDTO, id?: string) => Promise<void>;
   editingBatch?: ProductionBatch | null;
+  existingBatches?: ProductionBatch[];
 }
 
 const STATUS_OPTIONS: SelectOption[] = [
@@ -32,6 +33,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
   onClose,
   onSave,
   editingBatch,
+  existingBatches = [],
 }) => {
   const [batchNumber, setBatchNumber] = useState('');
   const [machineId, setMachineId] = useState('');
@@ -44,6 +46,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -54,7 +57,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
           if (res && res.machines) {
             const options: SelectOption[] = res.machines.map((m) => ({
               value: m.id,
-              label: `[${m.code}] ${m.name} (${m.type})`,
+              label: `${m.name} (${m.type})`,
             }));
             setMachineOptions(options);
             if (!editingBatch && options.length > 0 && !machineId) {
@@ -104,6 +107,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
       setNotes('');
     }
     setError(null);
+    setFieldErrors({});
   }, [editingBatch, isOpen]);
 
   const statusOptions: SelectOption[] = editingBatch
@@ -114,55 +118,87 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
         { value: 'PAUSED', label: '3. Pausado' },
       ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const cleanBatch = batchNumber.trim().toUpperCase();
 
-    if (!batchNumber.trim()) {
-      setError('El número o código identificador del lote es obligatorio (ej. LOTE 12).');
-      return;
+    // 1. Identificador de Lote Requerido
+    if (!cleanBatch) {
+      errors.batchNumber = 'El código o número de lote es obligatorio (ej. LOTE 12).';
+    } else if (cleanBatch.length < 2) {
+      errors.batchNumber = 'El código de lote debe tener al menos 2 caracteres.';
+    } else {
+      // 2. Duplicados de Lote
+      const isDuplicate = existingBatches.some(
+        (b) => b.batchNumber.toUpperCase() === cleanBatch && b.id !== editingBatch?.id
+      );
+      if (isDuplicate) {
+        errors.batchNumber = `Ya existe un lote registrado con el identificador "${cleanBatch}".`;
+      }
     }
 
+    // 3. Proveedor / Cliente requerido
     if (!supplierId.trim()) {
-      setError('El proveedor / cliente de hilado es obligatorio.');
-      return;
+      errors.supplierId = 'Debes seleccionar el proveedor / cliente del hilado.';
     }
 
+    // 4. Máquina de Producción requerida
     if (!machineId.trim()) {
-      setError('La máquina de producción es obligatoria.');
-      return;
+      errors.machineId = 'Debes asignar la máquina de tejeduría.';
     }
 
+    // 5. Fecha de Inicio requerida
     if (!startDate.trim()) {
-      setError('La fecha de inicio del lote es obligatoria.');
-      return;
+      errors.startDate = 'La fecha de inicio de producción es obligatoria.';
     }
 
+    // 6. Motivo de pausa si aplica
     if (status === 'PAUSED' && editingBatch?.status !== 'PAUSED' && !statusNote.trim()) {
-      setError('Debes especificar un motivo u observación para pausar el lote.');
-      return;
+      errors.statusNote = 'Debes especificar el motivo de pausar el lote.';
     }
 
     if (status === 'COMPLETED') {
       if (!editingBatch) {
-        setError('Un lote nuevo no puede crearse en estado Terminado porque aún no tiene rollos.');
-        return;
-      }
-      if (editingBatch.rolls) {
+        errors.status = 'Un lote nuevo no puede crearse en estado Terminado porque aún no tiene rollos.';
+      } else if (editingBatch.rolls) {
         if (editingBatch.rolls.length === 0) {
-          setError('No se puede marcar el lote como Terminado porque aún no tiene rollos registrados.');
-          return;
-        }
-        const pendingRolls = editingBatch.rolls.filter((r) => r.status !== 'DELIVERED').length;
-        if (pendingRolls > 0) {
-          setError(
-            `No se puede marcar el lote como Terminado porque tiene ${pendingRolls} ${
-              pendingRolls === 1 ? 'rollo pendiente' : 'rollos pendientes'
-            } de entrega (todos los rollos deben estar en estado "Entregado").`
-          );
-          return;
+          errors.status = 'No se puede marcar el lote como Terminado porque no tiene rollos registrados.';
+        } else {
+          const pendingRolls = editingBatch.rolls.filter((r) => r.status !== 'DELIVERED').length;
+          if (pendingRolls > 0) {
+            errors.status = `Tiene ${pendingRolls} rollo(s) pendiente(s) de entrega (todos deben estar Entregados).`;
+          }
         }
       }
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setError('Por favor corrige los campos señalados antes de guardar.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleBatchNumberChange = (val: string) => {
+    setBatchNumber(val);
+    if (fieldErrors.batchNumber) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.batchNumber;
+        return copy;
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!validateForm()) {
+      return;
     }
 
     try {
@@ -192,6 +228,10 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
       const apiError =
         (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+
+      if (apiError && apiError.toLowerCase().includes('lote')) {
+        setFieldErrors((prev) => ({ ...prev, batchNumber: apiError }));
+      }
 
       setError(apiError || 'Ocurrió un error al guardar el lote de producción.');
     } finally {
@@ -234,13 +274,24 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
             <div className="relative">
               <input
                 type="text"
-                required
                 value={batchNumber}
-                onChange={(e) => setBatchNumber(e.target.value)}
+                onChange={(e) => handleBatchNumberChange(e.target.value)}
                 placeholder="Ej. LOTE 15 o CU-001"
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono uppercase"
+                className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm font-bold transition-all font-mono uppercase ${
+                  fieldErrors.batchNumber
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500'
+                }`}
               />
             </div>
+            {fieldErrors.batchNumber ? (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.batchNumber}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 mt-1">Código único de orden o partida</p>
+            )}
           </div>
 
           <div>
@@ -249,10 +300,25 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
               leftIcon={<Truck className="w-4 h-4 text-slate-400" />}
               options={supplierOptions}
               value={supplierId}
-              onChange={setSupplierId}
+              onChange={(val) => {
+                setSupplierId(val);
+                if (fieldErrors.supplierId) {
+                  setFieldErrors((prev) => {
+                    const copy = { ...prev };
+                    delete copy.supplierId;
+                    return copy;
+                  });
+                }
+              }}
               disabled={Boolean(editingBatch)}
               placeholder="Selecciona proveedor..."
             />
+            {fieldErrors.supplierId && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.supplierId}</span>
+              </p>
+            )}
             {editingBatch && (
               <p className="text-[11px] text-slate-400 mt-1">El proveedor ya fue asignado al crearse el lote.</p>
             )}
@@ -266,9 +332,24 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
             leftIcon={<Cog className="w-4 h-4 text-slate-400" />}
             options={machineOptions}
             value={machineId}
-            onChange={setMachineId}
+            onChange={(val) => {
+              setMachineId(val);
+              if (fieldErrors.machineId) {
+                setFieldErrors((prev) => {
+                  const copy = { ...prev };
+                  delete copy.machineId;
+                  return copy;
+                });
+              }
+            }}
             placeholder="Selecciona la máquina..."
           />
+          {fieldErrors.machineId && (
+            <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{fieldErrors.machineId}</span>
+            </p>
+          )}
         </div>
 
         {/* 3. Fecha de Inicio y Estado */}
@@ -277,9 +358,24 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
             <DatePicker
               label="Fecha de Inicio *"
               value={startDate}
-              onChange={setStartDate}
+              onChange={(val) => {
+                setStartDate(val);
+                if (fieldErrors.startDate) {
+                  setFieldErrors((prev) => {
+                    const copy = { ...prev };
+                    delete copy.startDate;
+                    return copy;
+                  });
+                }
+              }}
               placeholder="Selecciona fecha..."
             />
+            {fieldErrors.startDate && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.startDate}</span>
+              </p>
+            )}
           </div>
 
           <div>

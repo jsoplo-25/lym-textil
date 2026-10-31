@@ -433,6 +433,7 @@ export const UsersPage: React.FC = () => {
         onSave={handleSaveUser}
         editingUser={editingUser}
         availableRoles={rolesList}
+        existingUsers={users}
       />
 
       {/* Delete Confirmation Modal */}
