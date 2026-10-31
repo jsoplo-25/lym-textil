@@ -17,6 +17,9 @@ router.get('/:id', authenticateJwt, requirePermission('production:read'), contro
 router.post('/', authenticateJwt, requirePermission('production:create'), controller.createBatch);
 router.put('/:id', authenticateJwt, requirePermission('production:edit'), controller.updateBatch);
 router.delete('/:id', authenticateJwt, requirePermission('production:delete'), controller.deleteBatch);
+router.post('/:id/notify-whatsapp-threshold', authenticateJwt, requirePermission('production:edit'), controller.notifyBatchPickupThreshold);
+router.get('/:id/whatsapp-logs', authenticateJwt, requirePermission('production:read'), controller.getBatchWhatsAppLogs);
+router.post('/whatsapp/test', authenticateJwt, requirePermission('production:edit'), controller.testWhatsAppMessage);
 
 // Hilos dentro de un lote (Yarns)
 router.post('/:id/yarns', authenticateJwt, requirePermission('production:create'), controller.addYarn);

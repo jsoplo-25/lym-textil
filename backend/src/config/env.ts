@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load .env file in development if present
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env'), override: true });
 
 const port = process.env.PORT || 4000;
 const defaultApiUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
@@ -28,5 +28,21 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS || '',
   EMAIL_FROM: process.env.EMAIL_FROM || 'Textiles L&M <no-reply@textileslym.com>',
   CLOUDFLARE_TURNSTILE_SECRET_KEY: process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || '',
+  // WhatsApp Cloud API (lectura dinámica desde .env)
+  get WHATSAPP_API_TOKEN() {
+    dotenv.config({ path: path.resolve(__dirname, '../../.env'), override: true });
+    return process.env.WHATSAPP_API_TOKEN || '';
+  },
+  get WHATSAPP_PHONE_NUMBER_ID() {
+    dotenv.config({ path: path.resolve(__dirname, '../../.env'), override: true });
+    return process.env.WHATSAPP_PHONE_NUMBER_ID || '';
+  },
+  get WHATSAPP_BUSINESS_ACCOUNT_ID() {
+    dotenv.config({ path: path.resolve(__dirname, '../../.env'), override: true });
+    return process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '';
+  },
+  get WHATSAPP_API_VERSION() {
+    return process.env.WHATSAPP_API_VERSION || 'v21.0';
+  },
 };
 

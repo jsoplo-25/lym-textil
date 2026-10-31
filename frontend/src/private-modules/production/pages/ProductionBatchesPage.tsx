@@ -550,9 +550,16 @@ export const ProductionBatchesPage: React.FC = () => {
 
                     {/* Peso Total */}
                     <Td>
-                      <span className="font-extrabold font-mono text-primary-600 dark:text-primary-400 text-xs">
-                        {(batch.totalWeight || 0).toFixed(2)} Kg
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="font-extrabold font-mono text-primary-600 dark:text-primary-400 text-xs">
+                          {(batch.totalWeight || 0).toFixed(2)} Kg
+                        </span>
+                        {Boolean(batch.totalFabricKg && batch.totalFabricKg > 0) && (
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            Meta: {batch.totalFabricKg?.toFixed(2)} Kg
+                          </span>
+                        )}
+                      </div>
                     </Td>
 
                     {/* Estado General Lote */}

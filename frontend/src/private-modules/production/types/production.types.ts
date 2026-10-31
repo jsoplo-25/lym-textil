@@ -143,6 +143,8 @@ export interface ProductionBatch {
   yarns?: BatchYarn[];
   rolls?: ProductionRoll[];
   statusLogs?: BatchStatusLog[];
+  totalFabricKg?: number | null;
+  notifiedMilestones?: number[];
 }
 
 export interface BatchTrackingData {
@@ -198,6 +200,7 @@ export interface CreateBatchDTO {
   status?: BatchStatus;
   notes?: string;
   statusNote?: string;
+  totalFabricKg?: number;
 }
 
 export interface UpdateBatchDTO {
@@ -209,6 +212,24 @@ export interface UpdateBatchDTO {
   status?: BatchStatus;
   notes?: string;
   statusNote?: string;
+  totalFabricKg?: number;
+}
+
+export interface WhatsAppNotificationLogItem {
+  id: string;
+  batchId: string;
+  supplierId?: string | null;
+  supplierName?: string | null;
+  phoneNumber: string;
+  percentage: number;
+  totalKg: number;
+  readyKg: number;
+  rollsCount: number;
+  message: string;
+  status: 'SENT' | 'FAILED' | 'SIMULATED';
+  responseId?: string | null;
+  errorDetails?: string | null;
+  createdAt: string;
 }
 
 export interface CreateRollDTO {

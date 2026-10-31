@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
 import { prisma, ProductionBatch, BatchYarn } from '../../config/prisma';
+import { WhatsAppService } from '../../services/whatsapp.service';
 
 async function generateUniqueTrackingCode(): Promise<string> {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -208,6 +209,8 @@ export class ProductionController {
           totalWeight: parseFloat(totalWeight.toFixed(2)),
           avgWeight,
           yarns: batch.yarns,
+          totalFabricKg: batch.totalFabricKg ?? 0,
+          notifiedMilestones: batch.notifiedMilestones ?? [],
         };
       });
 
@@ -339,6 +342,8 @@ export class ProductionController {
         yarns: batch.yarns,
         rolls: batch.rolls,
         statusLogs: batch.statusLogs,
+        totalFabricKg: batch.totalFabricKg ?? 0,
+        notifiedMilestones: batch.notifiedMilestones ?? [],
       };
 
       res.status(200).json({ success: true, data: responseData });
@@ -353,11 +358,21 @@ export class ProductionController {
    */
   async createBatch(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { batchNumber, machineId, supplierId, startDate, endDate, status, notes, statusNote } = req.body;
+      const { batchNumber, machineId, supplierId, startDate, endDate, status, notes, statusNote, totalFabricKg } = req.body;
 
       if (!batchNumber || typeof batchNumber !== 'string' || !batchNumber.trim()) {
         res.status(400).json({ success: false, error: 'El identificador o código de lote es obligatorio.' });
         return;
+      }
+
+      let parsedTotalFabricKg: number | null = null;
+      if (totalFabricKg !== undefined && totalFabricKg !== null && totalFabricKg !== '') {
+        const num = parseFloat(String(totalFabricKg));
+        if (isNaN(num) || num < 0) {
+          res.status(400).json({ success: false, error: 'El Total de kilos de tela debe ser un número decimal mayor o igual a cero.' });
+          return;
+        }
+        parsedTotalFabricKg = num;
       }
 
       const normalizedBatchNumber = batchNumber.trim().toUpperCase();
@@ -436,6 +451,7 @@ export class ProductionController {
           endDate: parseBatchDate(endDate),
           status: finalStatus,
           notes: notes && typeof notes === 'string' ? notes.trim() : null,
+          totalFabricKg: parsedTotalFabricKg ?? 0,
         },
       });
 
@@ -468,7 +484,7 @@ export class ProductionController {
   async updateBatch(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const id = String(req.params.id);
-      const { batchNumber, machineId, supplierId, startDate, endDate, status, notes, statusNote } = req.body;
+      const { batchNumber, machineId, supplierId, startDate, endDate, status, notes, statusNote, totalFabricKg } = req.body;
 
       const existingBatch = await prisma.productionBatch.findUnique({
         where: { id },
@@ -598,6 +614,19 @@ export class ProductionController {
 
       if (notes !== undefined) {
         dataToUpdate.notes = notes ? String(notes).trim() : null;
+      }
+
+      if (totalFabricKg !== undefined) {
+        if (totalFabricKg === null || totalFabricKg === '') {
+          dataToUpdate.totalFabricKg = 0;
+        } else {
+          const num = parseFloat(String(totalFabricKg));
+          if (isNaN(num) || num < 0) {
+            res.status(400).json({ success: false, error: 'El Total de kilos de tela debe ser un número decimal mayor o igual a cero.' });
+            return;
+          }
+          dataToUpdate.totalFabricKg = num;
+        }
       }
 
       const updatedBatch = await prisma.productionBatch.update({
@@ -1078,6 +1107,15 @@ export class ProductionController {
         }
       }
 
+      // Si el rollo pasó a Listo para recojo (o se actualizó su peso estando en Listo para recojo),
+      // evaluar si se alcanzaron hitos del 25%, 50%, 75% o 100% para notificar al proveedor vía WhatsApp
+      const isReadyForPickup = (status && status === 'READY_FOR_PICKUP') || existingRoll.status === 'READY_FOR_PICKUP';
+      if (isReadyForPickup) {
+        WhatsAppService.checkAndNotifyPickupThreshold(existingRoll.batchId).catch((err) => {
+          console.error('[updateRoll] Error al verificar umbrales de recojo para WhatsApp:', err);
+        });
+      }
+
       res.status(200).json({
         success: true,
         message: `Rollo N° ${updatedRoll.rollNumber} actualizado exitosamente.`,
@@ -1128,6 +1166,11 @@ export class ProductionController {
         data: {
           status: 'READY_FOR_PICKUP',
         },
+      });
+
+      // Evaluar si se alcanzaron los hitos del 25%, 50%, 75% o 100% de tela para recojo y notificar por WhatsApp
+      WhatsAppService.checkAndNotifyPickupThreshold(existingRoll.batchId).catch((err) => {
+        console.error('[approveRoll] Error al evaluar hitos de recojo WhatsApp:', err);
       });
 
       const supplierName =
@@ -1542,4 +1585,89 @@ export class ProductionController {
       res.status(500).json({ success: false, error: errorMsg });
     }
   }
+
+  /**
+   * Verificar manualmente y disparar notificación por WhatsApp según hitos (25%, 50%, 75%, 100%)
+   */
+  async notifyBatchPickupThreshold(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const batchId = String(req.params.id);
+      const result = await WhatsAppService.checkAndNotifyPickupThreshold(batchId);
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al verificar hitos de WhatsApp.';
+      res.status(500).json({ success: false, error: errorMsg });
+    }
+  }
+
+  /**
+   * Obtener el historial de notificaciones por WhatsApp de un lote
+   */
+  async getBatchWhatsAppLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const batchId = String(req.params.id);
+      const logs = await prisma.whatsAppNotificationLog.findMany({
+        where: { batchId },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.status(200).json({
+        success: true,
+        data: logs,
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al obtener bitácora de WhatsApp.';
+      res.status(500).json({ success: false, error: errorMsg });
+    }
+  }
+
+  /**
+   * Enviar mensaje de prueba directo de WhatsApp
+   */
+  async testWhatsAppMessage(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { toPhone, message, useTemplate } = req.body;
+      if (!toPhone) {
+        res.status(400).json({ success: false, error: 'El número de teléfono destinatario es obligatorio.' });
+        return;
+      }
+
+      let result;
+      if (useTemplate) {
+        result = await WhatsAppService.sendTemplateMessage(String(toPhone), 'hello_world', 'en_US');
+      } else {
+        const testMsg = message || '🧪 ¡Mensaje de prueba exitoso desde Textiles L&M Sistema de Producción!';
+        result = await WhatsAppService.sendTextMessage(String(toPhone), testMsg);
+
+        // Si falló por ventana de 24h (template requerido), intentamos automáticamente con la plantilla hello_world
+        if (
+          !result.success &&
+          result.error &&
+          (result.error.includes('131047') ||
+            result.error.toLowerCase().includes('template') ||
+            result.error.toLowerCase().includes('24 hour'))
+        ) {
+          result = await WhatsAppService.sendTemplateMessage(String(toPhone), 'hello_world', 'en_US');
+        }
+      }
+
+      if (!result.success) {
+        res.status(400).json({ success: false, error: result.error });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        message: result.simulated
+          ? 'Mensaje simulado correctamente (credenciales pendientes).'
+          : '¡Mensaje de WhatsApp enviado exitosamente a tu celular!',
+        data: result,
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al enviar mensaje de prueba.';
+      res.status(500).json({ success: false, error: errorMsg });
+    }
+  }
 }
+

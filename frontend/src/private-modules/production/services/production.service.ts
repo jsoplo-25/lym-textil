@@ -97,4 +97,20 @@ export const productionService = {
     const res = await axiosInstance.post(`/production/rolls/${rollId}/approve`);
     return res.data;
   },
+
+  // WhatsApp Notificaciones por Hitos
+  async triggerWhatsAppThresholdCheck(batchId: string): Promise<any> {
+    const res = await axiosInstance.post(`/production/${batchId}/notify-whatsapp-threshold`);
+    return res.data.data;
+  },
+
+  async getWhatsAppLogs(batchId: string): Promise<any[]> {
+    const res = await axiosInstance.get(`/production/${batchId}/whatsapp-logs`);
+    return res.data.data;
+  },
+
+  async testWhatsAppMessage(toPhone: string, message?: string, useTemplate?: boolean): Promise<any> {
+    const res = await axiosInstance.post('/production/whatsapp/test', { toPhone, message, useTemplate });
+    return res.data;
+  },
 };

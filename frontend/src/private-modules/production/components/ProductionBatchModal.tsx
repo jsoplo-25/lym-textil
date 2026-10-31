@@ -10,7 +10,7 @@ import type {
 } from '../types/production.types';
 import { machinesService } from '../../machines/services/machines.service';
 import { suppliersService } from '../../suppliers/services/suppliers.service';
-import { Layers, Activity, FileText, Cog, Truck, AlertTriangle } from 'lucide-react';
+import { Layers, Activity, FileText, Cog, Truck, AlertTriangle, Scale } from 'lucide-react';
 import { getTodayLocalDate, toDatePickerValue } from '../../../shared/lib/utils';
 
 interface ProductionBatchModalProps {
@@ -41,6 +41,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
   const [startDate, setStartDate] = useState('');
   const [status, setStatus] = useState<BatchStatus>('REQUESTED');
   const [statusNote, setStatusNote] = useState('');
+  const [totalFabricKg, setTotalFabricKg] = useState('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,12 +96,14 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
       );
       setStatus(editingBatch.status || 'REQUESTED');
       setStatusNote('');
+      setTotalFabricKg(editingBatch.totalFabricKg ? String(editingBatch.totalFabricKg) : '');
       setNotes(editingBatch.notes || '');
     } else {
       setBatchNumber('');
       setStartDate(getTodayLocalDate());
       setStatus('REQUESTED');
       setStatusNote('');
+      setTotalFabricKg('');
       setNotes('');
     }
     setError(null);
@@ -135,6 +138,11 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
 
     if (!startDate.trim()) {
       setError('La fecha de inicio del lote es obligatoria.');
+      return;
+    }
+
+    if (!totalFabricKg.trim() || isNaN(parseFloat(totalFabricKg)) || parseFloat(totalFabricKg) <= 0) {
+      setError('Debes ingresar el Total de kilos de tela (número mayor a 0). Es la base del 100% para las notificaciones por WhatsApp.');
       return;
     }
 
@@ -176,6 +184,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
         status,
         statusNote: statusNote.trim() || undefined,
         notes: notes.trim() || undefined,
+        totalFabricKg: parseFloat(totalFabricKg),
       };
 
       await onSave(payload, editingBatch?.id);
@@ -259,16 +268,48 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
           </div>
         </div>
 
-        {/* 2. Máquina Asignada */}
-        <div>
-          <Select
-            label="Máquina de Producción *"
-            leftIcon={<Cog className="w-4 h-4 text-slate-400" />}
-            options={machineOptions}
-            value={machineId}
-            onChange={setMachineId}
-            placeholder="Selecciona la máquina..."
-          />
+        {/* 2. Total de kilos de tela y Máquina Asignada */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Scale className="w-3.5 h-3.5 text-primary-500" />
+                Total de Kilos de Tela (100%) <span className="text-rose-500">*</span>
+              </span>
+              <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+                WhatsApp 25%-100%
+              </span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                value={totalFabricKg}
+                onChange={(e) => setTotalFabricKg(e.target.value)}
+                placeholder="Ej. 1200.50"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                Kg
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              Base del 100% para notificar al proveedor al alcanzar 25%, 50%, 75% y 100% listos.
+            </p>
+          </div>
+
+          <div>
+            <Select
+              label="Máquina de Producción *"
+              leftIcon={<Cog className="w-4 h-4 text-slate-400" />}
+              options={machineOptions}
+              value={machineId}
+              onChange={setMachineId}
+              placeholder="Selecciona la máquina..."
+            />
+          </div>
         </div>
 
         {/* 3. Fecha de Inicio y Estado */}
