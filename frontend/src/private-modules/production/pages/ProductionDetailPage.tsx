@@ -256,11 +256,12 @@ export const ProductionDetailPage: React.FC = () => {
     try {
       const data = await productionService.getBatchById(id);
       if (data) {
-        const hasRollsInPrep = data.rolls?.some(
-          (r) =>
-            Boolean(r.status && ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'].includes(r.status))
-        );
-        if (data.status === 'REQUESTED' && hasRollsInPrep) {
+        if (!data.rolls || data.rolls.length === 0) {
+          if (data.status !== 'REQUESTED') {
+            data.status = 'REQUESTED';
+            productionService.updateBatch(data.id, { status: 'REQUESTED' }).catch(console.error);
+          }
+        } else if (data.status === 'REQUESTED') {
           data.status = 'IN_PROGRESS';
           productionService.updateBatch(data.id, { status: 'IN_PROGRESS' }).catch(console.error);
         }
@@ -468,9 +469,12 @@ export const ProductionDetailPage: React.FC = () => {
     readyRollsCount > 0 ||
     deliveredRollsCount > 0;
 
-  // Si el lote está en REQUESTED pero ya tiene rollos iniciados o preparados, su estado efectivo es IN_PROGRESS
+  // Si no hay rollos registrados, el lote ÚNICAMENTE puede estar en REQUESTED (Solicitud registrada).
+  // Si ya hay al menos un rollo (totalRolls > 0), el lote pasa automáticamente a IN_PROGRESS si estaba en REQUESTED.
   const currentBatchStatus: BatchStatus =
-    batch?.status === 'REQUESTED' && hasRollsInPrepOrBeyond
+    totalRolls === 0
+      ? 'REQUESTED'
+      : batch?.status === 'REQUESTED' && totalRolls > 0
       ? 'IN_PROGRESS'
       : (batch?.status || 'REQUESTED');
 
@@ -478,23 +482,24 @@ export const ProductionDetailPage: React.FC = () => {
     if (!id || !canEdit || !batch) return;
     if (currentBatchStatus === newStatus) return;
 
+    if (totalRolls === 0 && newStatus !== 'REQUESTED') {
+      toast.error('Si no hay rollos registrados, el lote solo puede estar en "Solicitud registrada".');
+      return;
+    }
+
     if (newStatus === 'PAUSED' && !observationNotes) {
       setIsPauseModalOpen(true);
       return;
     }
 
-    if (newStatus === 'REQUESTED') {
-      if (hasRollsInPrepOrBeyond) {
-        toast.error('No se puede volver a "Solicitud registrada" porque ya existen rollos en preparación o completados.');
-        return;
-      }
+    if (newStatus === 'REQUESTED' && totalRolls > 0) {
+      toast.error('No se puede volver a "Solicitud registrada" porque el lote ya tiene rollos creados.');
+      return;
     }
 
-    if (newStatus === 'IN_PROGRESS') {
-      if (!hasRollsInPrepOrBeyond) {
-        toast.error('Para cambiar a "En proceso" debe haber al menos un rollo en preparación.');
-        return;
-      }
+    if (newStatus === 'IN_PROGRESS' && totalRolls === 0) {
+      toast.error('Para pasar a "En proceso" debe haber al menos un rollo registrado.');
+      return;
     }
 
     if (newStatus === 'COMPLETED') {
@@ -968,7 +973,9 @@ export const ProductionDetailPage: React.FC = () => {
                 </button>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {currentBatchStatus === 'COMPLETED'
+                {totalRolls === 0
+                  ? 'Lote registrado, pendiente de agregar rollos de producción.'
+                  : currentBatchStatus === 'COMPLETED'
                   ? 'Todos los hilos y entregas de este lote han concluido con éxito.'
                   : currentBatchStatus === 'IN_PROGRESS'
                   ? 'Lote en producción activa con rollos en preparación o terminación.'
@@ -982,12 +989,14 @@ export const ProductionDetailPage: React.FC = () => {
               {/* 1. SOLICITUD REGISTRADA */}
               <Tooltip
                 content={
-                  currentBatchStatus === 'REQUESTED'
+                  totalRolls === 0
+                    ? 'Estado actual: Solicitud registrada (el lote no tiene rollos registrados).'
+                    : totalRolls > 0
+                    ? 'Deshabilitado: ya existen rollos registrados en el lote.'
+                    : currentBatchStatus === 'REQUESTED'
                     ? 'Estado actual: Solicitud registrada.'
                     : currentBatchStatus === 'COMPLETED'
                     ? 'El lote ya ha sido finalizado.'
-                    : hasRollsInPrepOrBeyond
-                    ? 'Deshabilitado: ya existen rollos en preparación o entregados.'
                     : 'Cambiar a Solicitud registrada'
                 }
                 position="top"
@@ -997,15 +1006,16 @@ export const ProductionDetailPage: React.FC = () => {
                   disabled={
                     !canEdit ||
                     isUpdatingBatchStatus ||
+                    totalRolls === 0 ||
+                    totalRolls > 0 ||
                     currentBatchStatus === 'REQUESTED' ||
-                    currentBatchStatus === 'COMPLETED' ||
-                    hasRollsInPrepOrBeyond
+                    currentBatchStatus === 'COMPLETED'
                   }
                   onClick={() => handleQuickUpdateStatus('REQUESTED')}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                     currentBatchStatus === 'REQUESTED'
                       ? 'bg-blue-600 text-white shadow-xs cursor-default'
-                      : !canEdit || isUpdatingBatchStatus || currentBatchStatus === 'COMPLETED' || hasRollsInPrepOrBeyond
+                      : !canEdit || isUpdatingBatchStatus || totalRolls === 0 || totalRolls > 0 || currentBatchStatus === 'COMPLETED'
                       ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer'
                   }`}
@@ -1022,12 +1032,12 @@ export const ProductionDetailPage: React.FC = () => {
               {/* 2. EN PROCESO */}
               <Tooltip
                 content={
-                  currentBatchStatus === 'IN_PROGRESS'
+                  totalRolls === 0
+                    ? 'Deshabilitado: registra al menos un rollo para pasar a En proceso.'
+                    : currentBatchStatus === 'IN_PROGRESS'
                     ? 'Estado actual: En proceso.'
                     : currentBatchStatus === 'COMPLETED'
                     ? 'El lote ya ha sido finalizado.'
-                    : !hasRollsInPrepOrBeyond
-                    ? 'Deshabilitado: requiere que al menos un rollo esté en preparación.'
                     : 'Cambiar a En proceso'
                 }
                 position="top"
@@ -1037,15 +1047,15 @@ export const ProductionDetailPage: React.FC = () => {
                   disabled={
                     !canEdit ||
                     isUpdatingBatchStatus ||
+                    totalRolls === 0 ||
                     currentBatchStatus === 'IN_PROGRESS' ||
-                    currentBatchStatus === 'COMPLETED' ||
-                    !hasRollsInPrepOrBeyond
+                    currentBatchStatus === 'COMPLETED'
                   }
                   onClick={() => handleQuickUpdateStatus('IN_PROGRESS')}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                     currentBatchStatus === 'IN_PROGRESS'
                       ? 'bg-amber-600 text-white shadow-xs cursor-default'
-                      : !canEdit || isUpdatingBatchStatus || currentBatchStatus === 'COMPLETED' || !hasRollsInPrepOrBeyond
+                      : !canEdit || isUpdatingBatchStatus || totalRolls === 0 || currentBatchStatus === 'COMPLETED'
                       ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
                       : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer'
                   }`}
@@ -1062,7 +1072,9 @@ export const ProductionDetailPage: React.FC = () => {
               {/* 3. PAUSADO */}
               <Tooltip
                 content={
-                  currentBatchStatus === 'PAUSED'
+                  totalRolls === 0
+                    ? 'Deshabilitado: no se puede pausar un lote sin rollos registrados.'
+                    : currentBatchStatus === 'PAUSED'
                     ? 'Estado actual: Pausado.'
                     : currentBatchStatus === 'COMPLETED'
                     ? 'El lote ya ha sido finalizado.'
@@ -1075,6 +1087,7 @@ export const ProductionDetailPage: React.FC = () => {
                   disabled={
                     !canEdit ||
                     isUpdatingBatchStatus ||
+                    totalRolls === 0 ||
                     currentBatchStatus === 'PAUSED' ||
                     currentBatchStatus === 'COMPLETED'
                   }
@@ -1082,7 +1095,7 @@ export const ProductionDetailPage: React.FC = () => {
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                     currentBatchStatus === 'PAUSED'
                       ? 'bg-orange-600 text-white shadow-xs cursor-default'
-                      : !canEdit || isUpdatingBatchStatus || currentBatchStatus === 'COMPLETED'
+                      : !canEdit || isUpdatingBatchStatus || totalRolls === 0 || currentBatchStatus === 'COMPLETED'
                       ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
                       : 'text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 cursor-pointer'
                   }`}
@@ -1099,10 +1112,10 @@ export const ProductionDetailPage: React.FC = () => {
               {/* 4. TERMINADO */}
               <Tooltip
                 content={
-                  currentBatchStatus === 'COMPLETED'
-                    ? 'Lote terminado (todos los rollos entregados).'
-                    : totalRolls === 0
+                  totalRolls === 0
                     ? 'No se puede terminar: registra rollos antes de finalizar el lote.'
+                    : currentBatchStatus === 'COMPLETED'
+                    ? 'Lote terminado (todos los rollos entregados).'
                     : deliveredRollsCount < totalRolls
                     ? `No se puede terminar: faltan ${totalRolls - deliveredRollsCount} ${
                         totalRolls - deliveredRollsCount === 1 ? 'rollo' : 'rollos'

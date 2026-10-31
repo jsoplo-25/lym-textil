@@ -178,10 +178,15 @@ export class ProductionController {
           }
 
           let status = batch.status;
-          const hasRollsInProgress = batch.rolls.some((r) =>
-            ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'].includes(r.status)
-          );
-          if (status === 'REQUESTED' && hasRollsInProgress) {
+          if (batch.rolls.length === 0) {
+            if (status !== 'REQUESTED') {
+              status = 'REQUESTED';
+              await prisma.productionBatch.update({
+                where: { id: batch.id },
+                data: { status: 'REQUESTED' },
+              });
+            }
+          } else if (status === 'REQUESTED') {
             status = 'IN_PROGRESS';
             await prisma.productionBatch.update({
               where: { id: batch.id },
@@ -328,19 +333,23 @@ export class ProductionController {
       }
 
       let currentStatus = batch.status;
-      const hasRollsInProgress = batch.rolls.some((r) =>
-        ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'].includes(r.status)
-      );
+      const totalRolls = batch.rolls.length;
 
-      if (currentStatus === 'REQUESTED' && hasRollsInProgress) {
+      if (totalRolls === 0) {
+        if (currentStatus !== 'REQUESTED') {
+          currentStatus = 'REQUESTED';
+          await prisma.productionBatch.update({
+            where: { id: batch.id },
+            data: { status: 'REQUESTED' },
+          });
+        }
+      } else if (currentStatus === 'REQUESTED') {
         currentStatus = 'IN_PROGRESS';
         await prisma.productionBatch.update({
           where: { id: batch.id },
           data: { status: 'IN_PROGRESS' },
         });
       }
-
-      const totalRolls = batch.rolls.length;
       const totalWeight = batch.rolls.reduce((sum, r) => sum + (r.weight || 0), 0);
       const avgWeight = totalRolls > 0 ? parseFloat((totalWeight / totalRolls).toFixed(2)) : 0;
 
@@ -576,6 +585,18 @@ export class ProductionController {
       let targetStatus = existingBatch.status;
 
       if (status !== undefined) {
+        const totalRollsCount = await prisma.productionRoll.count({
+          where: { batchId: id },
+        });
+
+        if (totalRollsCount === 0 && status !== 'REQUESTED') {
+          res.status(400).json({
+            success: false,
+            error: 'Si el lote no tiene rollos registrados, solo puede estar en "Solicitud registrada".',
+          });
+          return;
+        }
+
         if (status === 'COMPLETED') {
           const totalRolls = await prisma.productionRoll.count({
             where: { batchId: id },
@@ -605,32 +626,26 @@ export class ProductionController {
         }
 
         if (status === 'IN_PROGRESS') {
-          const prepRollsCount = await prisma.productionRoll.count({
-            where: {
-              batchId: id,
-              status: { in: ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'] },
-            },
+          const totalRolls = await prisma.productionRoll.count({
+            where: { batchId: id },
           });
-          if (prepRollsCount === 0) {
+          if (totalRolls === 0) {
             res.status(400).json({
               success: false,
-              error: 'Para pasar el lote a "En proceso" debe haber al menos un rollo en preparación o iniciado.',
+              error: 'Para pasar el lote a "En proceso" debe tener al menos un rollo registrado.',
             });
             return;
           }
         }
 
         if (status === 'REQUESTED') {
-          const activeRollsCount = await prisma.productionRoll.count({
-            where: {
-              batchId: id,
-              status: { in: ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'] },
-            },
+          const rollsCount = await prisma.productionRoll.count({
+            where: { batchId: id },
           });
-          if (activeRollsCount > 0) {
+          if (rollsCount > 0) {
             res.status(400).json({
               success: false,
-              error: 'No se puede regresar a "Solicitud registrada" porque el lote ya tiene rollos en preparación o procesados.',
+              error: 'No se puede regresar a "Solicitud registrada" porque el lote ya tiene rollos creados.',
             });
             return;
           }
@@ -845,16 +860,8 @@ export class ProductionController {
         },
       });
 
-      // Si el lote estaba en COMPLETED, al añadir un nuevo rollo (no entregado) revierte a REQUESTED
-      if (batch.status === 'COMPLETED') {
-        await prisma.productionBatch.update({
-          where: { id: batchId },
-          data: { status: 'REQUESTED' },
-        });
-      } else if (
-        batch.status === 'REQUESTED' &&
-        ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'].includes(newRoll.status)
-      ) {
+      // Si el lote estaba en REQUESTED o COMPLETED, al añadir un rollo pasa automáticamente a IN_PROGRESS
+      if (batch.status === 'REQUESTED' || batch.status === 'COMPLETED') {
         await prisma.productionBatch.update({
           where: { id: batchId },
           data: { status: 'IN_PROGRESS' },
@@ -1325,16 +1332,10 @@ export class ProductionController {
         where: { batchId: existingRoll.batchId },
       });
       if (remainingTotal === 0) {
-        const batch = await prisma.productionBatch.findUnique({
+        await prisma.productionBatch.update({
           where: { id: existingRoll.batchId },
-          select: { status: true },
+          data: { status: 'REQUESTED' },
         });
-        if (batch?.status === 'COMPLETED') {
-          await prisma.productionBatch.update({
-            where: { id: existingRoll.batchId },
-            data: { status: 'REQUESTED' },
-          });
-        }
       } else {
         const remainingPending = await prisma.productionRoll.count({
           where: {
