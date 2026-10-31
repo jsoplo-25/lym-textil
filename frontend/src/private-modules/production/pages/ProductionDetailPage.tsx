@@ -463,12 +463,6 @@ export const ProductionDetailPage: React.FC = () => {
   const readyRollsCount = rolls.filter((r) => r.status === 'READY_FOR_PICKUP').length;
   const deliveredRollsCount = rolls.filter((r) => r.status === 'DELIVERED').length;
 
-  const hasRollsInPrepOrBeyond =
-    prepRollsCount > 0 ||
-    readyApprovalRollsCount > 0 ||
-    readyRollsCount > 0 ||
-    deliveredRollsCount > 0;
-
   // Si no hay rollos registrados, el lote ÚNICAMENTE puede estar en REQUESTED (Solicitud registrada).
   // Si ya hay al menos un rollo (totalRolls > 0), el lote pasa automáticamente a IN_PROGRESS si estaba en REQUESTED.
   const currentBatchStatus: BatchStatus =
