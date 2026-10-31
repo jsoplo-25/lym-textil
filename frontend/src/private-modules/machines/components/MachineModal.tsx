@@ -9,6 +9,7 @@ import {
   FileText,
   Activity,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import type { Machine, CreateMachineDTO, UpdateMachineDTO, MachineStatus } from '../types/machines.types';
 import { Modal } from '../../../shared/ui/Modal';
@@ -20,6 +21,7 @@ interface MachineModalProps {
   onClose: () => void;
   onSave: (data: CreateMachineDTO | UpdateMachineDTO, id?: string) => Promise<void>;
   editingMachine?: Machine | null;
+  existingMachines?: Machine[];
 }
 
 const TYPE_OPTIONS: SelectOption[] = [
@@ -37,6 +39,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
   onClose,
   onSave,
   editingMachine,
+  existingMachines = [],
 }) => {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -50,6 +53,7 @@ export const MachineModal: React.FC<MachineModalProps> = ({
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (editingMachine) {
@@ -80,19 +84,104 @@ export const MachineModal: React.FC<MachineModalProps> = ({
       setNotes('');
     }
     setError(null);
+    setFieldErrors({});
   }, [editingMachine, isOpen]);
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const cleanCode = code.trim().toUpperCase();
+    const cleanName = name.trim();
+    const cleanSerial = serialNumber.trim().toUpperCase();
+
+    // 1. Validación de Código (Requerido)
+    if (!cleanCode) {
+      errors.code = 'El código de identificación es obligatorio.';
+    } else if (cleanCode.length < 2) {
+      errors.code = 'El código debe tener al menos 2 caracteres.';
+    } else {
+      // 2. Validación de Duplicados en Código
+      const isDuplicateCode = existingMachines.some(
+        (m) => m.code.toUpperCase() === cleanCode && m.id !== editingMachine?.id
+      );
+      if (isDuplicateCode) {
+        errors.code = `Ya existe una máquina registrada con el código "${cleanCode}".`;
+      }
+    }
+
+    // 3. Validación de Nombre / Descripción (Requerido)
+    if (!cleanName) {
+      errors.name = 'El nombre o descripción de la máquina es obligatorio.';
+    } else if (cleanName.length < 3) {
+      errors.name = 'El nombre debe tener al menos 3 caracteres.';
+    }
+
+    // 4. Validación de Tipo / Proceso (Requerido)
+    if (!type.trim()) {
+      errors.type = 'Debes seleccionar un proceso textil.';
+    }
+
+    // 5. Validación de Duplicados en N° de Serie (si se proporciona)
+    if (cleanSerial) {
+      const isDuplicateSerial = existingMachines.some(
+        (m) =>
+          m.serialNumber &&
+          m.serialNumber.trim().toUpperCase() === cleanSerial &&
+          m.id !== editingMachine?.id
+      );
+      if (isDuplicateSerial) {
+        errors.serialNumber = `Este N° de serie ya está registrado en otra máquina del sistema.`;
+      }
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setError('Por favor revisa los campos señalados antes de continuar.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleCodeChange = (val: string) => {
+    const upper = val.toUpperCase();
+    setCode(upper);
+    if (fieldErrors.code) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.code;
+        return copy;
+      });
+    }
+  };
+
+  const handleNameChange = (val: string) => {
+    setName(val);
+    if (fieldErrors.name) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.name;
+        return copy;
+      });
+    }
+  };
+
+  const handleSerialChange = (val: string) => {
+    setSerialNumber(val);
+    if (fieldErrors.serialNumber) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.serialNumber;
+        return copy;
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!code.trim()) {
-      setError('El código de identificación de la máquina es obligatorio.');
-      return;
-    }
-
-    if (!name.trim()) {
-      setError('El nombre o descripción de la máquina es obligatorio.');
+    if (!validateForm()) {
       return;
     }
 
@@ -130,6 +219,13 @@ export const MachineModal: React.FC<MachineModalProps> = ({
       const apiError =
         (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+
+      // Si el backend reporta duplicado, asignarlo también al campo correspondiente
+      if (apiError && apiError.toLowerCase().includes('código')) {
+        setFieldErrors((prev) => ({ ...prev, code: apiError }));
+      } else if (apiError && (apiError.toLowerCase().includes('serie') || apiError.toLowerCase().includes('serial'))) {
+        setFieldErrors((prev) => ({ ...prev, serialNumber: apiError }));
+      }
 
       setError(apiError || 'Ocurrió un error al guardar los datos de la máquina. Intente nuevamente.');
     } finally {
@@ -173,14 +269,24 @@ export const MachineModal: React.FC<MachineModalProps> = ({
               </div>
               <input
                 type="text"
-                required
                 value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                onChange={(e) => handleCodeChange(e.target.value)}
                 placeholder="Ej. MQ-001, TEL-02"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
+                className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm font-semibold transition-all font-mono ${
+                  fieldErrors.code
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500'
+                }`}
               />
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Identificador único en planta</p>
+            {fieldErrors.code ? (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.code}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 mt-1">Identificador único en planta (no duplicable)</p>
+            )}
           </div>
 
           <div>
@@ -189,9 +295,24 @@ export const MachineModal: React.FC<MachineModalProps> = ({
               leftIcon={<Layers className="w-4 h-4 text-slate-400" />}
               options={TYPE_OPTIONS}
               value={type}
-              onChange={setType}
+              onChange={(val) => {
+                setType(val);
+                if (fieldErrors.type) {
+                  setFieldErrors((prev) => {
+                    const copy = { ...prev };
+                    delete copy.type;
+                    return copy;
+                  });
+                }
+              }}
               placeholder="Selecciona el proceso textil..."
             />
+            {fieldErrors.type && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.type}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -206,13 +327,24 @@ export const MachineModal: React.FC<MachineModalProps> = ({
             </div>
             <input
               type="text"
-              required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Ej. Remalladora 5 hilos mecatrónica, Tejedora Circular"
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+              className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm font-semibold transition-all ${
+                fieldErrors.name
+                  ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                  : 'border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500'
+              }`}
             />
           </div>
+          {fieldErrors.name ? (
+            <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{fieldErrors.name}</span>
+            </p>
+          ) : (
+            <p className="text-[11px] text-slate-400 mt-1">Descripción técnica o denominación operativa</p>
+          )}
         </div>
 
         {/* 3. Marca, Modelo y Serie */}
@@ -250,10 +382,20 @@ export const MachineModal: React.FC<MachineModalProps> = ({
             <input
               type="text"
               value={serialNumber}
-              onChange={(e) => setSerialNumber(e.target.value)}
+              onChange={(e) => handleSerialChange(e.target.value)}
               placeholder="Ej. SN-4910283"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm transition-all font-mono ${
+                fieldErrors.serialNumber
+                  ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                  : 'border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500'
+              }`}
             />
+            {fieldErrors.serialNumber && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.serialNumber}</span>
+              </p>
+            )}
           </div>
         </div>
 

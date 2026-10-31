@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Save, Lock, Mail, User, Shield, Eye, EyeOff, Phone, Briefcase, FileText, CreditCard, Loader2 } from 'lucide-react';
+import { UserPlus, Save, Lock, Mail, User, Shield, Eye, EyeOff, Phone, Briefcase, FileText, CreditCard, Loader2, AlertCircle } from 'lucide-react';
 import type { ManagedUser, CreateUserDTO, UpdateUserDTO, UserStatus, PeruDocumentType } from '../types/users.types';
 import type { UserProfile } from '../../../entities/session/sessionTypes';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
@@ -27,6 +27,7 @@ interface UserModalProps {
   onSave: (data: CreateUserDTO | UpdateUserDTO, id?: string) => Promise<void>;
   editingUser?: ManagedUser | null;
   availableRoles?: RoleDefinition[];
+  existingUsers?: ManagedUser[];
 }
 
 export const UserModal: React.FC<UserModalProps> = ({
@@ -35,6 +36,7 @@ export const UserModal: React.FC<UserModalProps> = ({
   onSave,
   editingUser,
   availableRoles,
+  existingUsers = [],
 }) => {
   const [documentType, setDocumentType] = useState<PeruDocumentType>('DNI');
   const [documentNumber, setDocumentNumber] = useState('');
@@ -52,6 +54,7 @@ export const UserModal: React.FC<UserModalProps> = ({
   const [rawRoles, setRawRoles] = useState<RoleDefinition[]>(availableRoles || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (availableRoles && availableRoles.length > 0) {
@@ -111,11 +114,19 @@ export const UserModal: React.FC<UserModalProps> = ({
       setStatus('ACTIVE');
     }
     setError(null);
+    setFieldErrors({});
   }, [editingUser, isOpen, availableRoles, roleOptions, rawRoles]);
 
   const handleRoleChange = (newRoleVal: string) => {
     const selectedRole = newRoleVal as UserProfile['role'];
     setRole(selectedRole);
+    if (fieldErrors.role) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.role;
+        return copy;
+      });
+    }
     const matched = rawRoles.find((r) => r.code === selectedRole || r.id === selectedRole);
     if (matched?.description) {
       setJobTitle(matched.description);
@@ -129,43 +140,108 @@ export const UserModal: React.FC<UserModalProps> = ({
     } else {
       setDocumentNumber(val.toUpperCase().replace(/[^A-Z0-9]/g, ''));
     }
+    if (fieldErrors.documentNumber) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.documentNumber;
+        return copy;
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const cleanDoc = documentNumber.trim();
+    const cleanFirstName = firstName.trim();
+    const cleanLastName = lastName.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Validación de documento peruano (si se ingresó)
+    if (cleanDoc) {
+      if (documentType === 'DNI' && !/^\d{8}$/.test(cleanDoc)) {
+        errors.documentNumber = 'El DNI debe contener exactamente 8 dígitos numéricos.';
+      } else if (documentType === 'RUC' && !/^\d{11}$/.test(cleanDoc)) {
+        errors.documentNumber = 'El RUC debe contener exactamente 11 dígitos numéricos.';
+      } else if (documentType === 'CE' && !/^[A-Za-z0-9]{8,12}$/.test(cleanDoc)) {
+        errors.documentNumber = 'El Carné de Extranjería (CE) debe contener entre 8 y 12 caracteres.';
+      } else if (documentType === 'PASAPORTE' && !/^[A-Za-z0-9]{6,12}$/.test(cleanDoc)) {
+        errors.documentNumber = 'El Pasaporte debe contener entre 6 y 12 caracteres.';
+      } else {
+        // Verificar duplicados de documento
+        const isDuplicateDoc = existingUsers.some(
+          (u) => u.documentNumber && u.documentNumber.trim() === cleanDoc && u.id !== editingUser?.id
+        );
+        if (isDuplicateDoc) {
+          errors.documentNumber = `Ya existe un usuario con el documento "${cleanDoc}".`;
+        }
+      }
+    }
+
+    // 2. Nombres requeridos
+    if (!cleanFirstName) {
+      errors.firstName = 'El nombre del usuario es obligatorio.';
+    } else if (cleanFirstName.length < 2) {
+      errors.firstName = 'El nombre debe tener al menos 2 caracteres.';
+    }
+
+    // 3. Apellidos requeridos
+    if (!cleanLastName) {
+      errors.lastName = 'El apellido del usuario es obligatorio.';
+    } else if (cleanLastName.length < 2) {
+      errors.lastName = 'El apellido debe tener al menos 2 caracteres.';
+    }
+
+    // 4. Correo electrónico requerido y formato
+    if (!cleanEmail) {
+      errors.email = 'El correo electrónico es obligatorio.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanEmail)) {
+        errors.email = 'El formato del correo electrónico no es válido.';
+      } else {
+        // Verificar duplicado de correo
+        const isDuplicateEmail = existingUsers.some(
+          (u) => u.email.toLowerCase() === cleanEmail && u.id !== editingUser?.id
+        );
+        if (isDuplicateEmail) {
+          errors.email = `Ya existe un usuario con el correo "${cleanEmail}".`;
+        }
+      }
+    }
+
+    // 5. Rol requerido
+    if (!role) {
+      errors.role = 'Debes seleccionar un rol para el usuario.';
+    }
+
+    // 6. Contraseña para nuevos usuarios
+    if (!editingUser) {
+      if (!password) {
+        errors.password = 'La contraseña es obligatoria para nuevos usuarios.';
+      } else if (password.length < 6) {
+        errors.password = 'La contraseña debe tener al menos 6 caracteres.';
+      }
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setError('Por favor revisa los campos señalados antes de continuar.');
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validación de documento peruano
+    if (!validateForm()) {
+      return;
+    }
+
     const cleanDoc = documentNumber.trim();
-    if (cleanDoc) {
-      if (documentType === 'DNI' && !/^\d{8}$/.test(cleanDoc)) {
-        setError('El DNI debe contener exactamente 8 dígitos numéricos.');
-        return;
-      }
-      if (documentType === 'RUC' && !/^\d{11}$/.test(cleanDoc)) {
-        setError('El RUC debe contener exactamente 11 dígitos numéricos.');
-        return;
-      }
-      if (documentType === 'CE' && !/^[A-Za-z0-9]{8,12}$/.test(cleanDoc)) {
-        setError('El Carné de Extranjería (CE) debe contener entre 8 y 12 caracteres alfanuméricos.');
-        return;
-      }
-      if (documentType === 'PASAPORTE' && !/^[A-Za-z0-9]{6,12}$/.test(cleanDoc)) {
-        setError('El Pasaporte debe contener entre 6 y 12 caracteres alfanuméricos.');
-        return;
-      }
-    }
-
-    if (!editingUser && !password) {
-      setError('La contraseña es obligatoria para nuevos usuarios.');
-      return;
-    }
-
-    if (!editingUser && password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -215,8 +291,17 @@ export const UserModal: React.FC<UserModalProps> = ({
       }
       onClose();
     } catch (err: unknown) {
+      console.error('Error saving user:', err);
       const errorObj = err && typeof err === 'object' ? (err as { response?: { data?: { error?: string } }; message?: string }) : null;
-      setError(errorObj?.response?.data?.error || errorObj?.message || 'Error al guardar usuario.');
+      const apiError = errorObj?.response?.data?.error || errorObj?.message || 'Error al guardar usuario.';
+
+      if (apiError.toLowerCase().includes('correo') || apiError.toLowerCase().includes('email')) {
+        setFieldErrors((prev) => ({ ...prev, email: apiError }));
+      } else if (apiError.toLowerCase().includes('documento')) {
+        setFieldErrors((prev) => ({ ...prev, documentNumber: apiError }));
+      }
+
+      setError(apiError);
     } finally {
       setIsLoading(false);
     }
@@ -252,6 +337,13 @@ export const UserModal: React.FC<UserModalProps> = ({
               onChange={(val) => {
                 setDocumentType(val as PeruDocumentType);
                 setDocumentNumber('');
+                if (fieldErrors.documentNumber) {
+                  setFieldErrors((prev) => {
+                    const copy = { ...prev };
+                    delete copy.documentNumber;
+                    return copy;
+                  });
+                }
               }}
               leftIcon={<FileText className="w-4 h-4 text-slate-400" />}
             />
@@ -281,10 +373,20 @@ export const UserModal: React.FC<UserModalProps> = ({
                     ? 'Ej. 10712345678'
                     : 'Ej. 001234567'
                 }
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                className={`w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-slate-900 dark:text-white text-xs font-mono font-semibold focus:outline-none transition-all ${
+                  fieldErrors.documentNumber
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:ring-2 focus:ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500'
+                }`}
               />
               <CreditCard className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
             </div>
+            {fieldErrors.documentNumber && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.documentNumber}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -298,13 +400,31 @@ export const UserModal: React.FC<UserModalProps> = ({
               <input
                 type="text"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
+                onChange={(e) => {
+                  setFirstName(e.target.value);
+                  if (fieldErrors.firstName) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.firstName;
+                      return copy;
+                    });
+                  }
+                }}
                 placeholder="Ej. Carlos"
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                className={`w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-slate-900 dark:text-white text-xs focus:outline-none transition-all ${
+                  fieldErrors.firstName
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:ring-2 focus:ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500'
+                }`}
               />
               <User className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
             </div>
+            {fieldErrors.firstName && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.firstName}</span>
+              </p>
+            )}
           </div>
 
           <div>
@@ -314,11 +434,29 @@ export const UserModal: React.FC<UserModalProps> = ({
             <input
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
+              onChange={(e) => {
+                setLastName(e.target.value);
+                if (fieldErrors.lastName) {
+                  setFieldErrors((prev) => {
+                    const copy = { ...prev };
+                    delete copy.lastName;
+                    return copy;
+                  });
+                }
+              }}
               placeholder="Ej. Gomez"
-              className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:outline-none"
+              className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-slate-900 dark:text-white text-xs focus:outline-none transition-all ${
+                fieldErrors.lastName
+                  ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:ring-2 focus:ring-rose-500/20'
+                  : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500'
+              }`}
             />
+            {fieldErrors.lastName && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.lastName}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -332,13 +470,31 @@ export const UserModal: React.FC<UserModalProps> = ({
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.email;
+                      return copy;
+                    });
+                  }
+                }}
                 placeholder="correo@textil-lym.com"
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                className={`w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-slate-900 dark:text-white text-xs focus:outline-none transition-all ${
+                  fieldErrors.email
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:ring-2 focus:ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500'
+                }`}
               />
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
             </div>
+            {fieldErrors.email && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.email}</span>
+              </p>
+            )}
           </div>
 
           <div>
@@ -368,10 +524,22 @@ export const UserModal: React.FC<UserModalProps> = ({
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.password;
+                      return copy;
+                    });
+                  }
+                }}
                 placeholder="Mínimo 6 caracteres"
-                className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                className={`w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-slate-900 dark:text-white text-xs focus:outline-none transition-all ${
+                  fieldErrors.password
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:ring-2 focus:ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary-500'
+                }`}
               />
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
               <button
@@ -382,6 +550,12 @@ export const UserModal: React.FC<UserModalProps> = ({
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {fieldErrors.password && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.password}</span>
+              </p>
+            )}
           </div>
         )}
 
@@ -398,6 +572,12 @@ export const UserModal: React.FC<UserModalProps> = ({
               placeholder="Seleccionar rol..."
               leftIcon={<Shield className="w-4 h-4 text-slate-400" />}
             />
+            {fieldErrors.role && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.role}</span>
+              </p>
+            )}
           </div>
 
           <div>

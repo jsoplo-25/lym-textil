@@ -5,7 +5,7 @@ import {
   Plus,
   Edit2,
   Trash2,
-  Printer,
+  FileSpreadsheet,
   Layers,
   Clock,
   User,
@@ -18,6 +18,10 @@ import {
   PackageCheck,
   Copy,
   Loader2,
+  Play,
+  Pause,
+  AlertTriangle,
+  History,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../app/store';
@@ -34,6 +38,9 @@ import type {
 } from '../types/production.types';
 import { RollModal, ROLL_STATUS_OPTIONS } from '../components/RollModal';
 import { ProductionBatchModal } from '../components/ProductionBatchModal';
+import { exportBatchToExcel } from '../lib/exportBatchToExcel';
+import { PauseBatchModal } from '../components/PauseBatchModal';
+import { BatchStatusLogsModal } from '../components/BatchStatusLogsModal';
 import { Tooltip } from '../../../shared/ui/Tooltip';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useToast } from '../../../shared/hooks/useToast';
@@ -44,6 +51,141 @@ import { TimePicker } from '../../../shared/ui/TimePicker';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { Button } from '../../../shared/ui/Button';
 import { Table, TableBody, TableContainer, TableHead, Td, Th, Tr } from '../../../shared/ui/Table';
+
+const SKELETON_TABLE_COLUMNS = 11;
+const SKELETON_TABLE_ROWS = 6;
+
+const ProductionDetailSkeleton: React.FC = () => (
+  <div className="space-y-6 pb-12" aria-busy="true" aria-label="Cargando detalle del lote">
+    {/* Navegación y acciones */}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Skeleton className="h-4 w-52" />
+      <div className="flex items-center gap-2 flex-wrap">
+        <Skeleton className="h-9 w-36 rounded-xl" />
+        <Skeleton className="h-9 w-32 rounded-xl" />
+        <Skeleton className="h-9 w-36 rounded-xl" />
+      </div>
+    </div>
+
+    {/* Cabecera de la sábana */}
+    <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 border-b border-slate-100 dark:border-slate-800 pb-5">
+        <div className="space-y-3 min-w-0">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Skeleton className="h-3.5 w-52" />
+            <Skeleton className="h-6 w-48 rounded-lg" />
+          </div>
+          <Skeleton className="h-9 w-64 sm:w-80" />
+          <div className="flex items-center gap-3 flex-wrap pt-1">
+            <Skeleton className="h-8 w-52 rounded-xl" />
+            <Skeleton className="h-8 w-44 rounded-xl" />
+            <Skeleton className="h-8 w-36 rounded-xl" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 space-y-2"
+            >
+              <Skeleton className="h-2.5 w-16" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Estado general del lote */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2">
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-44" />
+          <Skeleton className="h-3 w-72 max-w-full" />
+        </div>
+        <div className="inline-flex flex-wrap items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 gap-1">
+          {[36, 28, 24, 28].map((w, i) => (
+            <Skeleton key={i} className="h-8 rounded-xl" style={{ width: `${w * 4}px` }} />
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Resumen por estado de rollo */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-3 shadow-xs"
+        >
+          <Skeleton className="w-10 h-10 rounded-2xl shrink-0" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Ingreso rápido */}
+    <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+        <div className="flex items-center gap-2">
+          <Skeleton className="w-6 h-6 rounded-lg" />
+          <Skeleton className="h-3.5 w-40" />
+        </div>
+        <Skeleton className="h-6 w-44 rounded-lg hidden sm:block" />
+      </div>
+      <div className="space-y-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3">
+          {['md:col-span-2', 'md:col-span-4', 'md:col-span-3', 'md:col-span-3'].map((span, i) => (
+            <div key={i} className={`${span} space-y-1.5`}>
+              <Skeleton className="h-2.5 w-20" />
+              <Skeleton className="h-9 w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3">
+          {['md:col-span-4', 'md:col-span-2', 'md:col-span-2', 'md:col-span-1', 'md:col-span-2', 'md:col-span-1'].map(
+            (span, i) => (
+              <div key={i} className={`${span} space-y-1.5`}>
+                <Skeleton className="h-2.5 w-16" />
+                <Skeleton className="h-9 w-full rounded-xl" />
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+
+    {/* Tabla de rollos */}
+    <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="overflow-hidden">
+        <div className="flex items-center gap-4 px-4 sm:px-6 py-3.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
+          {Array.from({ length: SKELETON_TABLE_COLUMNS }).map((_, i) => (
+            <Skeleton key={i} className="h-3 flex-1 bg-slate-300/60 dark:bg-slate-600/40" />
+          ))}
+        </div>
+        {Array.from({ length: SKELETON_TABLE_ROWS }).map((_, row) => (
+          <div
+            key={row}
+            className="flex items-center gap-4 px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 last:border-b-0"
+          >
+            {Array.from({ length: SKELETON_TABLE_COLUMNS }).map((_, col) => (
+              <Skeleton
+                key={col}
+                className={`flex-1 ${col === 0 ? 'h-6 rounded-lg' : col === 1 ? 'h-8 rounded-xl' : 'h-3.5'}`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800">
+        <Skeleton className="h-3.5 w-44" />
+        <Skeleton className="h-4 w-56" />
+      </div>
+    </div>
+  </div>
+);
 
 export const ProductionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -67,6 +209,10 @@ export const ProductionDetailPage: React.FC = () => {
   // Modal Batch Edit
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
 
+  // Modales de Pausa y Bitácora de Estados
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+
   // Quick inline add state
   const [quickRollNumber, setQuickRollNumber] = useState('');
   const [quickStartDate, setQuickStartDate] = useState('');
@@ -85,6 +231,7 @@ export const ProductionDetailPage: React.FC = () => {
   const [approvingRollId, setApprovingRollId] = useState<string | null>(null);
   const [deletingRollId, setDeletingRollId] = useState<string | null>(null);
   const [isUpdatingBatchStatus, setIsUpdatingBatchStatus] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const toast = useToast();
 
@@ -109,6 +256,13 @@ export const ProductionDetailPage: React.FC = () => {
     try {
       const data = await productionService.getBatchById(id);
       if (data) {
+        const hasRollsInPrep = data.rolls?.some((r) =>
+          ['IN_PREPARATION', 'READY_FOR_APPROVAL', 'READY_FOR_PICKUP', 'DELIVERED'].includes(r.status)
+        );
+        if (data.status === 'REQUESTED' && hasRollsInPrep) {
+          data.status = 'IN_PROGRESS';
+          productionService.updateBatch(data.id, { status: 'IN_PROGRESS' }).catch(console.error);
+        }
         setBatch(data);
 
         const latestBatchRoll = data.rolls?.[data.rolls.length - 1];
@@ -261,18 +415,22 @@ export const ProductionDetailPage: React.FC = () => {
     await loadBatch();
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleExport = async () => {
+    if (!batch) return;
+    try {
+      setIsExporting(true);
+      await exportBatchToExcel(batch);
+      toast.success(`Lote ${batch.batchNumber} exportado a Excel.`);
+    } catch (err) {
+      console.error('Error exportando a Excel:', err);
+      toast.error('No se pudo exportar el lote a Excel.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (isLoading && !batch) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-48 rounded-xl" />
-        <Skeleton className="h-36 w-full rounded-2xl" />
-        <Skeleton className="h-96 w-full rounded-2xl" />
-      </div>
-    );
+    return <ProductionDetailSkeleton />;
   }
 
   if (!batch) {
@@ -303,9 +461,40 @@ export const ProductionDetailPage: React.FC = () => {
   const readyRollsCount = rolls.filter((r) => r.status === 'READY_FOR_PICKUP').length;
   const deliveredRollsCount = rolls.filter((r) => r.status === 'DELIVERED').length;
 
-  const handleQuickUpdateStatus = async (newStatus: BatchStatus) => {
+  const hasRollsInPrepOrBeyond =
+    prepRollsCount > 0 ||
+    readyApprovalRollsCount > 0 ||
+    readyRollsCount > 0 ||
+    deliveredRollsCount > 0;
+
+  // Si el lote está en REQUESTED pero ya tiene rollos iniciados o preparados, su estado efectivo es IN_PROGRESS
+  const currentBatchStatus: BatchStatus =
+    batch?.status === 'REQUESTED' && hasRollsInPrepOrBeyond
+      ? 'IN_PROGRESS'
+      : (batch?.status || 'REQUESTED');
+
+  const handleQuickUpdateStatus = async (newStatus: BatchStatus, observationNotes?: string) => {
     if (!id || !canEdit || !batch) return;
-    if (batch.status === newStatus) return;
+    if (currentBatchStatus === newStatus) return;
+
+    if (newStatus === 'PAUSED' && !observationNotes) {
+      setIsPauseModalOpen(true);
+      return;
+    }
+
+    if (newStatus === 'REQUESTED') {
+      if (hasRollsInPrepOrBeyond) {
+        toast.error('No se puede volver a "Solicitud registrada" porque ya existen rollos en preparación o completados.');
+        return;
+      }
+    }
+
+    if (newStatus === 'IN_PROGRESS') {
+      if (!hasRollsInPrepOrBeyond) {
+        toast.error('Para cambiar a "En proceso" debe haber al menos un rollo en preparación.');
+        return;
+      }
+    }
 
     if (newStatus === 'COMPLETED') {
       if (totalRolls === 0) {
@@ -325,18 +514,46 @@ export const ProductionDetailPage: React.FC = () => {
 
     try {
       setIsUpdatingBatchStatus(true);
-      await productionService.updateBatch(id, { status: newStatus });
-      toast.success(
-        newStatus === 'COMPLETED'
-          ? 'Lote marcado como Terminado (todos los rollos entregados).'
-          : 'Lote marcado como Solicitud registrada.'
-      );
+      await productionService.updateBatch(id, {
+        status: newStatus,
+        notes: observationNotes || (newStatus === 'PAUSED' ? 'Lote pausado' : undefined),
+        statusNote: observationNotes,
+      });
+      const statusLabels: Record<BatchStatus, string> = {
+        REQUESTED: 'Solicitud registrada',
+        IN_PROGRESS: 'En proceso',
+        PAUSED: 'Pausado',
+        COMPLETED: 'Terminado (todos los rollos entregados)',
+      };
+      toast.success(`Lote actualizado a "${statusLabels[newStatus]}".`);
       await loadBatch();
       window.dispatchEvent(new CustomEvent('production:rolls-updated'));
     } catch (err: unknown) {
       console.error('Error actualizando estado:', err);
       const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       toast.error(apiError || 'Error al actualizar el estado del lote.');
+    } finally {
+      setIsUpdatingBatchStatus(false);
+    }
+  };
+
+  const handleConfirmPause = async (notes: string) => {
+    if (!id) return;
+    try {
+      setIsUpdatingBatchStatus(true);
+      await productionService.updateBatch(id, {
+        status: 'PAUSED',
+        notes,
+        statusNote: notes,
+      });
+      toast.success('Lote pausado correctamente.');
+      setIsPauseModalOpen(false);
+      await loadBatch();
+      window.dispatchEvent(new CustomEvent('production:rolls-updated'));
+    } catch (err: unknown) {
+      console.error('Error al pausar lote:', err);
+      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(apiError || 'Error al pausar el lote.');
     } finally {
       setIsUpdatingBatchStatus(false);
     }
@@ -469,7 +686,7 @@ export const ProductionDetailPage: React.FC = () => {
     );
   };
 
-  const isPaused = batch?.status === 'PAUSED';
+  const isPaused = currentBatchStatus === 'PAUSED';
   const latestPauseLog = isPaused && batch?.statusLogs && batch.statusLogs.length > 0
     ? batch.statusLogs.find((l) => l.status === 'PAUSED')
     : null;
@@ -535,8 +752,8 @@ export const ProductionDetailPage: React.FC = () => {
       {isPaused && (
         <div className="p-4 rounded-2xl bg-accent-500/10 border-2 border-accent-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-accent-800 dark:text-accent-300 shadow-sm print:hidden">
           <div className="flex items-start gap-3">
-            <span className="p-2 rounded-xl bg-accent-500/20 text-accent-600 dark:text-accent-400 font-bold shrink-0">
-              ⏸️
+            <span className="w-10 h-10 rounded-xl bg-accent-500/20 text-accent-600 dark:text-accent-400 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
             </span>
             <div>
               <p className="font-extrabold text-sm">
@@ -552,14 +769,26 @@ export const ProductionDetailPage: React.FC = () => {
               )}
             </div>
           </div>
-          {canEdit && (
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <button
-              onClick={() => setIsBatchModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold transition-all shrink-0 cursor-pointer"
+              type="button"
+              onClick={() => setIsLogModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-accent-900 dark:text-accent-200 text-xs font-bold border border-accent-500/30 hover:bg-white dark:hover:bg-slate-900 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
             >
-              Reanudar Lote
+              <History className="w-3.5 h-3.5 text-accent-600 dark:text-accent-400" />
+              <span>Ver Bitácora</span>
             </button>
-          )}
+            {canEdit && (
+              <button
+                type="button"
+                disabled={isUpdatingBatchStatus}
+                onClick={() => handleQuickUpdateStatus('IN_PROGRESS', 'Lote reanudado')}
+                className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                Reanudar Lote
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -575,11 +804,25 @@ export const ProductionDetailPage: React.FC = () => {
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={handlePrint}
+            type="button"
+            onClick={() => setIsLogModalOpen(true)}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-slate-500" />
-            <span>Imprimir Sábana</span>
+            <History className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+            <span>Bitácora ({batch.statusLogs?.length || 0})</span>
+          </button>
+
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            )}
+            <span>{isExporting ? 'Exportando...' : 'Exportar Excel'}</span>
           </button>
 
           {canEdit && (
@@ -659,7 +902,6 @@ export const ProductionDetailPage: React.FC = () => {
                 <Layers className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                 <span className="font-semibold text-slate-500 dark:text-slate-400">Máquina:</span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {batch.machineCode ? `[${batch.machineCode}] ` : ''}
                   {batch.machineName || 'Sin asignar'}
                 </span>
               </div>
@@ -702,43 +944,157 @@ export const ProductionDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Estado General del Lote: 2 Estados (Solicitud registrada / Terminado) */}
+        {/* Estado General del Lote: 4 Estados (Solicitud registrada / En proceso / Pausado / Terminado) */}
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                Estado General del Lote
-              </span>
-              <p className="text-[11px] text-slate-400">
-                {batch.status === 'COMPLETED'
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                  Estado General del Lote
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsLogModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                  title="Ver bitácora de cambios y observaciones"
+                >
+                  <History className="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                  <span>Bitácora ({batch.statusLogs?.length || 0})</span>
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {currentBatchStatus === 'COMPLETED'
                   ? 'Todos los hilos y entregas de este lote han concluido con éxito.'
-                  : 'Lote registrado con avances de tejido semanales en curso.'}
+                  : currentBatchStatus === 'IN_PROGRESS'
+                  ? 'Lote en producción activa con rollos en preparación o terminación.'
+                  : currentBatchStatus === 'PAUSED'
+                  ? 'Producción del lote pausada temporalmente.'
+                  : 'Lote registrado, a la espera del inicio de preparación de rollos.'}
               </p>
             </div>
 
-            <div className="inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 self-start sm:self-auto">
-              <button
-                type="button"
-                disabled={!canEdit || isUpdatingBatchStatus}
-                onClick={() => handleQuickUpdateStatus('REQUESTED')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  batch.status !== 'COMPLETED'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                } ${!canEdit || isUpdatingBatchStatus ? 'cursor-default opacity-60' : ''}`}
-                title="Lote registrado"
-              >
-                {isUpdatingBatchStatus && batch.status !== 'COMPLETED' ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Clock className="w-3.5 h-3.5" />
-                )}
-                <span>Solicitud registrada</span>
-              </button>
-
+            <div className="inline-flex flex-wrap items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 self-start lg:self-auto gap-1">
+              {/* 1. SOLICITUD REGISTRADA */}
               <Tooltip
                 content={
-                  batch.status === 'COMPLETED'
+                  currentBatchStatus === 'REQUESTED'
+                    ? 'Estado actual: Solicitud registrada.'
+                    : currentBatchStatus === 'COMPLETED'
+                    ? 'El lote ya ha sido finalizado.'
+                    : hasRollsInPrepOrBeyond
+                    ? 'Deshabilitado: ya existen rollos en preparación o entregados.'
+                    : 'Cambiar a Solicitud registrada'
+                }
+                position="top"
+              >
+                <button
+                  type="button"
+                  disabled={
+                    !canEdit ||
+                    isUpdatingBatchStatus ||
+                    currentBatchStatus === 'REQUESTED' ||
+                    currentBatchStatus === 'COMPLETED' ||
+                    hasRollsInPrepOrBeyond
+                  }
+                  onClick={() => handleQuickUpdateStatus('REQUESTED')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    currentBatchStatus === 'REQUESTED'
+                      ? 'bg-blue-600 text-white shadow-xs cursor-default'
+                      : !canEdit || isUpdatingBatchStatus || currentBatchStatus === 'COMPLETED' || hasRollsInPrepOrBeyond
+                      ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer'
+                  }`}
+                >
+                  {isUpdatingBatchStatus && currentBatchStatus === 'REQUESTED' ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5" />
+                  )}
+                  <span>Solicitud registrada</span>
+                </button>
+              </Tooltip>
+
+              {/* 2. EN PROCESO */}
+              <Tooltip
+                content={
+                  currentBatchStatus === 'IN_PROGRESS'
+                    ? 'Estado actual: En proceso.'
+                    : currentBatchStatus === 'COMPLETED'
+                    ? 'El lote ya ha sido finalizado.'
+                    : !hasRollsInPrepOrBeyond
+                    ? 'Deshabilitado: requiere que al menos un rollo esté en preparación.'
+                    : 'Cambiar a En proceso'
+                }
+                position="top"
+              >
+                <button
+                  type="button"
+                  disabled={
+                    !canEdit ||
+                    isUpdatingBatchStatus ||
+                    currentBatchStatus === 'IN_PROGRESS' ||
+                    currentBatchStatus === 'COMPLETED' ||
+                    !hasRollsInPrepOrBeyond
+                  }
+                  onClick={() => handleQuickUpdateStatus('IN_PROGRESS')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    currentBatchStatus === 'IN_PROGRESS'
+                      ? 'bg-amber-600 text-white shadow-xs cursor-default'
+                      : !canEdit || isUpdatingBatchStatus || currentBatchStatus === 'COMPLETED' || !hasRollsInPrepOrBeyond
+                      ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                      : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer'
+                  }`}
+                >
+                  {isUpdatingBatchStatus && currentBatchStatus === 'IN_PROGRESS' ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Play className="w-3.5 h-3.5" />
+                  )}
+                  <span>En proceso</span>
+                </button>
+              </Tooltip>
+
+              {/* 3. PAUSADO */}
+              <Tooltip
+                content={
+                  currentBatchStatus === 'PAUSED'
+                    ? 'Estado actual: Pausado.'
+                    : currentBatchStatus === 'COMPLETED'
+                    ? 'El lote ya ha sido finalizado.'
+                    : 'Pausar producción del lote'
+                }
+                position="top"
+              >
+                <button
+                  type="button"
+                  disabled={
+                    !canEdit ||
+                    isUpdatingBatchStatus ||
+                    currentBatchStatus === 'PAUSED' ||
+                    currentBatchStatus === 'COMPLETED'
+                  }
+                  onClick={() => handleQuickUpdateStatus('PAUSED')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    currentBatchStatus === 'PAUSED'
+                      ? 'bg-orange-600 text-white shadow-xs cursor-default'
+                      : !canEdit || isUpdatingBatchStatus || currentBatchStatus === 'COMPLETED'
+                      ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                      : 'text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 cursor-pointer'
+                  }`}
+                >
+                  {isUpdatingBatchStatus && currentBatchStatus === 'PAUSED' ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Pause className="w-3.5 h-3.5" />
+                  )}
+                  <span>Pausado</span>
+                </button>
+              </Tooltip>
+
+              {/* 4. TERMINADO */}
+              <Tooltip
+                content={
+                  currentBatchStatus === 'COMPLETED'
                     ? 'Lote terminado (todos los rollos entregados).'
                     : totalRolls === 0
                     ? 'No se puede terminar: registra rollos antes de finalizar el lote.'
@@ -752,17 +1108,23 @@ export const ProductionDetailPage: React.FC = () => {
               >
                 <button
                   type="button"
-                  disabled={!canEdit || isUpdatingBatchStatus}
+                  disabled={
+                    !canEdit ||
+                    isUpdatingBatchStatus ||
+                    currentBatchStatus === 'COMPLETED' ||
+                    deliveredRollsCount < totalRolls ||
+                    totalRolls === 0
+                  }
                   onClick={() => handleQuickUpdateStatus('COMPLETED')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                    batch.status === 'COMPLETED'
-                      ? 'bg-primary-600 text-white shadow-xs'
-                      : deliveredRollsCount < totalRolls || totalRolls === 0
-                      ? 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-                      : 'text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-950/40'
-                  } ${!canEdit || isUpdatingBatchStatus ? 'cursor-default opacity-60' : ''}`}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    currentBatchStatus === 'COMPLETED'
+                      ? 'bg-emerald-600 text-white shadow-xs cursor-default'
+                      : !canEdit || isUpdatingBatchStatus || deliveredRollsCount < totalRolls || totalRolls === 0
+                      ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                      : 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer'
+                  }`}
                 >
-                  {isUpdatingBatchStatus && batch.status === 'COMPLETED' ? (
+                  {isUpdatingBatchStatus && currentBatchStatus === 'COMPLETED' ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1206,6 +1568,7 @@ export const ProductionDetailPage: React.FC = () => {
         onClose={() => setIsRollModalOpen(false)}
         onSave={handleSaveRoll}
         editingRoll={editingRoll}
+        existingRolls={rolls}
         suggestedRollNumber={String((rolls[rolls.length - 1] ? parseInt(rolls[rolls.length - 1].rollNumber, 10) + 1 : 1) || '')}
         suggestedStartOperator={hasLatestRollEnd ? latestRoll.endOperator || undefined : undefined}
         suggestedStartDate={hasLatestRollEnd ? toDatePickerValue(latestRoll.endDate) : undefined}
@@ -1217,6 +1580,21 @@ export const ProductionDetailPage: React.FC = () => {
         onClose={() => setIsBatchModalOpen(false)}
         onSave={handleSaveBatchHeader}
         editingBatch={batch}
+      />
+
+      <PauseBatchModal
+        isOpen={isPauseModalOpen}
+        batchNumber={batch.batchNumber}
+        onClose={() => setIsPauseModalOpen(false)}
+        onConfirm={handleConfirmPause}
+        isLoading={isUpdatingBatchStatus}
+      />
+
+      <BatchStatusLogsModal
+        isOpen={isLogModalOpen}
+        batchNumber={batch.batchNumber}
+        logs={batch.statusLogs}
+        onClose={() => setIsLogModalOpen(false)}
       />
     </div>
   );

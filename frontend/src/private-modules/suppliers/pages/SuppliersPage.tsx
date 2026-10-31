@@ -424,6 +424,7 @@ export const SuppliersPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveSupplier}
         editingSupplier={editingSupplier}
+        existingSuppliers={suppliers}
       />
 
       <DeleteSupplierConfirmModal

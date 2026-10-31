@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Save, Building2, Phone, Mail, MapPin, Layers, FileText, Activity, Loader2 } from 'lucide-react';
+import { Truck, Save, Building2, Phone, Mail, MapPin, Layers, FileText, Activity, Loader2, AlertCircle } from 'lucide-react';
 import type { Supplier, CreateSupplierDTO, UpdateSupplierDTO, SupplierStatus } from '../types/suppliers.types';
 import { Modal } from '../../../shared/ui/Modal';
 import { Alert } from '../../../shared/ui/Alert';
@@ -10,6 +10,7 @@ interface SupplierModalProps {
   onClose: () => void;
   onSave: (data: CreateSupplierDTO | UpdateSupplierDTO, id?: string) => Promise<void>;
   editingSupplier?: Supplier | null;
+  existingSuppliers?: Supplier[];
 }
 
 const STATUS_OPTIONS: SelectOption[] = [
@@ -22,6 +23,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
   onClose,
   onSave,
   editingSupplier,
+  existingSuppliers = [],
 }) => {
   const [document, setDocument] = useState('');
   const [name, setName] = useState('');
@@ -33,6 +35,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (editingSupplier) {
@@ -59,19 +62,101 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       setNotes('');
     }
     setError(null);
+    setFieldErrors({});
   }, [editingSupplier, isOpen]);
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const cleanDoc = document.trim().toUpperCase();
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Documento (RUC/DNI) requerido
+    if (!cleanDoc) {
+      errors.document = 'El RUC o documento del proveedor es obligatorio.';
+    } else if (cleanDoc.length < 8) {
+      errors.document = 'El documento debe tener al menos 8 dígitos (DNI) u 11 (RUC).';
+    } else {
+      // Duplicados de Documento
+      const isDuplicateDoc = existingSuppliers.some(
+        (s) => s.document.toUpperCase() === cleanDoc && s.id !== editingSupplier?.id
+      );
+      if (isDuplicateDoc) {
+        errors.document = `Ya existe un proveedor registrado con el documento "${cleanDoc}".`;
+      }
+    }
+
+    // 2. Razón Social requerida
+    if (!cleanName) {
+      errors.name = 'La Razón Social o nombre del proveedor es obligatorio.';
+    } else if (cleanName.length < 3) {
+      errors.name = 'El nombre del proveedor debe tener al menos 3 caracteres.';
+    } else {
+      // Duplicados de Razón Social
+      const isDuplicateName = existingSuppliers.some(
+        (s) => s.name.trim().toLowerCase() === cleanName.toLowerCase() && s.id !== editingSupplier?.id
+      );
+      if (isDuplicateName) {
+        errors.name = `Ya existe un proveedor registrado con el nombre "${cleanName}".`;
+      }
+    }
+
+    // 3. Formato de Email si se ingresó
+    if (cleanEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanEmail)) {
+        errors.email = 'El formato del correo electrónico es inválido.';
+      }
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setError('Por favor verifica los campos resaltados antes de guardar.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleDocumentChange = (val: string) => {
+    setDocument(val);
+    if (fieldErrors.document) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.document;
+        return copy;
+      });
+    }
+  };
+
+  const handleNameChange = (val: string) => {
+    setName(val);
+    if (fieldErrors.name) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.name;
+        return copy;
+      });
+    }
+  };
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (fieldErrors.email) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.email;
+        return copy;
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!document.trim()) {
-      setError('El RUC o documento del proveedor es obligatorio.');
-      return;
-    }
-
-    if (!name.trim()) {
-      setError('La Razón Social o nombre del proveedor es obligatorio.');
+    if (!validateForm()) {
       return;
     }
 
@@ -106,6 +191,14 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       const apiError =
         (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+
+      if (apiError && (apiError.toLowerCase().includes('documento') || apiError.toLowerCase().includes('ruc'))) {
+        setFieldErrors((prev) => ({ ...prev, document: apiError }));
+      } else if (apiError && (apiError.toLowerCase().includes('razón social') || apiError.toLowerCase().includes('nombre'))) {
+        setFieldErrors((prev) => ({ ...prev, name: apiError }));
+      } else if (apiError && apiError.toLowerCase().includes('correo')) {
+        setFieldErrors((prev) => ({ ...prev, email: apiError }));
+      }
 
       setError(apiError || 'Ocurrió un error al guardar los datos del proveedor.');
     } finally {
@@ -147,13 +240,24 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
               </div>
               <input
                 type="text"
-                required
                 value={document}
-                onChange={(e) => setDocument(e.target.value)}
+                onChange={(e) => handleDocumentChange(e.target.value)}
                 placeholder="Ej. 20601234567"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
+                className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm font-bold transition-all font-mono ${
+                  fieldErrors.document
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500'
+                }`}
               />
             </div>
+            {fieldErrors.document ? (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.document}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 mt-1">Documento único de identificación fiscal</p>
+            )}
           </div>
 
           <div>
@@ -162,12 +266,21 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
             </label>
             <input
               type="text"
-              required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Ej. INLOTEX S.A.C., SANDRO TEXTIL"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm font-semibold transition-all ${
+                fieldErrors.name
+                  ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                  : 'border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500'
+              }`}
             />
+            {fieldErrors.name && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.name}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -195,10 +308,18 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="contacto@inlotex.com"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all ${
+                fieldErrors.email ? 'border-rose-500 text-rose-900 dark:text-rose-200' : 'border-slate-200 dark:border-slate-800'
+              }`}
             />
+            {fieldErrors.email && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.email}</span>
+              </p>
+            )}
           </div>
         </div>
 
