@@ -103,7 +103,7 @@ export const ProductionBatchesPage: React.FC = () => {
           { value: 'ALL', label: 'Todas las máquinas' },
           ...machRes.machines.map((m) => ({
             value: m.id,
-            label: `[${m.code}] ${m.name}`,
+            label: m.name,
           })),
         ]);
       }
@@ -519,11 +519,10 @@ export const ProductionBatchesPage: React.FC = () => {
 
                     {/* Máquina */}
                     <Td>
-                      {batch.machineCode || batch.machineName ? (
+                      {batch.machineName ? (
                         <div>
                           <span className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                            {batch.machineCode ? `[${batch.machineCode}] ` : ''}
-                            {batch.machineName || ''}
+                            {batch.machineName}
                           </span>
                         </div>
                       ) : (
@@ -617,6 +616,7 @@ export const ProductionBatchesPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveBatch}
         editingBatch={editingBatch}
+        existingBatches={batches}
       />
 
       <DeleteBatchConfirmModal

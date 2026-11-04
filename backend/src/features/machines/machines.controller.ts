@@ -122,6 +122,11 @@ export class MachinesController {
         return;
       }
 
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        res.status(400).json({ success: false, error: 'El nombre o descripción de la máquina es obligatorio.' });
+        return;
+      }
+
       const normalizedCode = code.trim().toUpperCase();
 
       // Verificar si el código ya existe
@@ -137,14 +142,30 @@ export class MachinesController {
         return;
       }
 
+      // Verificar si el número de serie ya existe (si fue provisto)
+      if (serialNumber && typeof serialNumber === 'string' && serialNumber.trim()) {
+        const cleanSerial = serialNumber.trim();
+        const existingSerial = await prisma.machine.findFirst({
+          where: { serialNumber: { equals: cleanSerial, mode: 'insensitive' } },
+        });
+
+        if (existingSerial) {
+          res.status(409).json({
+            success: false,
+            error: `El N° de serie "${cleanSerial}" ya está registrado en la máquina [${existingSerial.code}].`,
+          });
+          return;
+        }
+      }
+
       const validStatuses = ['OPERATIVE', 'MAINTENANCE', 'OUT_OF_SERVICE'];
       const finalStatus = validStatuses.includes(status) ? status : 'OPERATIVE';
 
       const newMachine = await prisma.machine.create({
         data: {
           code: normalizedCode,
-          name: name && typeof name === 'string' && name.trim() ? name.trim() : normalizedCode,
-          type: type && typeof type === 'string' ? type.trim() : 'Costura',
+          name: name.trim(),
+          type: type && typeof type === 'string' ? type.trim() : 'Tejido',
           brand: brand && typeof brand === 'string' ? brand.trim() : null,
           model: model && typeof model === 'string' ? model.trim() : null,
           serialNumber: serialNumber && typeof serialNumber === 'string' ? serialNumber.trim() : null,
@@ -208,11 +229,16 @@ export class MachinesController {
       }
 
       if (name !== undefined) {
-        dataToUpdate.name = String(name).trim() || existingMachine.name;
+        const trimmedName = String(name).trim();
+        if (!trimmedName) {
+          res.status(400).json({ success: false, error: 'El nombre o descripción de la máquina no puede estar vacío.' });
+          return;
+        }
+        dataToUpdate.name = trimmedName;
       }
 
       if (type !== undefined) {
-        dataToUpdate.type = String(type).trim() || 'Costura';
+        dataToUpdate.type = String(type).trim() || 'Tejido';
       }
 
       if (brand !== undefined) {
@@ -224,7 +250,23 @@ export class MachinesController {
       }
 
       if (serialNumber !== undefined) {
-        dataToUpdate.serialNumber = serialNumber ? String(serialNumber).trim() : null;
+        const trimmedSerial = serialNumber ? String(serialNumber).trim() : null;
+        if (trimmedSerial && trimmedSerial !== existingMachine.serialNumber) {
+          const duplicateSerial = await prisma.machine.findFirst({
+            where: {
+              serialNumber: { equals: trimmedSerial, mode: 'insensitive' },
+              id: { not: id },
+            },
+          });
+          if (duplicateSerial) {
+            res.status(409).json({
+              success: false,
+              error: `El N° de serie "${trimmedSerial}" ya está registrado en la máquina [${duplicateSerial.code}].`,
+            });
+            return;
+          }
+        }
+        dataToUpdate.serialNumber = trimmedSerial;
       }
 
       if (status !== undefined) {

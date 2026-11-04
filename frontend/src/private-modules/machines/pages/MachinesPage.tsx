@@ -492,6 +492,7 @@ export const MachinesPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveMachine}
         editingMachine={editingMachine}
+        existingMachines={machines}
       />
 
       <DeleteMachineConfirmModal

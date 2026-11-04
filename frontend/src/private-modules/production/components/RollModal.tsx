@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Layers, Save, User, Clock, Scale, FileText, Hash, Activity, Loader2 } from 'lucide-react';
+import { Layers, Save, User, Clock, Scale, FileText, Hash, Activity, Loader2, AlertCircle } from 'lucide-react';
 import type { RootState } from '../../../app/store';
 import type { ProductionRoll, CreateRollDTO, UpdateRollDTO, RollStatus } from '../types/production.types';
 import { Modal } from '../../../shared/ui/Modal';
@@ -17,6 +17,7 @@ interface RollModalProps {
   onClose: () => void;
   onSave: (data: CreateRollDTO | UpdateRollDTO, id?: string) => Promise<void>;
   editingRoll?: ProductionRoll | null;
+  existingRolls?: ProductionRoll[];
   suggestedRollNumber?: string;
   suggestedStartOperator?: string;
   suggestedStartDate?: string;
@@ -36,6 +37,7 @@ export const RollModal: React.FC<RollModalProps> = ({
   onClose,
   onSave,
   editingRoll,
+  existingRolls = [],
   suggestedRollNumber,
   suggestedStartOperator,
   suggestedStartDate,
@@ -58,6 +60,7 @@ export const RollModal: React.FC<RollModalProps> = ({
   const [operatorOptions, setOperatorOptions] = useState<SelectOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -103,49 +106,103 @@ export const RollModal: React.FC<RollModalProps> = ({
       setObservations('');
     }
     setError(null);
+    setFieldErrors({});
   }, [editingRoll, isOpen, suggestedRollNumber, suggestedStartOperator, suggestedStartDate, suggestedStartTime]);
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const cleanRollNum = rollNumber.trim();
+
+    // 1. Número de rollo obligatorio
+    if (!cleanRollNum) {
+      errors.rollNumber = 'El número de rollo es obligatorio (ej. 718, 719).';
+    } else {
+      // 2. Duplicado de rollo en el lote
+      const isDuplicate = existingRolls.some(
+        (r) => r.rollNumber.trim() === cleanRollNum && r.id !== editingRoll?.id
+      );
+      if (isDuplicate) {
+        errors.rollNumber = `Ya existe el rollo N° ${cleanRollNum} en este lote.`;
+      }
+    }
+
+    // 3. Operario de inicio obligatorio
+    if (!startOperator.trim()) {
+      errors.startOperator = 'El operario de inicio es obligatorio.';
+    }
+
+    // 4. Fecha y Hora de inicio obligatorias
+    if (!startDate.trim()) {
+      errors.startDate = 'La fecha de inicio es obligatoria.';
+    }
+
+    if (!startTime.trim()) {
+      errors.startTime = 'La hora de inicio es obligatoria (ej. 08:30).';
+    }
+
+    // 5. Validación de Peso si se ingresó
+    if (weight.trim() !== '') {
+      const num = parseFloat(weight);
+      if (isNaN(num) || num <= 0) {
+        errors.weight = 'El peso en kg debe ser un número decimal mayor a 0.';
+      }
+    }
+
+    // 6. Validación de congruencia de fecha/hora si se ingresó término
+    if (endDate.trim() && endTime.trim() && startDate.trim() && startTime.trim()) {
+      const startDateTime = new Date(`${startDate}T${startTime}:00`).getTime();
+      const endDateTime = new Date(`${endDate}T${endTime}:00`).getTime();
+      if (!isNaN(startDateTime) && !isNaN(endDateTime) && endDateTime < startDateTime) {
+        errors.endDate = 'La fecha/hora de término no puede ser anterior al inicio.';
+      }
+    }
+
+    // 7. Permisos de aprobación
+    if (status === 'READY_FOR_PICKUP' && !canApprove && editingRoll?.status !== 'READY_FOR_PICKUP') {
+      errors.status = 'Solo el Administrador o Asistente pueden aprobar y pasar a "Listo para recojo".';
+    }
+
+    if (!canApprove && editingRoll?.status === 'IN_PREPARATION' && status === 'REGISTERED') {
+      errors.status = 'No se puede retroceder un rollo en preparación a estado registrado.';
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setError('Por favor verifica los campos resaltados antes de guardar el rollo.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleRollNumberChange = (val: string) => {
+    setRollNumber(val);
+    if (fieldErrors.rollNumber) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.rollNumber;
+        return copy;
+      });
+    }
+  };
+
+  const handleWeightChange = (val: string) => {
+    setWeight(val);
+    if (fieldErrors.weight) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.weight;
+        return copy;
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!rollNumber.trim()) {
-      setError('El número de rollo es obligatorio (ej. 718, 719).');
-      return;
-    }
-
-    if (!startOperator.trim()) {
-      setError('El operario de inicio es obligatorio. Selecciona un tejedor u operario.');
-      return;
-    }
-
-    if (!startDate.trim()) {
-      setError('La fecha de inicio es obligatoria.');
-      return;
-    }
-
-    if (!startTime.trim()) {
-      setError('La hora de inicio es obligatoria (ej. 08:30).');
-      return;
-    }
-
-    if (weight.trim() !== '') {
-      const num = parseFloat(weight);
-      if (isNaN(num) || num < 0) {
-        setError('El peso en kg debe ser un número decimal mayor o igual a 0.');
-        return;
-      }
-    }
-
-    if (status === 'READY_FOR_PICKUP' && !canApprove && editingRoll?.status !== 'READY_FOR_PICKUP') {
-      setError(
-        'Solo el Asistente Administrativo o Administrador del sistema pueden aprobar el rollo y pasarlo a "Listo para recojo". Selecciona "Listo para aprobar".'
-      );
-      return;
-    }
-
-    if (!canApprove && editingRoll?.status === 'IN_PREPARATION' && status === 'REGISTERED') {
-      setError('No se puede retroceder un rollo en preparación a estado registrado.');
+    if (!validateForm()) {
       return;
     }
 
@@ -184,6 +241,10 @@ export const RollModal: React.FC<RollModalProps> = ({
       const apiError =
         (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+
+      if (apiError && apiError.toLowerCase().includes('rollo')) {
+        setFieldErrors((prev) => ({ ...prev, rollNumber: apiError }));
+      }
 
       setError(apiError || 'Ocurrió un error al guardar los datos del rollo.');
     } finally {
@@ -269,14 +330,25 @@ export const RollModal: React.FC<RollModalProps> = ({
               </div>
               <input
                 type="text"
-                required
                 disabled={isRollLockedForTejedor}
                 value={rollNumber}
-                onChange={(e) => setRollNumber(e.target.value)}
+                onChange={(e) => handleRollNumberChange(e.target.value)}
                 placeholder="Ej. 718"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono disabled:opacity-60"
+                className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm font-bold transition-all font-mono disabled:opacity-60 ${
+                  fieldErrors.rollNumber
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500'
+                }`}
               />
             </div>
+            {fieldErrors.rollNumber ? (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.rollNumber}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 mt-1">Número correlativo o identificador único en el lote</p>
+            )}
           </div>
 
           <div>
@@ -293,11 +365,21 @@ export const RollModal: React.FC<RollModalProps> = ({
                 min="0"
                 disabled={isRollLockedForTejedor}
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                onChange={(e) => handleWeightChange(e.target.value)}
                 placeholder="Ej. 21.65"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono disabled:opacity-60"
+                className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm font-bold transition-all font-mono disabled:opacity-60 ${
+                  fieldErrors.weight
+                    ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500'
+                }`}
               />
             </div>
+            {fieldErrors.weight && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.weight}</span>
+              </p>
+            )}
           </div>
 
           {editingRoll && (
@@ -308,9 +390,24 @@ export const RollModal: React.FC<RollModalProps> = ({
                 options={availableStatusOptions}
                 value={status}
                 disabled={isRollLockedForTejedor}
-                onChange={(val) => setStatus(val as RollStatus)}
+                onChange={(val) => {
+                  setStatus(val as RollStatus);
+                  if (fieldErrors.status) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.status;
+                      return copy;
+                    });
+                  }
+                }}
                 placeholder="Estado..."
               />
+              {fieldErrors.status && (
+                <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{fieldErrors.status}</span>
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -329,9 +426,24 @@ export const RollModal: React.FC<RollModalProps> = ({
                 leftIcon={<User className="w-4 h-4 text-slate-400" />}
                 options={operatorOptions}
                 value={startOperator}
-                onChange={setStartOperator}
+                onChange={(val) => {
+                  setStartOperator(val);
+                  if (fieldErrors.startOperator) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.startOperator;
+                      return copy;
+                    });
+                  }
+                }}
                 placeholder="Seleccionar operario..."
               />
+              {fieldErrors.startOperator && (
+                <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{fieldErrors.startOperator}</span>
+                </p>
+              )}
             </div>
 
             {/* 2. Fecha Inicio */}
@@ -339,9 +451,24 @@ export const RollModal: React.FC<RollModalProps> = ({
               <DatePicker
                 label="Fecha Inicio *"
                 value={startDate}
-                onChange={setStartDate}
+                onChange={(val) => {
+                  setStartDate(val);
+                  if (fieldErrors.startDate) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.startDate;
+                      return copy;
+                    });
+                  }
+                }}
                 placeholder="Seleccionar fecha..."
               />
+              {fieldErrors.startDate && (
+                <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{fieldErrors.startDate}</span>
+                </p>
+              )}
             </div>
 
             {/* 3. Hora Inicio */}
@@ -349,10 +476,25 @@ export const RollModal: React.FC<RollModalProps> = ({
               <TimePicker
                 label="Hora Inicio *"
                 value={startTime}
-                onChange={setStartTime}
+                onChange={(val) => {
+                  setStartTime(val);
+                  if (fieldErrors.startTime) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.startTime;
+                      return copy;
+                    });
+                  }
+                }}
                 placeholder="HH:MM"
                 align="right"
               />
+              {fieldErrors.startTime && (
+                <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{fieldErrors.startTime}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>
