@@ -1219,14 +1219,14 @@ export class ProductionController {
           return;
         }
 
-        const effRollNum = (dataToUpdate.rollNumber ?? existingRoll.rollNumber)?.trim();
-        const effStartOp = (dataToUpdate.startOperator ?? existingRoll.startOperator)?.trim();
-        const effStartDate = dataToUpdate.startDate ?? existingRoll.startDate;
-        const effStartTime = (dataToUpdate.startTime ?? existingRoll.startTime)?.trim();
-        const effEndOp = (dataToUpdate.endOperator ?? existingRoll.endOperator)?.trim();
-        const effEndDate = dataToUpdate.endDate ?? existingRoll.endDate;
-        const effEndTime = (dataToUpdate.endTime ?? existingRoll.endTime)?.trim();
-        const effWeight = dataToUpdate.weight !== undefined ? dataToUpdate.weight : existingRoll.weight;
+        const effRollNum = (typeof dataToUpdate.rollNumber === 'string' ? dataToUpdate.rollNumber : existingRoll.rollNumber)?.trim();
+        const effStartOp = (typeof dataToUpdate.startOperator === 'string' ? dataToUpdate.startOperator : existingRoll.startOperator)?.trim();
+        const effStartDate = typeof dataToUpdate.startDate === 'string' ? dataToUpdate.startDate : existingRoll.startDate;
+        const effStartTime = (typeof dataToUpdate.startTime === 'string' ? dataToUpdate.startTime : existingRoll.startTime)?.trim();
+        const effEndOp = (typeof dataToUpdate.endOperator === 'string' ? dataToUpdate.endOperator : existingRoll.endOperator)?.trim();
+        const effEndDate = typeof dataToUpdate.endDate === 'string' ? dataToUpdate.endDate : existingRoll.endDate;
+        const effEndTime = (typeof dataToUpdate.endTime === 'string' ? dataToUpdate.endTime : existingRoll.endTime)?.trim();
+        const effWeight = typeof dataToUpdate.weight === 'number' ? dataToUpdate.weight : existingRoll.weight;
 
         const missingFields: string[] = [];
         if (!effRollNum) missingFields.push('N° de Rollo');
