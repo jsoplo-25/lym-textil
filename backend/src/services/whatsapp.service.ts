@@ -106,7 +106,7 @@ export class WhatsAppService {
       const messageId = data?.messages?.[0]?.id || 'msg_sent_ok';
       return { success: true, messageId };
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? error.message : 'Error desconocido al invocar WhatsApp API';
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido al invocar WhatsApp API';
       console.error(`[WhatsAppService] Error de conexión:`, errorMsg);
       return { success: false, error: errorMsg };
     }
