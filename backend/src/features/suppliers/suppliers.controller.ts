@@ -52,11 +52,11 @@ function normalizePhone(raw: string): string {
   return raw.replace(/[\s\-().]/g, '').replace(/^\+?51(?=9\d{8}$)/, '');
 }
 
-/** Devuelve un mensaje de error si el documento es inválido; null si es válido. */
+/** Devuelve un mensaje de error si el RUC es inválido; null si es válido. */
 function validateDocument(doc: string): string | null {
-  if (!/^\d+$/.test(doc)) return 'El documento solo puede contener números.';
-  if (doc.length !== 8 && doc.length !== 11) return 'El documento debe tener 8 dígitos (DNI) u 11 dígitos (RUC).';
-  if (doc.length === 11 && !RUC_PREFIXES.includes(doc.slice(0, 2))) return 'El RUC debe empezar con 10, 15, 17 o 20.';
+  if (!/^\d+$/.test(doc)) return 'El RUC solo puede contener números.';
+  if (doc.length !== 11) return 'El RUC debe tener exactamente 11 dígitos.';
+  if (!RUC_PREFIXES.includes(doc.slice(0, 2))) return 'El RUC debe empezar con 10, 15, 17 o 20.';
   return null;
 }
 

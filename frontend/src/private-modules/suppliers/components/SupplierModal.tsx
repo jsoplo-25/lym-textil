@@ -80,21 +80,21 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Documento (DNI 8 dígitos / RUC 11 dígitos)
+    // 1. RUC: exactamente 11 dígitos
     if (!cleanDoc) {
-      errors.document = 'El RUC o documento del proveedor es obligatorio.';
+      errors.document = 'El RUC del proveedor es obligatorio.';
     } else if (!/^\d+$/.test(cleanDoc)) {
-      errors.document = 'El documento solo puede contener números.';
-    } else if (cleanDoc.length !== 8 && cleanDoc.length !== 11) {
-      errors.document = 'Debe tener 8 dígitos (DNI) u 11 dígitos (RUC).';
-    } else if (cleanDoc.length === 11 && !RUC_PREFIXES.includes(cleanDoc.slice(0, 2))) {
+      errors.document = 'El RUC solo puede contener números.';
+    } else if (cleanDoc.length !== 11) {
+      errors.document = 'El RUC debe tener exactamente 11 dígitos.';
+    } else if (!RUC_PREFIXES.includes(cleanDoc.slice(0, 2))) {
       errors.document = 'El RUC debe empezar con 10, 15, 17 o 20.';
     } else {
       const isDuplicateDoc = existingSuppliers.some(
         (s) => s.document.toUpperCase() === cleanDoc && s.id !== editingSupplier?.id
       );
       if (isDuplicateDoc) {
-        errors.document = `Ya existe un proveedor registrado con el documento "${cleanDoc}".`;
+        errors.document = `Ya existe un proveedor registrado con el RUC "${cleanDoc}".`;
       }
     }
 
@@ -256,7 +256,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              RUC / Documento <span className="text-rose-500">*</span>
+              RUC <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -282,7 +282,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
                 <span>{fieldErrors.document}</span>
               </p>
             ) : (
-              <p className="text-[11px] text-slate-400 mt-1">Documento único de identificación fiscal</p>
+              <p className="text-[11px] text-slate-400 mt-1">RUC de 11 dígitos, único por proveedor</p>
             )}
           </div>
 
