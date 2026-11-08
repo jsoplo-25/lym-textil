@@ -10,7 +10,7 @@ import type {
 } from '../types/production.types';
 import { machinesService } from '../../machines/services/machines.service';
 import { suppliersService } from '../../suppliers/services/suppliers.service';
-import { Layers, Activity, FileText, Cog, Truck, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Layers, Activity, FileText, Cog, Truck, AlertTriangle, AlertCircle, Scale } from 'lucide-react';
 import { getTodayLocalDate, toDatePickerValue } from '../../../shared/lib/utils';
 
 interface ProductionBatchModalProps {
@@ -41,6 +41,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
   const [supplierId, setSupplierId] = useState('');
   const [supplierOptions, setSupplierOptions] = useState<SelectOption[]>([]);
   const [startDate, setStartDate] = useState('');
+  const [totalFabricKg, setTotalFabricKg] = useState('');
   const [status, setStatus] = useState<BatchStatus>('REQUESTED');
   const [statusNote, setStatusNote] = useState('');
   const [notes, setNotes] = useState('');
@@ -60,9 +61,6 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
               label: `${m.name} (${m.type})`,
             }));
             setMachineOptions(options);
-            if (!editingBatch && options.length > 0 && !machineId) {
-              setMachineId(options[0].value);
-            }
           }
         })
         .catch(() => {});
@@ -74,12 +72,9 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
           if (res && res.suppliers) {
             const options: SelectOption[] = res.suppliers.map((s) => ({
               value: s.id,
-              label: `[${s.document}] ${s.name}${s.yarnTypes ? ` (${Array.isArray(s.yarnTypes) ? s.yarnTypes.join(', ') : s.yarnTypes})` : ''}`,
+              label: s.name,
             }));
             setSupplierOptions(options);
-            if (!editingBatch && options.length > 0 && !supplierId) {
-              setSupplierId(options[0].value);
-            }
           }
         })
         .catch(() => {});
@@ -96,12 +91,20 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
           ? toDatePickerValue(editingBatch.startDate)
           : getTodayLocalDate()
       );
+      setTotalFabricKg(
+        editingBatch.totalFabricKg !== undefined && editingBatch.totalFabricKg !== null && editingBatch.totalFabricKg > 0
+          ? String(editingBatch.totalFabricKg)
+          : ''
+      );
       setStatus(editingBatch.status || 'REQUESTED');
       setStatusNote('');
       setNotes(editingBatch.notes || '');
     } else {
       setBatchNumber('');
+      setMachineId('');
+      setSupplierId('');
       setStartDate(getTodayLocalDate());
+      setTotalFabricKg('');
       setStatus('REQUESTED');
       setStatusNote('');
       setNotes('');
@@ -152,7 +155,20 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
       errors.startDate = 'La fecha de inicio de producción es obligatoria.';
     }
 
-    // 6. Motivo de pausa si aplica
+    // 6. Total de kilos de tela (requerido al crear; si se informa al editar, debe ser válido)
+    const kgText = totalFabricKg.trim();
+    if (!kgText) {
+      if (!editingBatch) {
+        errors.totalFabricKg = 'El total de kilos de tela proyectados es obligatorio.';
+      }
+    } else {
+      const kg = parseFloat(kgText);
+      if (isNaN(kg) || kg <= 0) {
+        errors.totalFabricKg = 'Ingresa un total de kilos mayor a cero.';
+      }
+    }
+
+    // 7. Motivo de pausa si aplica
     if (status === 'PAUSED' && editingBatch?.status !== 'PAUSED' && !statusNote.trim()) {
       errors.statusNote = 'Debes especificar el motivo de pausar el lote.';
     }
@@ -204,6 +220,8 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
     try {
       setIsLoading(true);
 
+      const parsedKg = totalFabricKg.trim() ? parseFloat(totalFabricKg.trim()) : undefined;
+
       const payload: CreateBatchDTO = {
         batchNumber: batchNumber.trim().toUpperCase(),
         machineId: machineId.trim(),
@@ -212,6 +230,7 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
         status,
         statusNote: statusNote.trim() || undefined,
         notes: notes.trim() || undefined,
+        totalFabricKg: parsedKg !== undefined && !isNaN(parsedKg) ? parsedKg : 0,
       };
 
       await onSave(payload, editingBatch?.id);
@@ -390,6 +409,52 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
           </div>
         </div>
 
+        {/* Total Kilos de Tela Proyectados (Para cálculo de hitos WhatsApp) */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between flex-wrap gap-1">
+            <span className="flex items-center gap-1.5">
+              <Scale className="w-3.5 h-3.5 text-slate-400" />
+              Total de kilos de tela proyectados (Kg) <span className="text-rose-500">*</span>
+            </span>
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+              Requerido para cálculo de hitos WhatsApp (25%, 50%, 75%, 100%)
+            </span>
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={totalFabricKg}
+              onChange={(e) => {
+                setTotalFabricKg(e.target.value);
+                if (fieldErrors.totalFabricKg) {
+                  setFieldErrors((prev) => {
+                    const copy = { ...prev };
+                    delete copy.totalFabricKg;
+                    return copy;
+                  });
+                }
+              }}
+              placeholder="Ej. 1200.50"
+              className={`w-full pl-3.5 pr-12 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                fieldErrors.totalFabricKg
+                  ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500'
+                  : 'border-slate-200 dark:border-slate-800 focus:ring-primary-500/20 focus:border-primary-500'
+              }`}
+            />
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+              Kg
+            </span>
+          </div>
+          {fieldErrors.totalFabricKg && (
+            <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{fieldErrors.totalFabricKg}</span>
+            </p>
+          )}
+        </div>
+
         {/* Campo condicional: Motivo de pausa */}
         {status === 'PAUSED' && (
           <div>
@@ -429,14 +494,14 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
+            className="px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 active:bg-primary-700 text-white text-sm font-bold shadow-md shadow-primary-500/20 hover:shadow-primary-500/30 transition-all disabled:opacity-60"
+            className="px-5 py-2.5 rounded-full bg-primary-600 hover:bg-primary-500 active:bg-primary-700 text-white text-sm font-bold shadow-md shadow-primary-500/20 hover:shadow-primary-500/30 transition-all disabled:opacity-60"
           >
             {isLoading ? 'Guardando...' : editingBatch ? 'Actualizar Lote' : 'Crear Lote'}
           </button>

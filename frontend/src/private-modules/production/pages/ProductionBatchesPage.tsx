@@ -4,7 +4,6 @@ import {
   Factory,
   Plus,
   Search,
-  RefreshCw,
   Edit2,
   Trash2,
   Scale,
@@ -16,6 +15,8 @@ import {
   ClipboardList,
   CheckCircle2,
   Copy,
+  Loader2,
+  PauseCircle,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../app/store';
@@ -122,8 +123,8 @@ export const ProductionBatchesPage: React.FC = () => {
     }
   };
 
-  const loadBatches = async () => {
-    setIsLoading(true);
+  const loadBatches = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await productionService.getBatches({
         q: searchQuery || undefined,
@@ -139,7 +140,7 @@ export const ProductionBatchesPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Error cargando lotes:', err);
-      toast.error('Error al conectar con el servidor para cargar los lotes de producción.');
+      if (!silent) toast.error('Error al conectar con el servidor para cargar los lotes de producción.');
     } finally {
       setIsLoading(false);
     }
@@ -151,6 +152,13 @@ export const ProductionBatchesPage: React.FC = () => {
 
   useEffect(() => {
     loadBatches();
+
+    // Refresco en tiempo real (otro usuario/equipo cambió lotes o rollos), respetando los filtros activos
+    const handleUpdate = () => {
+      loadBatches(true);
+    };
+    window.addEventListener('production:rolls-updated', handleUpdate);
+    return () => window.removeEventListener('production:rolls-updated', handleUpdate);
   }, [searchQuery, selectedMachine, selectedSupplier, selectedStatus]);
 
   const handleOpenCreate = () => {
@@ -207,11 +215,22 @@ export const ProductionBatchesPage: React.FC = () => {
   const renderStatusBadge = (status: BatchStatus) => {
     switch (status) {
       case 'REQUESTED':
-      case 'IN_PROGRESS':
-      case 'IN_PREPARATION':
         return (
           <Badge variant="blue" icon={<ClipboardList className="w-3.5 h-3.5" />}>
             Solicitud registrada
+          </Badge>
+        );
+      case 'IN_PROGRESS':
+      case 'IN_PREPARATION':
+        return (
+          <Badge variant="amber" icon={<Loader2 className="w-3.5 h-3.5" />}>
+            En proceso
+          </Badge>
+        );
+      case 'PAUSED':
+        return (
+          <Badge variant="rose" icon={<PauseCircle className="w-3.5 h-3.5" />}>
+            Pausado
           </Badge>
         );
       case 'COMPLETED':
@@ -379,14 +398,6 @@ export const ProductionBatchesPage: React.FC = () => {
               placeholder="Estado..."
             />
           </div>
-
-          <button
-            onClick={loadBatches}
-            title="Actualizar lista"
-            className="p-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
         </div>
       </div>
 
@@ -549,9 +560,31 @@ export const ProductionBatchesPage: React.FC = () => {
 
                     {/* Peso Total */}
                     <Td>
-                      <span className="font-extrabold font-mono text-primary-600 dark:text-primary-400 text-xs">
-                        {(batch.totalWeight || 0).toFixed(2)} Kg
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="font-extrabold font-mono text-primary-600 dark:text-primary-400 text-xs">
+                          {(batch.totalWeight || 0).toFixed(2)} Kg
+                        </span>
+                        {Boolean(batch.totalFabricKg && batch.totalFabricKg > 0) && (() => {
+                          const pct = ((batch.totalWeight || 0) / (batch.totalFabricKg as number)) * 100;
+                          const barPct = Math.min(100, Math.max(0, pct));
+                          return (
+                            <div className="mt-1 min-w-[120px]">
+                              <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
+                                <span className="text-slate-400">Meta: {batch.totalFabricKg?.toFixed(2)} Kg</span>
+                                <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                                  {pct.toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="mt-0.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-emerald-500' : 'bg-primary-500'}`}
+                                  style={{ width: `${barPct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </Td>
 
                     {/* Estado General Lote */}

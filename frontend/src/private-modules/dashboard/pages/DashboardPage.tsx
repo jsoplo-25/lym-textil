@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { NavLink } from 'react-router-dom';
-import { RefreshCw, Calendar, Factory, ArrowRight } from 'lucide-react';
+import { Factory, ArrowRight } from 'lucide-react';
 import type { RootState } from '../../../app/store';
 import { useDashboard } from '../hooks/useDashboard';
 import { productionService } from '../../production/services/production.service';
@@ -52,53 +52,21 @@ export const DashboardPage: React.FC = () => {
 
   const isWeaver = !isAdmin && !isAssistant; // TEJEDOR, OPERATOR o rol de planta
 
-  const todayFormatted = new Date().toLocaleDateString('es-PE', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-  const capitalizedDate = todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1);
-
   return (
     <div className="flex-1 flex flex-col space-y-6 w-full animate-fadeIn pb-12">
-      {/* 1. Barra de herramientas y sincronización en tiempo real */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span className="min-w-0">{capitalizedDate}</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 text-primary-700 dark:text-primary-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
-            <span>Sincronizado en tiempo real</span>
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          {isWeaver && (
-            <NavLink
-              to="/production"
-              className="px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
-            >
-              <Factory className="w-3.5 h-3.5" />
-              <span>Ir a Sábana de Producción</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </NavLink>
-          )}
-
-          <button
-            type="button"
-            onClick={() => reload()}
-            disabled={isLoading}
-            className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            title="Actualizar datos del panel"
+      {/* 1. Acceso rápido para rol de planta */}
+      {isWeaver && (
+        <div className="flex justify-end">
+          <NavLink
+            to="/production"
+            className="px-3.5 py-1.5 rounded-full bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-primary-500' : 'text-slate-400'}`} />
-            <span>{isLoading ? 'Actualizando...' : 'Actualizar'}</span>
-          </button>
+            <Factory className="w-3.5 h-3.5" />
+            <span>Ir a Sábana de Producción</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </NavLink>
         </div>
-      </div>
+      )}
 
       {/* 2. Error Banner si ocurre fallo en API */}
       {error && (

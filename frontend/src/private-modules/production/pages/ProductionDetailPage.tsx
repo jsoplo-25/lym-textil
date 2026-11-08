@@ -22,6 +22,8 @@ import {
   Pause,
   AlertTriangle,
   History,
+  MessageSquare,
+  Scale,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../app/store';
@@ -37,19 +39,24 @@ import type {
   RollStatus,
 } from '../types/production.types';
 import { RollModal, ROLL_STATUS_OPTIONS } from '../components/RollModal';
+import { FinishRollModal } from '../components/FinishRollModal';
 import { ProductionBatchModal } from '../components/ProductionBatchModal';
 import { exportBatchToExcel } from '../lib/exportBatchToExcel';
 import { PauseBatchModal } from '../components/PauseBatchModal';
+import { getBatchLevelLogs } from '../lib/batchLogs';
 import { BatchStatusLogsModal } from '../components/BatchStatusLogsModal';
+import { WhatsAppLogsModal } from '../components/WhatsAppLogsModal';
+import { RollStatusLogsModal } from '../components/RollStatusLogsModal';
 import { Tooltip } from '../../../shared/ui/Tooltip';
 import { Skeleton } from '../../../shared/ui/Skeleton';
 import { useToast } from '../../../shared/hooks/useToast';
 import { hasPermission } from '../../../shared/lib/roles';
-import { formatLocalDate, getTodayLocalDate, toDatePickerValue } from '../../../shared/lib/utils';
+import { formatLocalDate, toDatePickerValue } from '../../../shared/lib/utils';
 import { DatePicker } from '../../../shared/ui/DatePicker';
 import { TimePicker } from '../../../shared/ui/TimePicker';
 import { Select, type SelectOption } from '../../../shared/ui/Select';
 import { Button } from '../../../shared/ui/Button';
+import { ConfirmModal } from '../../../shared/ui/ConfirmModal';
 import { Table, TableBody, TableContainer, TableHead, Td, Th, Tr } from '../../../shared/ui/Table';
 
 const SKELETON_TABLE_COLUMNS = 11;
@@ -196,15 +203,25 @@ export const ProductionDetailPage: React.FC = () => {
   const [operatorOptions, setOperatorOptions] = useState<SelectOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Permisos
+  // Permisos y Roles
   const canCreate = hasPermission(sessionUser, 'production:create');
   const canEdit = hasPermission(sessionUser, 'production:edit');
   const canDelete = hasPermission(sessionUser, 'production:delete');
   const canApprove = hasPermission(sessionUser, 'production:approve');
 
+  const userRole = String(sessionUser?.role || '').toUpperCase().trim();
+  const userRoleName = String(sessionUser?.roleName || '').toUpperCase().trim();
+  const isAdminOrAssistant =
+    canApprove ||
+    userRole === 'ADMINISTRADOR' ||
+    userRole === 'ASISTENTE_ADMINISTRATIVO' ||
+    userRoleName === 'ADMINISTRADOR DEL SISTEMA' ||
+    userRoleName === 'ASISTENTE ADMINISTRATIVO';
+
   // Modal Rollo
   const [isRollModalOpen, setIsRollModalOpen] = useState(false);
   const [editingRoll, setEditingRoll] = useState<ProductionRoll | null>(null);
+  const [finishingRoll, setFinishingRoll] = useState<ProductionRoll | null>(null);
 
   // Modal Batch Edit
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
@@ -212,26 +229,27 @@ export const ProductionDetailPage: React.FC = () => {
   // Modales de Pausa y Bitácora de Estados
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+  const [selectedRollForLog, setSelectedRollForLog] = useState<ProductionRoll | null>(null);
 
   // Quick inline add state
   const [quickRollNumber, setQuickRollNumber] = useState('');
   const [quickStartDate, setQuickStartDate] = useState('');
   const [quickStartOperator, setQuickStartOperator] = useState('');
   const [quickStartTime, setQuickStartTime] = useState('');
-  const [quickEndTime, setQuickEndTime] = useState('');
-  const [quickEndDate, setQuickEndDate] = useState('');
-  const [quickEndOperator, setQuickEndOperator] = useState('');
-  const [quickWeight, setQuickWeight] = useState('');
-  const [quickObservations, setQuickObservations] = useState('');
   const [isQuickAdding, setIsQuickAdding] = useState(false);
+  const [quickFieldErrors, setQuickFieldErrors] = useState<Record<string, string>>({});
   const lastQuickDefaultKeyRef = useRef<string | null | undefined>(undefined);
 
   // Row and action loaders
   const [updatingRollId, setUpdatingRollId] = useState<string | null>(null);
   const [approvingRollId, setApprovingRollId] = useState<string | null>(null);
   const [deletingRollId, setDeletingRollId] = useState<string | null>(null);
+  const [rollToDelete, setRollToDelete] = useState<ProductionRoll | null>(null);
   const [isUpdatingBatchStatus, setIsUpdatingBatchStatus] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isConfirmBulkDeliverOpen, setIsConfirmBulkDeliverOpen] = useState(false);
+  const [isBulkDelivering, setIsBulkDelivering] = useState(false);
 
   const toast = useToast();
 
@@ -267,23 +285,7 @@ export const ProductionDetailPage: React.FC = () => {
         }
         setBatch(data);
 
-        const latestBatchRoll = data.rolls?.[data.rolls.length - 1];
-        const latestRollKey = latestBatchRoll
-          ? `${latestBatchRoll.id}|${latestBatchRoll.endOperator || ''}|${latestBatchRoll.endDate || ''}|${latestBatchRoll.endTime || ''}`
-          : null;
-
-        if (lastQuickDefaultKeyRef.current !== latestRollKey) {
-          lastQuickDefaultKeyRef.current = latestRollKey;
-          if (latestBatchRoll?.endDate && latestBatchRoll.endTime) {
-            setQuickStartOperator(latestBatchRoll.endOperator || '');
-            setQuickStartDate(toDatePickerValue(latestBatchRoll.endDate));
-            setQuickStartTime(latestBatchRoll.endTime);
-          } else {
-            setQuickStartOperator('');
-            setQuickStartDate(getTodayLocalDate());
-            setQuickStartTime('');
-          }
-        }
+        // No sobreescribir los campos del inicio rápido automáticamente
       }
     } catch (err) {
       console.error('Error cargando detalle del lote:', err);
@@ -297,8 +299,11 @@ export const ProductionDetailPage: React.FC = () => {
     lastQuickDefaultKeyRef.current = undefined;
     loadOperators();
     loadBatch();
-    setQuickStartDate(getTodayLocalDate());
-    setQuickEndDate(getTodayLocalDate());
+    setQuickRollNumber('');
+    setQuickStartOperator('');
+    setQuickStartDate('');
+    setQuickStartTime('');
+    setQuickFieldErrors({});
 
     const handleRollsUpdated = () => {
       loadBatch();
@@ -308,6 +313,10 @@ export const ProductionDetailPage: React.FC = () => {
   }, [id]);
 
   const handleOpenAddRoll = () => {
+    if (isBatchGoalReached) {
+      toast.warning(`El lote ya alcanzó el 100% de la meta de kilaje (${targetBatchKg?.toFixed(2)} Kg). No se pueden agregar más rollos.`);
+      return;
+    }
     setEditingRoll(null);
     setIsRollModalOpen(true);
   };
@@ -331,9 +340,6 @@ export const ProductionDetailPage: React.FC = () => {
   };
 
   const handleDeleteRoll = async (roll: ProductionRoll) => {
-    if (!window.confirm(`¿Estás seguro de eliminar el rollo N° ${roll.rollNumber}?`)) {
-      return;
-    }
     try {
       setDeletingRollId(roll.id);
       await productionService.deleteRoll(roll.id);
@@ -345,6 +351,30 @@ export const ProductionDetailPage: React.FC = () => {
       toast.error('Error al eliminar el rollo.');
     } finally {
       setDeletingRollId(null);
+      setRollToDelete(null);
+    }
+  };
+
+  const handleConfirmBulkDeliver = async () => {
+    if (!id || !canEdit || isPaused) return;
+    try {
+      setIsBulkDelivering(true);
+      const res = await productionService.deliverAllReadyRolls(id);
+      toast.success(res.message || 'Rollos entregados masivamente.');
+      if (res.batchCompleted) {
+        toast.success('¡Todos los rollos del lote fueron entregados! El lote pasó a estado Terminado.');
+      }
+      setIsConfirmBulkDeliverOpen(false);
+      await loadBatch();
+      window.dispatchEvent(new CustomEvent('production:rolls-updated'));
+    } catch (err: unknown) {
+      console.error('Error en entrega masiva:', err);
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        'Error al realizar la entrega masiva.';
+      toast.error(msg);
+    } finally {
+      setIsBulkDelivering(false);
     }
   };
 
@@ -352,51 +382,59 @@ export const ProductionDetailPage: React.FC = () => {
     e.preventDefault();
     if (!id) return;
 
-    if (!quickRollNumber.trim()) {
-      toast.error('Ingresa el número de rollo.');
+    if (isBatchGoalReached) {
+      toast.warning(`El lote ya alcanzó el 100% de la meta de kilaje (${targetBatchKg?.toFixed(2)} Kg). No se pueden iniciar más rollos.`);
       return;
     }
 
-    const effectiveStartDate = quickStartDate.trim() || getTodayLocalDate();
-    const effectiveStartTime = quickStartTime.trim() || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const errors: Record<string, string> = {};
+    const cleanRollNum = quickRollNumber.trim();
+    if (!cleanRollNum) {
+      errors.rollNumber = 'Ingresa el N° de rollo.';
+    } else {
+      const isDuplicate = rolls.some((r) => r.rollNumber.trim() === cleanRollNum);
+      if (isDuplicate) {
+        errors.rollNumber = `Ya existe el rollo N° ${cleanRollNum} en este lote.`;
+      }
+    }
+
     if (!quickStartOperator.trim()) {
-      toast.error('Selecciona o ingresa el operario de inicio.');
+      errors.startOperator = 'Selecciona el operario de inicio.';
+    }
+
+    if (!quickStartDate.trim()) {
+      errors.startDate = 'Ingresa la fecha de inicio.';
+    }
+
+    if (!quickStartTime.trim()) {
+      errors.startTime = 'Ingresa la hora de inicio.';
+    }
+
+    setQuickFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error('Por favor completa todos los campos obligatorios del inicio rápido.');
       return;
     }
 
     try {
       setIsQuickAdding(true);
       const payload: CreateRollDTO = {
-        rollNumber: quickRollNumber.trim(),
-        startDate: effectiveStartDate,
-        startTime: effectiveStartTime,
+        rollNumber: cleanRollNum,
+        startDate: quickStartDate.trim(),
+        startTime: quickStartTime.trim(),
         startOperator: quickStartOperator.trim(),
-        endDate: quickEndDate.trim() || undefined,
-        endTime: quickEndTime.trim() || undefined,
-        endOperator: quickEndOperator.trim() || undefined,
-        weight: quickWeight.trim() !== '' ? parseFloat(quickWeight) : undefined,
-        status: 'REGISTERED',
-        observations: quickObservations.trim() || undefined,
+        status: 'IN_PREPARATION',
       };
 
       await productionService.addRoll(id, payload);
-      toast.success(`Rollo N° ${quickRollNumber} registrado.`);
+      toast.success(`Rollo N° ${cleanRollNum} iniciado en máquina.`);
 
-      // Limpiar campos del formulario tras registro exitoso
-      const parsedNum = parseInt(quickRollNumber, 10);
-      if (!isNaN(parsedNum)) {
-        setQuickRollNumber(String(parsedNum + 1));
-      } else {
-        setQuickRollNumber('');
-      }
-      setQuickWeight('');
-      setQuickObservations('');
-      setQuickStartTime('');
-      setQuickEndTime('');
+      // Limpiar todos los campos del inicio rápido para el siguiente rollo
+      setQuickRollNumber('');
       setQuickStartOperator('');
-      setQuickEndOperator('');
-      setQuickStartDate(getTodayLocalDate());
-      setQuickEndDate(getTodayLocalDate());
+      setQuickStartDate('');
+      setQuickStartTime('');
+      setQuickFieldErrors({});
 
       await loadBatch();
     } catch (err: unknown) {
@@ -457,11 +495,20 @@ export const ProductionDetailPage: React.FC = () => {
   const totalRolls = rolls.length;
   const totalWeight = rolls.reduce((sum, r) => sum + (r.weight || 0), 0);
   const avgWeight = totalRolls > 0 ? totalWeight / totalRolls : 0;
+  const targetBatchKg = batch?.totalFabricKg && Number(batch.totalFabricKg) > 0 ? Number(batch.totalFabricKg) : null;
+  const batchProgressPercent = targetBatchKg !== null ? (totalWeight / targetBatchKg) * 100 : 0;
+  const remainingBatchKg = targetBatchKg !== null ? Math.max(0, targetBatchKg - totalWeight) : null;
+  const isBatchGoalReached = targetBatchKg !== null && totalWeight >= targetBatchKg - 0.001;
   const registeredRollsCount = rolls.filter((r) => !r.status || r.status === 'REGISTERED').length;
   const prepRollsCount = rolls.filter((r) => r.status === 'IN_PREPARATION').length;
   const readyApprovalRollsCount = rolls.filter((r) => r.status === 'READY_FOR_APPROVAL').length;
   const readyRollsCount = rolls.filter((r) => r.status === 'READY_FOR_PICKUP').length;
   const deliveredRollsCount = rolls.filter((r) => r.status === 'DELIVERED').length;
+  const isAllReadyForPickup = totalRolls > 0 && rolls.every((r) => r.status === 'READY_FOR_PICKUP');
+  const canBulkDeliver =
+    totalRolls > 0 &&
+    readyRollsCount > 0 &&
+    rolls.every((r) => r.status === 'READY_FOR_PICKUP' || r.status === 'DELIVERED');
 
   // Si no hay rollos registrados, el lote ÚNICAMENTE puede estar en REQUESTED (Solicitud registrada).
   // Si ya hay al menos un rollo (totalRolls > 0), el lote pasa automáticamente a IN_PROGRESS si estaba en REQUESTED.
@@ -565,6 +612,24 @@ export const ProductionDetailPage: React.FC = () => {
 
   // Aprobación directa por parte del Asistente o Administrador
   const handleApproveRollDirectly = async (roll: ProductionRoll) => {
+    // Validar que todos los campos obligatorios de inicio y fin estén completos (solo observaciones es opcional)
+    const missing: string[] = [];
+    if (!roll.rollNumber?.trim()) missing.push('N° de Rollo');
+    if (!roll.startOperator?.trim()) missing.push('Operario Inicio');
+    if (!roll.startDate) missing.push('Fecha Inicio');
+    if (!roll.startTime?.trim()) missing.push('Hora Inicio');
+    if (!roll.endOperator?.trim()) missing.push('Operario Término');
+    if (!roll.endDate) missing.push('Fecha Término');
+    if (!roll.endTime?.trim()) missing.push('Hora Término');
+    if (roll.weight === null || roll.weight === undefined || Number(roll.weight) <= 0) {
+      missing.push('Peso de Balanza (Kg)');
+    }
+
+    if (missing.length > 0) {
+      toast.error(`Para cambiar a "Listo para recojo" debe completar: ${missing.join(', ')}.`);
+      return;
+    }
+
     try {
       setApprovingRollId(roll.id);
       const res = await productionService.approveRoll(roll.id);
@@ -584,6 +649,42 @@ export const ProductionDetailPage: React.FC = () => {
   const handleUpdateRollStatus = async (roll: ProductionRoll, newStatus: RollStatus) => {
     if (!id || !canEdit) return;
     if (roll.status === newStatus) return;
+
+    // Validación general para READY_FOR_PICKUP: inicio y término obligatorios
+    if (newStatus === 'READY_FOR_PICKUP') {
+      const missing: string[] = [];
+      if (!roll.rollNumber?.trim()) missing.push('N° de Rollo');
+      if (!roll.startOperator?.trim() || roll.startOperator === 'No asignado') missing.push('Operario Inicio');
+      if (!roll.startDate?.trim()) missing.push('Fecha Inicio');
+      if (!roll.startTime?.trim()) missing.push('Hora Inicio');
+      if (!roll.endOperator?.trim() || roll.endOperator === 'No asignado') missing.push('Operario Término');
+      if (!roll.endDate?.trim()) missing.push('Fecha Término');
+      if (!roll.endTime?.trim()) missing.push('Hora Término');
+      if (roll.weight === null || roll.weight === undefined || Number(roll.weight) <= 0) {
+        missing.push('Peso de Balanza (Kg)');
+      }
+
+      if (missing.length > 0) {
+        toast.error(`Para cambiar a "Listo para recojo" debe completar: ${missing.join(', ')}.`);
+        return;
+      }
+    }
+
+    // Validación general para READY_FOR_APPROVAL: debe estar pesado y con término
+    if (newStatus === 'READY_FOR_APPROVAL') {
+      const missingEnd: string[] = [];
+      if (!roll.endOperator?.trim() || roll.endOperator === 'No asignado') missingEnd.push('Operario Término');
+      if (!roll.endDate?.trim()) missingEnd.push('Fecha Término');
+      if (!roll.endTime?.trim()) missingEnd.push('Hora Término');
+      if (roll.weight === null || roll.weight === undefined || Number(roll.weight) <= 0) {
+        missingEnd.push('Peso de Balanza (Kg)');
+      }
+
+      if (missingEnd.length > 0) {
+        toast.error(`Para enviar a visto bueno debe registrar los datos de término con "Pesar Rollo": ${missingEnd.join(', ')}.`);
+        return;
+      }
+    }
 
     // 1. Validaciones para el Tejedor (no aprobador):
     if (!canApprove) {
@@ -613,12 +714,6 @@ export const ProductionDetailPage: React.FC = () => {
       }
       if (roll.status === 'IN_PREPARATION' && newStatus === 'REGISTERED') {
         toast.error('No se puede retroceder un rollo en preparación a estado registrado.');
-        return;
-      }
-    } else {
-      // 2. Validaciones para Asistente / Administrador:
-      if (newStatus === 'READY_FOR_PICKUP' && roll.status !== 'READY_FOR_PICKUP') {
-        toast.error('Para pasar el rollo a "Listo para recojo", haz clic en el botón "Aprobar".');
         return;
       }
     }
@@ -652,13 +747,24 @@ export const ProductionDetailPage: React.FC = () => {
   const getRollAvailableOptions = (roll: ProductionRoll) => {
     const current = roll.status || 'REGISTERED';
 
+    const hasAllData = Boolean(
+      roll.rollNumber?.trim() &&
+      roll.startOperator?.trim() && roll.startOperator !== 'No asignado' &&
+      roll.startDate?.trim() &&
+      roll.startTime?.trim() &&
+      roll.endOperator?.trim() && roll.endOperator !== 'No asignado' &&
+      roll.endDate?.trim() &&
+      roll.endTime?.trim() &&
+      roll.weight !== null && roll.weight !== undefined && Number(roll.weight) > 0
+    );
+
     // Para Asistente Administrativo o Administrador:
     if (canApprove) {
       return ROLL_STATUS_OPTIONS.filter((opt) => {
         if (opt.value === 'READY_FOR_APPROVAL') return false;
-        // "Listo para recojo" solo se ve si ya fue aprobado
+        // "Listo para recojo" solo se puede seleccionar si el rollo ya tiene TODOS sus datos de inicio y fin completos
         if (opt.value === 'READY_FOR_PICKUP') {
-          return current === 'READY_FOR_PICKUP';
+          return hasAllData;
         }
         return true; // REGISTERED, IN_PREPARATION, DELIVERED
       });
@@ -679,14 +785,14 @@ export const ProductionDetailPage: React.FC = () => {
     }
     if (current === 'IN_PREPARATION') {
       return ROLL_STATUS_OPTIONS.filter(
-        (opt) => opt.value === 'IN_PREPARATION' || opt.value === 'READY_FOR_APPROVAL'
+        (opt) => opt.value === 'IN_PREPARATION' || (hasAllData && opt.value === 'READY_FOR_APPROVAL')
       );
     }
     return ROLL_STATUS_OPTIONS.filter(
       (opt) =>
         opt.value === 'REGISTERED' ||
         opt.value === 'IN_PREPARATION' ||
-        opt.value === 'READY_FOR_APPROVAL'
+        (hasAllData && opt.value === 'READY_FOR_APPROVAL')
     );
   };
 
@@ -813,13 +919,22 @@ export const ProductionDetailPage: React.FC = () => {
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
           >
             <History className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-            <span>Bitácora ({batch.statusLogs?.length || 0})</span>
+            <span>Bitácora ({getBatchLevelLogs(batch.statusLogs).length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsWhatsAppModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/30 transition-colors shadow-xs cursor-pointer"
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>WhatsApp</span>
           </button>
 
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isExporting ? (
               <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
@@ -843,9 +958,15 @@ export const ProductionDetailPage: React.FC = () => {
             <Button
               variant="secondary"
               size="cta"
-              disabled={isPaused}
+              disabled={isPaused || isBatchGoalReached}
               onClick={handleOpenAddRoll}
-              title={isPaused ? 'El lote se encuentra pausado. Reanúdalo para añadir rollos.' : undefined}
+              title={
+                isBatchGoalReached
+                  ? `Se alcanzó el 100% de la meta del lote (${targetBatchKg?.toFixed(2)} Kg). No se pueden agregar más rollos.`
+                  : isPaused
+                  ? 'El lote se encuentra pausado. Reanúdalo para añadir rollos.'
+                  : undefined
+              }
             >
               <Plus className="w-4 h-4" />
               <span>Agregar Rollo</span>
@@ -924,27 +1045,59 @@ export const ProductionDetailPage: React.FC = () => {
           </div>
 
           {/* KPI Summary Tiles */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Rollos</span>
-              <span className="text-xl font-extrabold font-mono text-slate-900 dark:text-white">{totalRolls}</span>
+          <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap shrink-0">
+            <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Total Rollos</span>
+              <span className="text-base font-extrabold font-mono text-slate-900 dark:text-white">{totalRolls}</span>
             </div>
-            <div className="px-4 py-2.5 rounded-2xl bg-primary-500/10 border border-primary-500/20">
-              <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider block">
-                Peso Total
-              </span>
-              <span className="text-xl font-extrabold font-mono text-primary-600 dark:text-primary-400">
-                {totalWeight.toFixed(2)} Kg
-              </span>
+            <div className="px-3 py-1.5 rounded-xl bg-primary-500/10 border border-primary-500/20">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider block">
+                  Peso Total
+                </span>
+                {targetBatchKg !== null && (
+                  <span className="text-[10px] font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+                    {batchProgressPercent.toFixed(1)}%
+                  </span>
+                )}
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-base font-extrabold font-mono text-primary-600 dark:text-primary-400">
+                  {totalWeight.toFixed(2)} Kg
+                </span>
+                {targetBatchKg !== null && (
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                    (Meta: {targetBatchKg.toFixed(2)} Kg)
+                  </span>
+                )}
+              </div>
+              {targetBatchKg !== null && (
+                <div className="mt-1 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${batchProgressPercent >= 100 ? 'bg-emerald-500' : 'bg-primary-500'}`}
+                    style={{ width: `${Math.min(100, Math.max(0, batchProgressPercent))}%` }}
+                  />
+                </div>
+              )}
             </div>
-            <div className="px-4 py-2.5 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
+            <div className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
                 Promedio
               </span>
-              <span className="text-xl font-extrabold font-mono text-blue-600 dark:text-blue-400">
+              <span className="text-base font-extrabold font-mono text-blue-600 dark:text-blue-400">
                 {avgWeight.toFixed(2)} Kg
               </span>
             </div>
+            {targetBatchKg !== null && (
+              <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
+                  Faltan p/ 100%
+                </span>
+                <span className="text-base font-extrabold font-mono text-amber-600 dark:text-amber-400">
+                  {remainingBatchKg?.toFixed(2)} Kg
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -963,7 +1116,7 @@ export const ProductionDetailPage: React.FC = () => {
                   title="Ver bitácora de cambios y observaciones"
                 >
                   <History className="w-3 h-3 text-primary-600 dark:text-primary-400" />
-                  <span>Bitácora ({batch.statusLogs?.length || 0})</span>
+                  <span>Bitácora ({getBatchLevelLogs(batch.statusLogs).length})</span>
                 </button>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1256,137 +1409,189 @@ export const ProductionDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Quick Roll Add Form (Barra rápida de ingreso) */}
+      {/* 3. Quick Roll Add Form (Barra rápida de arranque de rollo) */}
       {canCreate && (
-        <div className="relative z-20 p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm print:hidden space-y-4">
+        <div className="relative z-20 p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm print:hidden space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold">
-                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                <Play className="w-3.5 h-3.5 fill-current" />
               </div>
               <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                Ingreso Rápido de Rollo
+                Iniciar Rollo en Máquina
               </h3>
             </div>
-            <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
-              Flujo: Operario &rarr; Fecha &rarr; Hora
-            </span>
+            {isBatchGoalReached ? (
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 shadow-2xs">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                Meta 100% alcanzada ({targetBatchKg?.toFixed(2)} Kg) • No se permiten más rollos
+              </span>
+            ) : (
+              <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2.5 py-0.5 rounded-lg">
+                El peso se registrará con "Pesar Rollo" al terminar el tejido
+              </span>
+            )}
           </div>
 
-          <form onSubmit={handleQuickAddRoll} className="space-y-3.5">
-            {/* Fila 1: N° Rollo e Inicio */}
-            <div className="relative z-30 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-end">
+          <form noValidate onSubmit={handleQuickAddRoll}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-start">
               <div className="md:col-span-2">
                 <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                   N° Rollo <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  required
+                  disabled={isPaused || isBatchGoalReached}
                   value={quickRollNumber}
-                  onChange={(e) => setQuickRollNumber(e.target.value)}
+                  onChange={(e) => {
+                    setQuickRollNumber(e.target.value);
+                    if (quickFieldErrors.rollNumber) {
+                      setQuickFieldErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.rollNumber;
+                        return copy;
+                      });
+                    }
+                  }}
                   placeholder="Ej. 718"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 shadow-xs"
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/90 border rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white outline-hidden focus:ring-2 shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    quickFieldErrors.rollNumber
+                      ? 'border-rose-500 text-rose-900 dark:text-rose-200 focus:ring-rose-500/20'
+                      : 'border-slate-300 dark:border-slate-700 focus:ring-primary-500/20'
+                  }`}
                 />
+                {quickFieldErrors.rollNumber && (
+                  <p className="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{quickFieldErrors.rollNumber}</span>
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-4">
                 <Select
-                  label="Operario Inicio"
+                  label="Operario Inicio *"
                   leftIcon={<User className="w-4 h-4 text-slate-400" />}
                   options={operatorOptions}
                   value={quickStartOperator}
-                  onChange={setQuickStartOperator}
+                  disabled={isPaused || isBatchGoalReached}
+                  onChange={(val) => {
+                    setQuickStartOperator(val);
+                    if (quickFieldErrors.startOperator) {
+                      setQuickFieldErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.startOperator;
+                        return copy;
+                      });
+                    }
+                  }}
                   placeholder="Seleccionar operario..."
                 />
+                {quickFieldErrors.startOperator && (
+                  <p className="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{quickFieldErrors.startOperator}</span>
+                  </p>
+                )}
               </div>
 
-              <div className="md:col-span-3">
+              <div className="md:col-span-2">
                 <DatePicker
-                  label="Fecha Inicio"
+                  label="Fecha Inicio *"
                   value={quickStartDate}
-                  onChange={setQuickStartDate}
+                  disabled={isPaused || isBatchGoalReached}
+                  onChange={(val) => {
+                    setQuickStartDate(val);
+                    if (quickFieldErrors.startDate) {
+                      setQuickFieldErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.startDate;
+                        return copy;
+                      });
+                    }
+                  }}
                   placeholder="Fecha..."
                 />
+                {quickFieldErrors.startDate && (
+                  <p className="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{quickFieldErrors.startDate}</span>
+                  </p>
+                )}
               </div>
 
-              <div className="md:col-span-3">
+              <div className="md:col-span-2">
                 <TimePicker
-                  label="Hora Inicio"
+                  label="Hora Inicio *"
                   value={quickStartTime}
-                  onChange={setQuickStartTime}
+                  disabled={isPaused || isBatchGoalReached}
+                  onChange={(val) => {
+                    setQuickStartTime(val);
+                    if (quickFieldErrors.startTime) {
+                      setQuickFieldErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.startTime;
+                        return copy;
+                      });
+                    }
+                  }}
                   placeholder="HH:MM"
                   align="right"
                 />
-              </div>
-            </div>
-
-            {/* Fila 2: Término, Peso, Observaciones y Botón */}
-            <div className="relative z-20 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-end pt-1">
-              <div className="md:col-span-4">
-                <Select
-                  label="Operario Término"
-                  leftIcon={<User className="w-4 h-4 text-slate-400" />}
-                  options={operatorOptions}
-                  value={quickEndOperator}
-                  onChange={setQuickEndOperator}
-                  placeholder="Seleccionar operario..."
-                />
+                {quickFieldErrors.startTime && (
+                  <p className="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>{quickFieldErrors.startTime}</span>
+                  </p>
+                )}
               </div>
 
-              <div className="md:col-span-2">
-                <DatePicker
-                  label="Fecha Término"
-                  value={quickEndDate}
-                  onChange={setQuickEndDate}
-                  placeholder="Fecha..."
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <TimePicker
-                  label="Hora Término"
-                  value={quickEndTime}
-                  onChange={setQuickEndTime}
-                  placeholder="HH:MM"
-                />
-              </div>
-
-              <div className="md:col-span-1">
-                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                  Peso (Kg)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={quickWeight}
-                  onChange={(e) => setQuickWeight(e.target.value)}
-                  placeholder="21.65"
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 shadow-xs"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                  Observaciones
-                </label>
-                <input
-                  type="text"
-                  value={quickObservations}
-                  onChange={(e) => setQuickObservations(e.target.value)}
-                  placeholder="Incidencias / Calidad..."
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 shadow-xs"
-                />
-              </div>
-
-              <div className="md:col-span-1">
-                <Button type="submit" variant="secondary" size="md" isLoading={isQuickAdding} className="w-full">
-                  {!isQuickAdding && <Plus className="w-3.5 h-3.5 stroke-[3]" />}
-                  <span>{isQuickAdding ? 'Guardando...' : 'Añadir'}</span>
+              <div className="md:col-span-2 pt-6">
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  size="md"
+                  isLoading={isQuickAdding}
+                  disabled={isPaused || isQuickAdding || isBatchGoalReached}
+                  className="w-full"
+                  title={isBatchGoalReached ? `Meta de kilaje del lote completada (${targetBatchKg?.toFixed(2)} Kg)` : undefined}
+                >
+                  {!isQuickAdding && <Play className="w-3.5 h-3.5 fill-current" />}
+                  <span>{isBatchGoalReached ? 'Meta 100% Alcanzada' : isQuickAdding ? 'Iniciando...' : 'Iniciar Rollo'}</span>
                 </Button>
               </div>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Banner de Entrega Masiva cuando los rollos están listos para recojo */}
+      {canBulkDeliver && canEdit && (
+        <div className="relative z-10 p-4 rounded-3xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+              <PackageCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wider">
+                {isAllReadyForPickup
+                  ? '¡Todos los rollos están listos para recojo!'
+                  : `Rollos listos para entrega (${readyRollsCount})`}
+              </h4>
+              <p className="text-xs text-emerald-700/90 dark:text-emerald-300/80 mt-0.5">
+                El proveedor puede retirar los rollos listos. Haz clic en "Entrega Masiva" para pasarlos todos a estado Entregado.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={isPaused || isBulkDelivering}
+            onClick={() => setIsConfirmBulkDeliverOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer flex items-center justify-center gap-2 shrink-0 hover:scale-105 active:scale-95"
+          >
+            <PackageCheck className="w-4 h-4" />
+            <span>Entrega Masiva ({readyRollsCount} rollos)</span>
+          </button>
         </div>
       )}
 
@@ -1412,14 +1617,21 @@ export const ProductionDetailPage: React.FC = () => {
           className="relative z-10"
           maxBodyHeight="880px"
           footer={
-            <div className="bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs font-bold text-slate-700 dark:text-slate-200">
+            <div className="bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
               <span className="uppercase tracking-wider">Total Acumulado ({totalRolls} rollos):</span>
-              <span className="font-mono text-primary-600 dark:text-primary-400 text-sm">
-                {totalWeight.toFixed(2)} Kg
-                <span className="ml-3 font-sans font-medium text-slate-500 text-[11px]">
-                  Promedio por rollo: {avgWeight.toFixed(2)} Kg
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-mono text-primary-600 dark:text-primary-400 text-sm">
+                  {totalWeight.toFixed(2)} Kg
+                  <span className="ml-3 font-sans font-medium text-slate-500 text-[11px]">
+                    Promedio por rollo: {avgWeight.toFixed(2)} Kg
+                  </span>
                 </span>
-              </span>
+                {targetBatchKg !== null && (
+                  <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60">
+                    Meta: {targetBatchKg.toFixed(2)} Kg ({batchProgressPercent.toFixed(1)}%) • Faltan: {remainingBatchKg?.toFixed(2)} Kg
+                  </span>
+                )}
+              </div>
             </div>
           }
         >
@@ -1510,12 +1722,10 @@ export const ProductionDetailPage: React.FC = () => {
 
                   {/* Peso */}
                   <Td align="right" className="font-mono font-bold text-slate-900 dark:text-white">
-                    {roll.weight !== null && roll.weight !== undefined ? (
-                      <span className="text-primary-600 dark:text-primary-400 text-xs">
-                        {roll.weight.toFixed(2)}
-                      </span>
+                    {roll.weight !== null && roll.weight !== undefined && Number(roll.weight) > 0 ? (
+                      <span>{Number(roll.weight).toFixed(2)} Kg</span>
                     ) : (
-                      <span className="text-slate-400 italic text-[11px]">-</span>
+                      <span className="text-slate-400 font-normal italic">-</span>
                     )}
                   </Td>
 
@@ -1539,31 +1749,67 @@ export const ProductionDetailPage: React.FC = () => {
                   {/* Acciones */}
                   <Td align="right" className="print:hidden">
                     <div className="flex items-center justify-end gap-1">
-                      {canEdit && (
-                        <Tooltip content={isPaused ? 'Lote pausado: no se pueden editar rollos' : 'Editar rollo'}>
-                          <button
-                            disabled={isPaused}
-                            onClick={() => handleOpenEditRoll(roll)}
-                            className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                        </Tooltip>
-                      )}
-                      {canDelete && (canApprove || (roll.status !== 'READY_FOR_PICKUP' && roll.status !== 'DELIVERED')) && (
-                        <Tooltip content={isPaused ? 'Lote pausado: no se pueden eliminar rollos' : 'Eliminar rollo'}>
-                          <button
-                            onClick={() => handleDeleteRoll(roll)}
-                            disabled={isPaused || deletingRollId === roll.id}
-                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            {deletingRollId === roll.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
-                            ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </Tooltip>
+                      {/* Bitácora del Rollo - Siempre visible para consultar su historial */}
+                      <Tooltip content={`Bitácora e historial del rollo #${roll.rollNumber}`}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRollForLog(roll)}
+                          className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer"
+                        >
+                          <History className="w-3.5 h-3.5" />
+                        </button>
+                      </Tooltip>
+
+                      {/* Para Administrador y Asistente Administrativo las acciones siguen apareciendo siempre.
+                          Solo para el tejedor (!isAdminOrAssistant) no se verán si el rollo está en 'Listo para recojo' o 'Entregado' (solo verá la bitácora) */}
+                      {(isAdminOrAssistant || (roll.status !== 'READY_FOR_PICKUP' && roll.status !== 'DELIVERED')) && (
+                        <>
+                          {canEdit && (
+                            <Tooltip
+                              content={
+                                isPaused
+                                  ? 'Lote pausado'
+                                  : roll.weight && roll.weight > 0
+                                  ? 'Editar peso y término (Balanza)'
+                                  : 'Pesar rollo y registrar término'
+                              }
+                            >
+                              <button
+                                disabled={isPaused}
+                                onClick={() => setFinishingRoll(roll)}
+                                className="p-2 rounded-xl text-emerald-600 hover:text-white hover:bg-emerald-600 dark:text-emerald-400 dark:hover:text-white dark:hover:bg-emerald-600 transition-colors cursor-pointer disabled:opacity-40"
+                              >
+                                <Scale className="w-3.5 h-3.5" />
+                              </button>
+                            </Tooltip>
+                          )}
+                          {canEdit && (
+                            <Tooltip content={isPaused ? 'Lote pausado' : 'Editar datos de inicio (N°, tejedor, hora)'}>
+                              <button
+                                disabled={isPaused}
+                                onClick={() => handleOpenEditRoll(roll)}
+                                className="p-2 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            </Tooltip>
+                          )}
+                          {canDelete && (
+                            <Tooltip content={isPaused ? 'Lote pausado: no se pueden eliminar rollos' : 'Eliminar rollo'}>
+                              <button
+                                onClick={() => setRollToDelete(roll)}
+                                disabled={isPaused || deletingRollId === roll.id}
+                                className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {deletingRollId === roll.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </Tooltip>
+                          )}
+                        </>
                       )}
                     </div>
                   </Td>
@@ -1602,11 +1848,86 @@ export const ProductionDetailPage: React.FC = () => {
         isLoading={isUpdatingBatchStatus}
       />
 
+      <ConfirmModal
+        isOpen={!!rollToDelete}
+        onClose={() => setRollToDelete(null)}
+        onConfirm={() => {
+          if (rollToDelete) return handleDeleteRoll(rollToDelete);
+        }}
+        variant="danger"
+        icon={<Trash2 className="w-7 h-7" />}
+        title="¿Eliminar rollo?"
+        description={
+          <>
+            Estás por eliminar el rollo N°{' '}
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {rollToDelete?.rollNumber}
+            </span>
+            . Esta acción no se puede deshacer.
+          </>
+        }
+        confirmLabel="Eliminar"
+        isLoading={!!deletingRollId}
+      />
+
+      <FinishRollModal
+        isOpen={Boolean(finishingRoll)}
+        onClose={() => setFinishingRoll(null)}
+        roll={finishingRoll}
+        onSave={handleSaveRoll}
+        batchTotalFabricKg={batch.totalFabricKg}
+        existingRolls={rolls}
+      />
+
       <BatchStatusLogsModal
         isOpen={isLogModalOpen}
         batchNumber={batch.batchNumber}
-        logs={batch.statusLogs}
+        logs={getBatchLevelLogs(batch.statusLogs)}
         onClose={() => setIsLogModalOpen(false)}
+      />
+
+      <WhatsAppLogsModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        batchId={batch.id}
+        batchNumber={batch.batchNumber}
+        supplierName={batch.supplier?.name || batch.supplierName || ''}
+        supplierPhone={batch.supplier?.phone || ''}
+        onRefreshBatch={loadBatch}
+      />
+
+      <RollStatusLogsModal
+        isOpen={Boolean(selectedRollForLog)}
+        onClose={() => setSelectedRollForLog(null)}
+        roll={selectedRollForLog}
+        batchNumber={batch.batchNumber}
+        logs={batch.statusLogs}
+      />
+
+      <ConfirmModal
+        isOpen={isConfirmBulkDeliverOpen}
+        onClose={() => setIsConfirmBulkDeliverOpen(false)}
+        onConfirm={handleConfirmBulkDeliver}
+        variant="primary"
+        icon={<PackageCheck className="w-7 h-7 text-emerald-600" />}
+        title="¿Confirmar Entrega Masiva?"
+        description={
+          <div className="space-y-2 text-xs">
+            <p>
+              ¿Estás seguro de que deseas cambiar a estado <strong>"Entregado"</strong> todos los{' '}
+              <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                {readyRollsCount} rollo(s)
+              </strong>{' '}
+              listos para recojo del lote <strong>{batch.batchNumber}</strong>?
+            </p>
+            <p className="text-slate-400">
+              Esta acción registrará que el proveedor ha retirado los rollos de planta. Si todos los rollos del lote quedan entregados, el lote pasará automáticamente a estado Terminado.
+            </p>
+          </div>
+        }
+        confirmLabel={isBulkDelivering ? 'Entregando...' : 'Sí, Entregar Todos'}
+        cancelLabel="Cancelar"
+        isLoading={isBulkDelivering}
       />
     </div>
   );

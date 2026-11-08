@@ -60,10 +60,10 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
   return (
     <div className="space-y-6">
       {/* 1. Buscador rápido y Atajo de Seguimiento */}
-      <Card variant="glass" padding="md" className="bg-primary-500/[0.07]">
+      <Card variant="solid" padding="md" className="rounded-xl shadow-none">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary-500" />
               <span>Coordinación Operativa y Mesa de Despacho</span>
             </h3>
@@ -87,7 +87,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
             </div>
             <button
               type="submit"
-              className="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold hover:bg-primary-600 dark:hover:bg-primary-500 dark:hover:text-white transition-colors cursor-pointer shrink-0"
+              className="px-3.5 py-2 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold hover:bg-primary-600 dark:hover:bg-primary-500 dark:hover:text-white transition-colors cursor-pointer shrink-0"
             >
               Buscar
             </button>
@@ -165,10 +165,10 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Columna Izquierda: Mesa de Aprobación Inmediata (3 columnas) */}
         <div className="lg:col-span-3 space-y-6">
-          <Card variant="glass" padding="lg">
+          <Card variant="solid" padding="md" className="rounded-xl shadow-none">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
-                <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <h3 className="font-semibold text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent-500" />
                   <span>Mesa de Aprobación de Rollos</span>
                 </h3>
@@ -184,7 +184,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                  <Skeleton key={i} className="h-20 w-full rounded-lg" />
                 ))}
               </div>
             ) : pendingApprovals.length === 0 ? (
@@ -203,11 +203,11 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                 {pendingApprovals.map((roll) => (
                   <div
                     key={roll.rollId}
-                    className="p-4 rounded-2xl bg-accent-50/60 dark:bg-accent-950/20 border border-accent-200/80 dark:border-accent-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-accent-400 transition-all"
+                    className="p-4 rounded-lg bg-accent-50/60 dark:bg-accent-950/20 border border-accent-200/80 dark:border-accent-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-accent-400 transition-all"
                   >
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-sm font-black text-accent-800 dark:text-accent-200">
+                        <span className="font-mono text-sm font-semibold text-accent-800 dark:text-accent-200">
                           Rollo #{roll.rollNumber}
                         </span>
                         <NavLink
@@ -219,7 +219,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                           <ExternalLink className="w-3 h-3" />
                         </NavLink>
                         {roll.weight && (
-                          <span className="font-mono text-xs font-black text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded bg-primary-500/10">
+                          <span className="font-mono text-xs font-semibold text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded bg-primary-500/10">
                             {roll.weight} kg
                           </span>
                         )}
@@ -262,10 +262,10 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
           </Card>
 
           {/* Lotes de Producción en Curso */}
-          <Card variant="glass" padding="lg">
+          <Card variant="solid" padding="md" className="rounded-xl shadow-none">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
-                <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <h3 className="font-semibold text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <Factory className="w-5 h-5 text-blue-500" />
                   <span>Avance de Lotes Activos</span>
                 </h3>
@@ -286,18 +286,18 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                 <NavLink
                   key={batch.id}
                   to={`/production/${batch.id}`}
-                  className="block p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 hover:bg-primary-500/5 hover:border-primary-500/20 border border-transparent transition-all group"
+                  className="block p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 hover:bg-primary-500/5 hover:border-primary-500/20 border border-transparent transition-all group"
                 >
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="font-mono text-xs font-black px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300">
                         {batch.batchNumber}
                       </span>
                       <span className="text-xs font-bold text-slate-900 dark:text-white truncate min-w-0 max-w-[10rem] min-[400px]:max-w-[14rem] sm:max-w-sm">
                         {batch.supplierName || 'Cliente General'}
                       </span>
                     </div>
-                    <span className="font-mono text-xs font-black text-primary-600 dark:text-primary-400 shrink-0">
+                    <span className="font-mono text-xs font-semibold text-primary-600 dark:text-primary-400 shrink-0">
                       {batch.progressPercent}%
                     </span>
                   </div>
@@ -327,10 +327,10 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
 
         {/* Columna Derecha: Rollos Listos para Recojo y Proveedores (2 columnas) */}
         <div className="lg:col-span-2 space-y-6">
-          <Card variant="glass" padding="lg">
+          <Card variant="solid" padding="md" className="rounded-xl shadow-none">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
-                <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <h3 className="font-semibold text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <PackageCheck className="w-5 h-5 text-primary-500" />
                   <span>Listos para Recojo</span>
                 </h3>
@@ -346,7 +346,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-14 w-full rounded-2xl" />
+                  <Skeleton key={i} className="h-14 w-full rounded-lg" />
                 ))}
               </div>
             ) : readyForPickupRolls.length === 0 ? (
@@ -364,11 +364,11 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                 {readyForPickupRolls.map((roll) => (
                   <div
                     key={roll.rollId}
-                    className="p-3 rounded-2xl bg-primary-50/50 dark:bg-primary-950/20 border border-primary-500/20 flex items-center justify-between gap-3"
+                    className="p-3 rounded-lg bg-primary-50/50 dark:bg-primary-950/20 border border-primary-500/20 flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs font-black text-primary-800 dark:text-primary-200">
+                        <span className="font-mono text-xs font-semibold text-primary-800 dark:text-primary-200">
                           Rollo #{roll.rollNumber}
                         </span>
                         <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
@@ -381,7 +381,7 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="font-mono text-xs font-black text-primary-600 dark:text-primary-400 block">
+                      <span className="font-mono text-xs font-semibold text-primary-600 dark:text-primary-400 block">
                         {roll.weight ? `${roll.weight} kg` : '-'}
                       </span>
                       <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase">
@@ -395,8 +395,8 @@ export const AssistantDashboardView: React.FC<AssistantDashboardViewProps> = ({
           </Card>
 
           {/* Atajos de Gestión */}
-          <Card variant="glass" padding="lg">
-            <h3 className="font-black text-slate-900 dark:text-white text-sm mb-3">
+          <Card variant="solid" padding="md" className="rounded-xl shadow-none">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-3">
               Atajos Operativos
             </h3>
             <div className="space-y-2">

@@ -24,6 +24,13 @@ import { productionService } from '../../../private-modules/production/services/
 import type { BatchTrackingData, RollStatus } from '../../../private-modules/production/types/production.types';
 import { Logo } from '../../../shared/ui/Logo';
 
+const BATCH_STATUS_LABELS: Record<string, string> = {
+  REQUESTED: 'Solicitud registrada',
+  IN_PROGRESS: 'En proceso',
+  PAUSED: 'Pausado',
+  COMPLETED: 'Terminado',
+};
+
 export const WelcomePortalPage: React.FC = () => {
   const { code: urlCode } = useParams<{ code?: string }>();
   const navigate = useNavigate();
@@ -100,6 +107,27 @@ export const WelcomePortalPage: React.FC = () => {
     }
   }, [urlCode]);
 
+  // Actualización automática del seguimiento (el proveedor no necesita recargar la página)
+  const trackedCode = trackingData?.trackingCode;
+  useEffect(() => {
+    if (!trackedCode) return;
+    const refresh = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const data = await productionService.trackBatch(trackedCode);
+        setTrackingData(data);
+      } catch {
+        // Ignorar fallos transitorios: se conserva la última información mostrada
+      }
+    };
+    const interval = setInterval(refresh, 15000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [trackedCode]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchInput.trim()) return;
@@ -169,7 +197,7 @@ export const WelcomePortalPage: React.FC = () => {
         isDark
           ? 'dark bg-slate-950 text-white'
           : 'bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900'
-      } flex flex-col justify-between selection:bg-primary-500 selection:text-white relative overflow-hidden transition-colors duration-300`}
+      } flex flex-col justify-between selection:bg-primary-500 selection:text-white relative overflow-x-hidden w-full max-w-full transition-colors duration-300`}
     >
       {/* Background Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[550px] bg-primary-500/5 pointer-events-none blur-3xl -z-10" />
@@ -202,7 +230,7 @@ export const WelcomePortalPage: React.FC = () => {
             <button
               type="button"
               onClick={togglePortalTheme}
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+              className="p-2.5 rounded-full border border-slate-200 dark:border-white/15 bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
               title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               aria-label="Cambiar tema de color"
             >
@@ -219,7 +247,7 @@ export const WelcomePortalPage: React.FC = () => {
                 to="/dashboard"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-extrabold text-xs transition-all flex items-center gap-2 shadow-md shadow-primary-600/20"
+                className="px-4 py-2.5 rounded-full bg-primary-600 hover:bg-primary-500 text-white font-extrabold text-xs transition-all flex items-center gap-2 shadow-md shadow-primary-600/20"
               >
                 <span className="hidden sm:inline">Ir al Panel ({sessionUser?.name?.split(' ')[0] || 'Usuario'})</span>
                 <span className="sm:hidden">Panel</span>
@@ -231,7 +259,7 @@ export const WelcomePortalPage: React.FC = () => {
                 aria-label="Acceso Interno"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/15 text-slate-800 dark:text-white font-bold text-xs transition-all border border-slate-200 dark:border-white/15 flex items-center gap-2 shadow-xs"
+                className="px-4 py-2.5 rounded-full bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/15 text-slate-800 dark:text-white font-bold text-xs transition-all border border-slate-200 dark:border-white/15 flex items-center gap-2 shadow-xs"
               >
                 <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                 <span className="hidden min-[420px]:inline">Acceso Interno</span>
@@ -243,10 +271,10 @@ export const WelcomePortalPage: React.FC = () => {
       </header>
 
       {/* 2. Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-10 flex-1">
+      <main className="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-10 flex-1">
         {/* 2.1 Hero y Buscador Directo para Proveedores */}
-        <section className="text-center space-y-4 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-700 dark:text-primary-400 text-xs font-bold backdrop-blur-md shadow-inner">
+        <section className="w-full min-w-0 text-center space-y-4 max-w-2xl mx-auto">
+          <div className="inline-flex max-w-full items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-700 dark:text-primary-400 text-xs font-bold backdrop-blur-md shadow-inner">
             <Sparkles className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
             <span>Portal de Seguimiento de Producción para Proveedores</span>
           </div>
@@ -285,7 +313,7 @@ export const WelcomePortalPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading || !searchInput.trim()}
-                className="m-1.5 sm:ml-0 sm:mr-1.5 px-6 py-3 rounded-xl justify-center bg-primary-600 hover:bg-primary-500 active:scale-95 text-white font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-600/25 shrink-0"
+                className="m-1.5 sm:ml-0 sm:mr-1.5 px-6 py-3 rounded-full justify-center bg-primary-600 hover:bg-primary-500 active:scale-95 text-white font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-600/25 shrink-0"
               >
                 {isLoading ? (
                   <span>Consultando...</span>
@@ -366,7 +394,7 @@ export const WelcomePortalPage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                   <button
                     onClick={handleCopyLink}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
                     title="Copiar enlace directo"
                   >
                     <Share2 className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
@@ -478,7 +506,7 @@ export const WelcomePortalPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  <span>Estado Lote: <strong className="text-slate-900 dark:text-white">{trackingData.status === 'COMPLETED' ? 'Terminado' : 'Solicitud registrada'}</strong></span>
+                  <span>Estado Lote: <strong className="text-slate-900 dark:text-white">{BATCH_STATUS_LABELS[trackingData.status] || trackingData.status}</strong></span>
                 </div>
               </div>
             </div>

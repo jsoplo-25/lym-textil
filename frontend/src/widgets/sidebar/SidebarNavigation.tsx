@@ -359,7 +359,7 @@ export const SidebarNavigation: React.FC = () => {
 
               <button
                 onClick={handleOpenLogoutModal}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-500/20 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-500/20 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Cerrar Sesión</span>

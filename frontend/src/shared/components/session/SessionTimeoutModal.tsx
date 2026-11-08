@@ -215,7 +215,7 @@ export const SessionTimeoutModal: React.FC = () => {
           <button
             onClick={handleLogout}
             type="button"
-            className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-all duration-200 cursor-pointer"
+            className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-all duration-200 cursor-pointer"
           >
             <LogOut className="w-4 h-4 text-slate-400" />
             <span>Cerrar sesión</span>
@@ -225,7 +225,7 @@ export const SessionTimeoutModal: React.FC = () => {
             onClick={handleExtendSession}
             disabled={isExtending}
             type="button"
-            className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-1/2 flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm shadow-lg shadow-primary-600/25 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {isExtending ? (
               <>

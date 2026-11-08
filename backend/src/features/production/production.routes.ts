@@ -2,9 +2,14 @@ import { Router } from 'express';
 import { ProductionController } from './production.controller';
 import { authenticateJwt } from '../../middlewares/auth.middleware';
 import { requirePermission } from '../../middlewares/role.middleware';
+import { broadcastProductionChanges, productionStream } from './production.events';
 
 const router = Router();
 const controller = new ProductionController();
+
+// Tiempo real: avisa a los clientes conectados tras cada cambio exitoso
+router.use(broadcastProductionChanges);
+router.get('/stream', productionStream);
 
 // Ruta PÚBLICA de seguimiento para proveedores (sin autenticación JWT)
 router.get('/track/:code', controller.trackBatch);
@@ -17,6 +22,10 @@ router.get('/:id', authenticateJwt, requirePermission('production:read'), contro
 router.post('/', authenticateJwt, requirePermission('production:create'), controller.createBatch);
 router.put('/:id', authenticateJwt, requirePermission('production:edit'), controller.updateBatch);
 router.delete('/:id', authenticateJwt, requirePermission('production:delete'), controller.deleteBatch);
+router.post('/:id/notify-whatsapp-threshold', authenticateJwt, requirePermission('production:edit'), controller.notifyBatchPickupThreshold);
+router.post('/:id/deliver-all-ready-rolls', authenticateJwt, requirePermission('production:edit'), controller.deliverAllReadyRolls);
+router.get('/:id/whatsapp-logs', authenticateJwt, requirePermission('production:read'), controller.getBatchWhatsAppLogs);
+router.post('/whatsapp/test', authenticateJwt, requirePermission('production:edit'), controller.testWhatsAppMessage);
 
 // Hilos dentro de un lote (Yarns)
 router.post('/:id/yarns', authenticateJwt, requirePermission('production:create'), controller.addYarn);
