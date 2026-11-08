@@ -16,7 +16,6 @@ import {
   Factory,
   Bell,
   CheckCircle2,
-  RefreshCw,
   Clock,
 } from 'lucide-react';
 import type { RootState } from '../../app/store';
@@ -152,7 +151,6 @@ export const AppHeader: React.FC = () => {
   // Notifications State for Approvers (Administrador / Asistente Administrativo)
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [pendingRolls, setPendingRolls] = useState<PendingApprovalRoll[]>([]);
-  const [isLoadingNotifs, setIsLoadingNotifs] = useState(false);
   const [approvingRollId, setApprovingRollId] = useState<string | null>(null);
 
   const notifRef = useRef<HTMLDivElement>(null);
@@ -174,16 +172,26 @@ export const AppHeader: React.FC = () => {
     user?.roleName?.toUpperCase() === 'ASISTENTE ADMINISTRATIVO';
 
   // Cargar notificaciones de rollos pendientes de aprobación
+  const knownPendingIdsRef = useRef<Set<string> | null>(null);
+
   const fetchPendingApprovals = async () => {
     if (!canApprove) return;
     try {
-      setIsLoadingNotifs(true);
-      const data = await productionService.getPendingApprovals();
-      setPendingRolls(data || []);
+      const data = (await productionService.getPendingApprovals()) || [];
+      // Avisar con un toast cuando llega un rollo nuevo por aprobar (no en la primera carga)
+      const known = knownPendingIdsRef.current;
+      if (known) {
+        const fresh = data.filter((r) => !known.has(r.rollId));
+        if (fresh.length === 1) {
+          toast.info(`Nuevo rollo por aprobar: N° ${fresh[0].rollNumber} (Lote ${fresh[0].batchNumber}).`);
+        } else if (fresh.length > 1) {
+          toast.info(`Tienes ${fresh.length} rollos nuevos por aprobar.`);
+        }
+      }
+      knownPendingIdsRef.current = new Set(data.map((r) => r.rollId));
+      setPendingRolls(data);
     } catch (err) {
       console.error('Error al cargar notificaciones de aprobación:', err);
-    } finally {
-      setIsLoadingNotifs(false);
     }
   };
 
@@ -519,15 +527,6 @@ export const AppHeader: React.FC = () => {
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-accent-500/10 text-accent-600 dark:text-accent-400 border border-accent-500/20">
                         {pendingRolls.length} {pendingRolls.length === 1 ? 'pendiente' : 'pendientes'}
                       </span>
-                      <button
-                        type="button"
-                        onClick={fetchPendingApprovals}
-                        disabled={isLoadingNotifs}
-                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                        title="Actualizar notificaciones"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isLoadingNotifs ? 'animate-spin' : ''}`} />
-                      </button>
                     </div>
                   </div>
 

@@ -4,6 +4,21 @@ import { AuthenticatedRequest, ApiResponse } from '../../shared/types';
 import { prisma, ProductionBatch, BatchYarn } from '../../config/prisma';
 import { WhatsAppService } from '../../services/whatsapp.service';
 
+/**
+ * Cambia el estado del lote por una regla automática y lo deja registrado en la bitácora.
+ */
+async function setBatchStatusWithLog(
+  batchId: string,
+  status: string,
+  notes: string,
+  userId?: string | null
+): Promise<void> {
+  await prisma.productionBatch.update({ where: { id: batchId }, data: { status } });
+  await prisma.batchStatusLog
+    .create({ data: { batchId, status, changedByUserId: userId || null, notes } })
+    .catch((err) => console.error('[setBatchStatusWithLog] Error registrando bitácora:', err));
+}
+
 async function generateUniqueTrackingCode(): Promise<string> {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -402,14 +417,16 @@ export class ProductionController {
       }
 
       let parsedTotalFabricKg: number | null = null;
-      if (totalFabricKg !== undefined && totalFabricKg !== null && totalFabricKg !== '') {
-        const num = parseFloat(String(totalFabricKg));
-        if (isNaN(num) || num < 0) {
-          res.status(400).json({ success: false, error: 'El Total de kilos de tela debe ser un número decimal mayor o igual a cero.' });
-          return;
-        }
-        parsedTotalFabricKg = num;
+      if (totalFabricKg === undefined || totalFabricKg === null || totalFabricKg === '') {
+        res.status(400).json({ success: false, error: 'El total de kilos de tela proyectados es obligatorio.' });
+        return;
       }
+      const num = parseFloat(String(totalFabricKg));
+      if (isNaN(num) || num <= 0) {
+        res.status(400).json({ success: false, error: 'El Total de kilos de tela debe ser un número mayor a cero.' });
+        return;
+      }
+      parsedTotalFabricKg = num;
 
       const normalizedBatchNumber = batchNumber.trim().toUpperCase();
 
@@ -491,17 +508,21 @@ export class ProductionController {
         },
       });
 
-      // Si se crea en estado PAUSED o viene statusNote, registrar en log de auditoría
-      if (finalStatus === 'PAUSED' || statusNote) {
-        await prisma.batchStatusLog.create({
-          data: {
-            batchId: newBatch.id,
-            status: finalStatus,
-            changedByUserId: req.user?.id || null,
-            notes: statusNote || (finalStatus === 'PAUSED' ? 'Lote creado en pausa' : null),
-          },
-        });
-      }
+      // Registrar siempre la creación del lote como primera entrada de la bitácora
+      await prisma.batchStatusLog.create({
+        data: {
+          batchId: newBatch.id,
+          status: finalStatus,
+          changedByUserId: req.user?.id || null,
+          notes:
+            statusNote ||
+            (finalStatus === 'PAUSED'
+              ? 'Lote creado en pausa'
+              : finalStatus === 'REQUESTED'
+              ? 'Lote creado: solicitud registrada.'
+              : 'Lote creado.'),
+        },
+      });
 
       res.status(201).json({
         success: true,
@@ -844,6 +865,22 @@ export class ProductionController {
         return;
       }
 
+      // Si el lote tiene meta de kilos y ya se alcanzó el 100%, no permitir crear más rollos
+      if (batch.totalFabricKg && batch.totalFabricKg > 0) {
+        const existingRollsAgg = await prisma.productionRoll.aggregate({
+          where: { batchId },
+          _sum: { weight: true },
+        });
+        const currentAccumulated = existingRollsAgg._sum.weight || 0;
+        if (currentAccumulated >= batch.totalFabricKg - 0.001) {
+          res.status(400).json({
+            success: false,
+            error: `El lote ya alcanzó el 100% de la meta de kilaje registrada (${batch.totalFabricKg.toFixed(2)} Kg). No se pueden agregar más rollos.`,
+          });
+          return;
+        }
+      }
+
       // Validar fecha y hora de inicio obligatorios
       if (!startDate || !String(startDate).trim()) {
         res.status(400).json({ success: false, error: 'La fecha de inicio del rollo es obligatoria (YYYY-MM-DD).' });
@@ -868,6 +905,25 @@ export class ProductionController {
           res.status(400).json({ success: false, error: 'El peso en kg debe ser un número decimal mayor o igual a cero.' });
           return;
         }
+
+        // Restricción: No superar el kilaje total del lote registrado
+        if (batch.totalFabricKg && batch.totalFabricKg > 0 && num > 0) {
+          const existingRollsAgg = await prisma.productionRoll.aggregate({
+            where: { batchId },
+            _sum: { weight: true },
+          });
+          const currentAccumulated = existingRollsAgg._sum.weight || 0;
+          const maxAllowed = Math.max(0, batch.totalFabricKg - currentAccumulated);
+
+          if (num > maxAllowed + 0.001) {
+            res.status(400).json({
+              success: false,
+              error: `El peso ingresado (${num.toFixed(2)} Kg) supera la meta total del lote (${batch.totalFabricKg.toFixed(2)} Kg). Actualmente solo se acepta hasta ${maxAllowed.toFixed(2)} Kg para alcanzar el 100% (faltan ${maxAllowed.toFixed(2)} Kg).`,
+            });
+            return;
+          }
+        }
+
         parsedWeight = num;
       }
 
@@ -891,10 +947,12 @@ export class ProductionController {
 
       // Si el lote estaba en REQUESTED o COMPLETED, al añadir un rollo pasa automáticamente a IN_PROGRESS
       if (batch.status === 'REQUESTED' || batch.status === 'COMPLETED') {
-        await prisma.productionBatch.update({
-          where: { id: batchId },
-          data: { status: 'IN_PROGRESS' },
-        });
+        await setBatchStatusWithLog(
+          batchId,
+          'IN_PROGRESS',
+          `Cambio automático: se registró el rollo #${newRoll.rollNumber}.`,
+          req.user?.id
+        );
       }
 
       res.status(201).json({
@@ -1039,6 +1097,33 @@ export class ProductionController {
             res.status(400).json({ success: false, error: 'El peso en kg debe ser un número decimal mayor o igual a cero.' });
             return;
           }
+
+          // Restricción: No superar el kilaje total del lote registrado
+          const batch = await prisma.productionBatch.findUnique({
+            where: { id: existingRoll.batchId },
+            select: { totalFabricKg: true },
+          });
+
+          if (batch?.totalFabricKg && batch.totalFabricKg > 0 && parsed > 0) {
+            const otherRollsAgg = await prisma.productionRoll.aggregate({
+              where: {
+                batchId: existingRoll.batchId,
+                id: { not: rollId },
+              },
+              _sum: { weight: true },
+            });
+            const otherAccumulated = otherRollsAgg._sum.weight || 0;
+            const maxAllowed = Math.max(0, batch.totalFabricKg - otherAccumulated);
+
+            if (parsed > maxAllowed + 0.001) {
+              res.status(400).json({
+                success: false,
+                error: `El peso ingresado (${parsed.toFixed(2)} Kg) supera la meta total del lote (${batch.totalFabricKg.toFixed(2)} Kg). Actualmente solo se acepta hasta ${maxAllowed.toFixed(2)} Kg para alcanzar el 100% (faltan ${maxAllowed.toFixed(2)} Kg).`,
+              });
+              return;
+            }
+          }
+
           dataToUpdate.weight = parsed;
         }
       }
@@ -1120,15 +1205,45 @@ export class ProductionController {
           });
           return;
         }
-      } else {
-        // 2. Validaciones para Asistente Administrativo / Administrador:
-        // El estado READY_FOR_PICKUP no se asigna manualmente por dropdown si aún no ha sido aprobado;
-        // debe pasar por la acción de aprobación explícita.
-        if (status === 'READY_FOR_PICKUP' && existingRoll.status !== 'READY_FOR_PICKUP') {
+      }
+
+      // Regla de negocio: Para cambiar de estado a "Listo para recojo" (READY_FOR_PICKUP)
+      // debe completar obligatoriamente todos los datos de inicio y fin (peso mayor a 0 kg).
+      // Solo el campo de observaciones es opcional.
+      if (status === 'READY_FOR_PICKUP') {
+        if (!hasApprovePerm) {
+          res.status(403).json({
+            success: false,
+            error: 'Solo el Asistente o Administrador tienen permiso para cambiar el rollo a "Listo para recojo".',
+          });
+          return;
+        }
+
+        const effRollNum = (dataToUpdate.rollNumber ?? existingRoll.rollNumber)?.trim();
+        const effStartOp = (dataToUpdate.startOperator ?? existingRoll.startOperator)?.trim();
+        const effStartDate = dataToUpdate.startDate ?? existingRoll.startDate;
+        const effStartTime = (dataToUpdate.startTime ?? existingRoll.startTime)?.trim();
+        const effEndOp = (dataToUpdate.endOperator ?? existingRoll.endOperator)?.trim();
+        const effEndDate = dataToUpdate.endDate ?? existingRoll.endDate;
+        const effEndTime = (dataToUpdate.endTime ?? existingRoll.endTime)?.trim();
+        const effWeight = dataToUpdate.weight !== undefined ? dataToUpdate.weight : existingRoll.weight;
+
+        const missingFields: string[] = [];
+        if (!effRollNum) missingFields.push('N° de Rollo');
+        if (!effStartOp) missingFields.push('Operario Inicio');
+        if (!effStartDate) missingFields.push('Fecha Inicio');
+        if (!effStartTime) missingFields.push('Hora Inicio');
+        if (!effEndOp) missingFields.push('Operario Término');
+        if (!effEndDate) missingFields.push('Fecha Término');
+        if (!effEndTime) missingFields.push('Hora Término');
+        if (effWeight === null || effWeight === undefined || isNaN(Number(effWeight)) || Number(effWeight) <= 0) {
+          missingFields.push('Peso de Balanza (Kg)');
+        }
+
+        if (missingFields.length > 0) {
           res.status(400).json({
             success: false,
-            error:
-              'Para pasar el rollo a "Listo para recojo", utiliza el botón oficial de "Aprobar" en la sábana o notificaciones.',
+            error: `Para cambiar de estado a "Listo para recojo" debe completar todos los campos obligatorios de inicio y término: ${missingFields.join(', ')}.`,
           });
           return;
         }
@@ -1149,6 +1264,25 @@ export class ProductionController {
 
       // Verificación y actualización automática del estado del lote:
       if (status !== undefined && status !== existingRoll.status) {
+        const statusMap: Record<string, string> = {
+          REGISTERED: 'Registrado',
+          IN_PREPARATION: 'En Preparación / Tejido',
+          READY_FOR_APPROVAL: 'Por Aprobar (Visto Bueno)',
+          READY_FOR_PICKUP: 'Listo para Recojo',
+          DELIVERED: 'Entregado',
+        };
+        const statusLabel = statusMap[status] || status;
+        await prisma.batchStatusLog
+          .create({
+            data: {
+              batchId: existingRoll.batchId,
+              status: status,
+              changedByUserId: req.user?.id,
+              notes: `Rollo #${existingRoll.rollNumber}: Estado actualizado a "${statusLabel}".`,
+            },
+          })
+          .catch((err) => console.error('[updateRoll] Error registrando bitácora del rollo:', err));
+
         const batchId = existingRoll.batchId;
         const totalRolls = await prisma.productionRoll.count({
           where: { batchId },
@@ -1160,12 +1294,21 @@ export class ProductionController {
           },
         });
 
+        const batchCurrent = await prisma.productionBatch.findUnique({
+          where: { id: batchId },
+          select: { status: true },
+        });
+
         // Si todos los rollos están entregados (y hay al menos 1 rollo), pasar lote automáticamente a COMPLETED
         if (totalRolls > 0 && pendingRolls === 0) {
-          await prisma.productionBatch.update({
-            where: { id: batchId },
-            data: { status: 'COMPLETED' },
-          });
+          if (batchCurrent?.status !== 'COMPLETED') {
+            await setBatchStatusWithLog(
+              batchId,
+              'COMPLETED',
+              'Cambio automático: todos los rollos fueron entregados.',
+              req.user?.id
+            );
+          }
         } else {
           // Si algún rollo no está entregado y el lote estaba en COMPLETED, revertir a IN_PROGRESS
           const currentBatch = await prisma.productionBatch.findUnique({
@@ -1173,10 +1316,12 @@ export class ProductionController {
             select: { status: true },
           });
           if (currentBatch?.status === 'COMPLETED') {
-            await prisma.productionBatch.update({
-              where: { id: batchId },
-              data: { status: 'IN_PROGRESS' },
-            });
+            await setBatchStatusWithLog(
+              batchId,
+              'IN_PROGRESS',
+              'Cambio automático: hay rollos pendientes de entrega.',
+              req.user?.id
+            );
           }
         }
 
@@ -1187,10 +1332,12 @@ export class ProductionController {
             select: { status: true },
           });
           if (currentBatch?.status === 'REQUESTED') {
-            await prisma.productionBatch.update({
-              where: { id: batchId },
-              data: { status: 'IN_PROGRESS' },
-            });
+            await setBatchStatusWithLog(
+              batchId,
+              'IN_PROGRESS',
+              'Cambio automático: un rollo pasó a preparación.',
+              req.user?.id
+            );
           }
         }
       }
@@ -1249,12 +1396,45 @@ export class ProductionController {
         return;
       }
 
+      // Validar que todos los campos obligatorios de inicio y término estén completos (solo observaciones es opcional)
+      const missingFields: string[] = [];
+      if (!existingRoll.rollNumber?.trim()) missingFields.push('N° de Rollo');
+      if (!existingRoll.startOperator?.trim()) missingFields.push('Operario Inicio');
+      if (!existingRoll.startDate) missingFields.push('Fecha Inicio');
+      if (!existingRoll.startTime?.trim()) missingFields.push('Hora Inicio');
+      if (!existingRoll.endOperator?.trim()) missingFields.push('Operario Término');
+      if (!existingRoll.endDate) missingFields.push('Fecha Término');
+      if (!existingRoll.endTime?.trim()) missingFields.push('Hora Término');
+      if (existingRoll.weight === null || existingRoll.weight === undefined || isNaN(Number(existingRoll.weight)) || Number(existingRoll.weight) <= 0) {
+        missingFields.push('Peso de Balanza (Kg)');
+      }
+
+      if (missingFields.length > 0) {
+        res.status(400).json({
+          success: false,
+          error: `Para cambiar de estado a "Listo para recojo" debe completar todos los campos obligatorios de inicio y término: ${missingFields.join(', ')}.`,
+        });
+        return;
+      }
+
       const updatedRoll = await prisma.productionRoll.update({
         where: { id: rollId },
         data: {
           status: 'READY_FOR_PICKUP',
         },
       });
+
+      // Registrar en bitácora de estados
+      await prisma.batchStatusLog
+        .create({
+          data: {
+            batchId: existingRoll.batchId,
+            status: 'READY_FOR_PICKUP',
+            changedByUserId: req.user?.id,
+            notes: `Rollo #${existingRoll.rollNumber}: Aprobado con visto bueno y cambiado a "Listo para recojo".`,
+          },
+        })
+        .catch((err) => console.error('[approveRoll] Error registrando bitácora:', err));
 
       // Evaluar si se alcanzaron los hitos del 25%, 50%, 75% o 100% de tela para recojo y notificar por WhatsApp
       WhatsAppService.checkAndNotifyPickupThreshold(existingRoll.batchId).catch((err) => {
@@ -1375,10 +1555,12 @@ export class ProductionController {
         where: { batchId: existingRoll.batchId },
       });
       if (remainingTotal === 0) {
-        await prisma.productionBatch.update({
-          where: { id: existingRoll.batchId },
-          data: { status: 'REQUESTED' },
-        });
+        await setBatchStatusWithLog(
+          existingRoll.batchId,
+          'REQUESTED',
+          'Cambio automático: el lote quedó sin rollos.',
+          req.user?.id
+        );
       } else {
         const remainingPending = await prisma.productionRoll.count({
           where: {
@@ -1387,10 +1569,12 @@ export class ProductionController {
           },
         });
         if (remainingPending === 0) {
-          await prisma.productionBatch.update({
-            where: { id: existingRoll.batchId },
-            data: { status: 'COMPLETED' },
-          });
+          await setBatchStatusWithLog(
+            existingRoll.batchId,
+            'COMPLETED',
+            'Cambio automático: todos los rollos restantes fueron entregados.',
+            req.user?.id
+          );
         }
       }
 
@@ -1636,6 +1820,19 @@ export class ProductionController {
       const progressPercent =
         totalRolls > 0 ? Math.round(((readyPickupCount + deliveredCount) / totalRolls) * 100) : 0;
 
+      // Estado efectivo del lote (misma regla que el detalle interno), sin escribir en BD
+      // porque esta ruta es pública y de solo lectura.
+      let effectiveStatus: string;
+      if (batch.status === 'PAUSED') {
+        effectiveStatus = 'PAUSED';
+      } else if (totalRolls === 0) {
+        effectiveStatus = 'REQUESTED';
+      } else if (deliveredCount === totalRolls) {
+        effectiveStatus = 'COMPLETED';
+      } else {
+        effectiveStatus = 'IN_PROGRESS';
+      }
+
       res.status(200).json({
         success: true,
         data: {
@@ -1643,7 +1840,7 @@ export class ProductionController {
           trackingCode,
           batchNumber: batch.batchNumber,
           supplierName: batch.supplier?.name || batch.supplierName || 'Proveedor',
-          status: batch.status,
+          status: effectiveStatus,
           startDate: batch.startDate,
           endDate: batch.endDate,
           notes: batch.notes,
@@ -1718,12 +1915,15 @@ export class ProductionController {
 
       let result;
       if (useTemplate) {
-        result = await WhatsAppService.sendTemplateMessage(String(toPhone), 'hello_world', 'en_US');
+        result = await WhatsAppService.sendTemplateMessage(String(toPhone), '3p_direct_integration_test_template', 'en_US');
+        if (!result.success) {
+          result = await WhatsAppService.sendTemplateMessage(String(toPhone), 'hello_world', 'en_US');
+        }
       } else {
         const testMsg = message || '🧪 ¡Mensaje de prueba exitoso desde Textiles L&M Sistema de Producción!';
         result = await WhatsAppService.sendTextMessage(String(toPhone), testMsg);
 
-        // Si falló por ventana de 24h (template requerido), intentamos automáticamente con la plantilla hello_world
+        // Si falló por ventana de 24h (template requerido), intentamos automáticamente con la plantilla aprobada
         if (
           !result.success &&
           result.error &&
@@ -1731,7 +1931,10 @@ export class ProductionController {
             result.error.toLowerCase().includes('template') ||
             result.error.toLowerCase().includes('24 hour'))
         ) {
-          result = await WhatsAppService.sendTemplateMessage(String(toPhone), 'hello_world', 'en_US');
+          result = await WhatsAppService.sendTemplateMessage(String(toPhone), '3p_direct_integration_test_template', 'en_US');
+          if (!result.success) {
+            result = await WhatsAppService.sendTemplateMessage(String(toPhone), 'hello_world', 'en_US');
+          }
         }
       }
 
@@ -1748,6 +1951,97 @@ export class ProductionController {
       });
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : 'Error al enviar mensaje de prueba.';
+      res.status(500).json({ success: false, error: errorMsg });
+    }
+  }
+
+  /**
+   * Entrega masiva de todos los rollos listos para recojo en un lote.
+   * Si todos los rollos del lote quedan en estado DELIVERED, el lote pasa automáticamente a COMPLETED.
+   */
+  async deliverAllReadyRolls(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const batchId = String(req.params.id);
+
+      const batch = await prisma.productionBatch.findUnique({
+        where: { id: batchId },
+        include: {
+          rolls: true,
+        },
+      });
+
+      if (!batch) {
+        res.status(404).json({ success: false, error: 'Lote no encontrado.' });
+        return;
+      }
+
+      if (batch.status === 'PAUSED') {
+        res.status(400).json({
+          success: false,
+          error: 'El lote se encuentra PAUSADO. No se pueden realizar entregas mientras la producción esté detenida.',
+        });
+        return;
+      }
+
+      const readyRolls = batch.rolls.filter((r) => r.status === 'READY_FOR_PICKUP');
+
+      if (readyRolls.length === 0) {
+        res.status(400).json({
+          success: false,
+          error: 'No hay rollos en estado "Listo para recojo" disponibles para entregar en este lote.',
+        });
+        return;
+      }
+
+      // Marcar masivamente como DELIVERED
+      const updateResult = await prisma.productionRoll.updateMany({
+        where: {
+          batchId,
+          status: 'READY_FOR_PICKUP',
+        },
+        data: {
+          status: 'DELIVERED',
+        },
+      });
+
+      // Evaluar si todos los rollos del lote quedaron entregados
+      const totalRolls = await prisma.productionRoll.count({ where: { batchId } });
+      const pendingRolls = await prisma.productionRoll.count({
+        where: {
+          batchId,
+          status: { not: 'DELIVERED' },
+        },
+      });
+
+      let batchUpdatedToCompleted = false;
+      if (totalRolls > 0 && pendingRolls === 0) {
+        await prisma.productionBatch.update({
+          where: { id: batchId },
+          data: { status: 'COMPLETED' },
+        });
+        batchUpdatedToCompleted = true;
+      }
+
+      // Registrar en bitácora de estados la entrega masiva
+      await prisma.batchStatusLog
+        .create({
+          data: {
+            batchId,
+            status: batchUpdatedToCompleted ? 'COMPLETED' : batch.status,
+            changedByUserId: req.user?.id,
+            notes: `Entrega masiva: ${updateResult.count} rollo(s) listos para recojo cambiados a "Entregado" (${readyRolls.map((r) => `#${r.rollNumber}`).join(', ')}).`,
+          },
+        })
+        .catch((err) => console.error('[deliverAllReadyRolls] Error registrando bitácora:', err));
+
+      res.json({
+        success: true,
+        message: `Se entregaron con éxito ${updateResult.count} rollo(s) del lote.`,
+        deliveredCount: updateResult.count,
+        batchCompleted: batchUpdatedToCompleted,
+      });
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error al entregar rollos masivamente.';
       res.status(500).json({ success: false, error: errorMsg });
     }
   }

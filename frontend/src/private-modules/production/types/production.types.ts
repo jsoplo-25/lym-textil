@@ -130,6 +130,8 @@ export interface ProductionBatch {
     id: string;
     document: string;
     name: string;
+    phone?: string | null;
+    email?: string | null;
   } | null;
   startDate: string;
   endDate?: string | null;

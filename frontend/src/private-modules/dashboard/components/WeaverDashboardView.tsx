@@ -100,10 +100,10 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Columna Izquierda: Lotes Activos para Tejer y Últimos Rollos (3 columnas) */}
         <div className="lg:col-span-3 space-y-6">
-          <Card variant="glass" padding="lg">
+          <Card variant="solid" padding="md" className="rounded-xl shadow-none">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
-                <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <h3 className="font-semibold text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <Factory className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   <span>Mis Lotes en Producción</span>
                 </h3>
@@ -122,7 +122,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                  <Skeleton key={i} className="h-20 w-full rounded-lg" />
                 ))}
               </div>
             ) : activeBatches.length === 0 ? (
@@ -140,11 +140,11 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
                 {activeBatches.map((batch) => (
                   <div
                     key={batch.id}
-                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 hover:border-primary-500/40 transition-all flex flex-col justify-between space-y-3"
+                    className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 hover:border-primary-500/40 transition-all flex flex-col justify-between space-y-3"
                   >
                     <div>
                       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-1.5">
-                        <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-primary-500/10 text-primary-700 dark:text-primary-300">
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-primary-500/10 text-primary-700 dark:text-primary-300">
                           {batch.batchNumber}
                         </span>
                         {batch.machineName && (
@@ -172,7 +172,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
 
                       <NavLink
                         to={`/production/${batch.id}`}
-                        className="w-full py-2 px-3 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        className="w-full py-2 px-3 rounded-full bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <span>Abrir Sábana</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -185,10 +185,10 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
           </Card>
 
           {/* Últimos Rollos Registrados en Vivo */}
-          <Card variant="glass" padding="lg">
+          <Card variant="solid" padding="md" className="rounded-xl shadow-none">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <div>
-                <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <h3 className="font-semibold text-slate-900 dark:text-white text-base flex items-center gap-2">
                   <Layers className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   <span>Últimos Rollos Registrados</span>
                 </h3>
@@ -217,7 +217,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
+                        <span className="font-mono text-xs font-semibold text-slate-900 dark:text-white">
                           Rollo #{roll.rollNumber}
                         </span>
                         <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
@@ -242,8 +242,8 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
         {/* Columna Derecha: Guía de Flujo y Máquinas (2 columnas) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Guía Visual del Ciclo de Vida del Rollo */}
-          <Card variant="glass" padding="lg">
-            <h3 className="font-black text-slate-900 dark:text-white text-sm mb-1 flex items-center gap-2">
+          <Card variant="solid" padding="md" className="rounded-xl shadow-none">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-1 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary-500" />
               <span>Flujo de Trabajo del Tejedor</span>
             </h3>
@@ -253,7 +253,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
 
             <div className="space-y-3 relative before:absolute before:inset-0 before:left-3 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
               <div className="flex items-start gap-3 relative">
-                <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-semibold shrink-0 shadow-xs">
                   1
                 </div>
                 <div>
@@ -267,7 +267,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
               </div>
 
               <div className="flex items-start gap-3 relative">
-                <div className="w-6 h-6 rounded-full bg-accent-500 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-accent-500 text-white flex items-center justify-center text-xs font-semibold shrink-0 shadow-xs">
                   2
                 </div>
                 <div>
@@ -282,7 +282,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
               </div>
 
               <div className="flex items-start gap-3 relative">
-                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs font-semibold shrink-0 shadow-xs">
                   3
                 </div>
                 <div>
@@ -296,7 +296,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
               </div>
 
               <div className="flex items-start gap-3 relative">
-                <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs font-semibold shrink-0 shadow-xs">
                   4
                 </div>
                 <div>
@@ -312,9 +312,9 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
           </Card>
 
           {/* Estado de Máquinas */}
-          <Card variant="glass" padding="lg">
+          <Card variant="solid" padding="md" className="rounded-xl shadow-none">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <h3 className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                 <Cog className="w-4 h-4 text-purple-500" />
                 <span>Máquinas de Tejeduría</span>
               </h3>
@@ -325,7 +325,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
 
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className="p-3 rounded-xl bg-primary-500/10 border border-primary-500/20">
-                <span className="text-lg font-black text-primary-600 dark:text-primary-400 font-mono block">
+                <span className="text-lg font-semibold text-primary-600 dark:text-primary-400 font-mono block">
                   {stats?.machines.operational ?? 0}
                 </span>
                 <span className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase">
@@ -333,7 +333,7 @@ export const WeaverDashboardView: React.FC<WeaverDashboardViewProps> = ({
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
-                <span className="text-lg font-black text-accent-600 dark:text-accent-400 font-mono block">
+                <span className="text-lg font-semibold text-accent-600 dark:text-accent-400 font-mono block">
                   {stats?.machines.maintenance ?? 0}
                 </span>
                 <span className="text-[10px] font-bold text-accent-700 dark:text-accent-300 uppercase">

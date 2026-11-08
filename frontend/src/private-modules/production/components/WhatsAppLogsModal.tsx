@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../shared/ui/Modal';
 import { productionService } from '../services/production.service';
 import type { WhatsAppNotificationLogItem } from '../types/production.types';
-import { MessageSquare, RefreshCw, CheckCircle2, AlertTriangle, Clock, Send, PhoneCall } from 'lucide-react';
+import { MessageSquare, CheckCircle2, AlertTriangle, Clock, Send, PhoneCall } from 'lucide-react';
 import { useToast } from '../../../shared/hooks/useToast';
 
 interface WhatsAppLogsModalProps {
@@ -79,30 +79,6 @@ export const WhatsAppLogsModal: React.FC<WhatsAppLogsModalProps> = ({
     }
   };
 
-  const [isSendingTest, setIsSendingTest] = useState(false);
-
-  const handleSendTest = async () => {
-    if (!supplierPhone) {
-      toast.warning('El proveedor no tiene número de teléfono registrado.');
-      return;
-    }
-    try {
-      setIsSendingTest(true);
-      const res = await productionService.testWhatsAppMessage(
-        supplierPhone,
-        `🧪 *Textiles L&M*: Hola ${supplierName || ''}, este es un mensaje de prueba de conexión con WhatsApp API para el lote ${batchNumber}.`
-      );
-      toast.success(res.message || 'Mensaje de prueba procesado.');
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        'Error al enviar mensaje de prueba por WhatsApp.';
-      toast.error(msg);
-    } finally {
-      setIsSendingTest(false);
-    }
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -126,41 +102,21 @@ export const WhatsAppLogsModal: React.FC<WhatsAppLogsModalProps> = ({
                 {supplierName || 'Proveedor'}
               </span>
               <span className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400">
-                {supplierPhone ? `WhatsApp: ${supplierPhone}` : '⚠️ Sin número de WhatsApp registrado'}
+                {supplierPhone ? `WhatsApp: ${supplierPhone}` : '⚠️ Sin número de WhatsApp en la ficha'}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
-            {supplierPhone && (
-              <button
-                type="button"
-                onClick={handleSendTest}
-                disabled={isSendingTest}
-                className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
-                title="Enviar mensaje de prueba directo a este número"
-              >
-                <span>{isSendingTest ? 'Enviando...' : 'Probar Envío'}</span>
-              </button>
-            )}
-
             <button
               type="button"
               onClick={handleManualTrigger}
               disabled={isTriggering}
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+              title="Evalúa si se alcanzaron hitos del 25%, 50%, 75% o 100% pendientes de notificar"
             >
               <Send className={`w-3.5 h-3.5 ${isTriggering ? 'animate-pulse' : ''}`} />
               <span>{isTriggering ? 'Verificando...' : 'Reevaluar Hitos'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={loadLogs}
-              disabled={isLoading}
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors"
-              title="Refrescar historial"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>

@@ -3,7 +3,6 @@ import {
   Truck,
   Plus,
   Search,
-  RefreshCw,
   Edit2,
   Trash2,
   Phone,
@@ -257,17 +256,6 @@ export const SuppliersPage: React.FC = () => {
             placeholder="Filtrar por estado..."
           />
         </div>
-
-        {/* Refresh button */}
-        <Tooltip content="Recargar proveedores">
-          <button
-            onClick={loadSuppliers}
-            aria-label="Recargar proveedores"
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 self-end md:self-auto"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-        </Tooltip>
       </div>
 
       {/* 4. Suppliers Table Card */}

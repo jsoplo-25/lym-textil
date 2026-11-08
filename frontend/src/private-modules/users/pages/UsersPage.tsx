@@ -8,7 +8,6 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
-  RefreshCw,
 } from 'lucide-react';
 import { usersService } from '../services/users.service';
 import type { ManagedUser, CreateUserDTO, UpdateUserDTO } from '../types/users.types';
@@ -242,16 +241,6 @@ export const UsersPage: React.FC = () => {
               options={filterOptions}
             />
           </div>
-
-          <Tooltip content="Recargar usuarios">
-            <button
-              onClick={loadUsers}
-              aria-label="Recargar usuarios"
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </Tooltip>
         </div>
       </div>
 

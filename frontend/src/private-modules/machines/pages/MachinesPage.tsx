@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  RefreshCw,
   MapPin,
   Layers,
   FileText,
@@ -317,15 +316,6 @@ export const MachinesPage: React.FC = () => {
               placeholder="Proceso..."
             />
           </div>
-
-          {/* Refresh */}
-          <button
-            onClick={loadMachines}
-            title="Actualizar lista"
-            className="p-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 self-end sm:self-auto"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
         </div>
       </div>
 

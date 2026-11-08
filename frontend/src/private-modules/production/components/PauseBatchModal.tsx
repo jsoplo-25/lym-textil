@@ -64,7 +64,7 @@ export const PauseBatchModal: React.FC<PauseBatchModalProps> = ({
             type="button"
             disabled={isLoading}
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -109,14 +109,14 @@ export const PauseBatchModal: React.FC<PauseBatchModalProps> = ({
               type="button"
               disabled={isLoading}
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 rounded-full text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isLoading ? (
                 <>

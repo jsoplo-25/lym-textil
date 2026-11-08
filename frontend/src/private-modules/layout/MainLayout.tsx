@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { SidebarNavigation } from '../../widgets/sidebar/SidebarNavigation';
 import { AppHeader } from '../../widgets/header/AppHeader';
 import { AppFooter } from '../../widgets/footer/AppFooter';
+import { useProductionRealtime } from '../../shared/hooks/useProductionRealtime';
 import { SessionTimeoutModal } from '../../shared/components/session/SessionTimeoutModal';
 
 interface MainLayoutProps {
@@ -16,6 +17,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   showHeader = true,
   showFooter = true,
 }) => {
+  useProductionRealtime();
+
   return (
     <div className="min-h-screen bg-[#F6F8FB] dark:bg-[#0F1522] text-slate-800 dark:text-slate-100 relative overflow-hidden transition-colors duration-300">
       {/* Soft Ambient Glows */}

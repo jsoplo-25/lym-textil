@@ -88,6 +88,12 @@ export class WhatsAppService {
       const data = (await response.json()) as any;
 
       if (!response.ok) {
+        if (data?.error?.code === 100 && (cleanedPhone.endsWith('908675224') || String(data?.error?.message).includes('Invalid parameter'))) {
+          return {
+            success: false,
+            error: 'No puedes enviar un WhatsApp al mismo número emisor de la empresa (+51 908 675 224). El proveedor debe tener un número de celular de destino diferente.',
+          };
+        }
         const message = data?.error?.message || 'Error al enviar mensaje por WhatsApp';
         const code = data?.error?.code ? ` (Code ${data.error.code})` : '';
         const subcode = data?.error?.error_subcode ? ` (Subcode ${data.error.error_subcode})` : '';
@@ -221,18 +227,52 @@ export class WhatsAppService {
       const supplierPhone = batch.supplier?.phone || '';
       const supplierName = batch.supplier?.name || batch.supplierName || 'Estimado Proveedor';
 
+      // Asegurar que el lote tenga código de seguimiento único
+      let trackingCode = batch.trackingCode;
+      if (!trackingCode) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let random = '';
+        for (let i = 0; i < 6; i++) {
+          random += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        trackingCode = `TRK-${random}`;
+        try {
+          await prisma.productionBatch.update({
+            where: { id: batch.id },
+            data: { trackingCode },
+          });
+        } catch {
+          // Continuar con trackingCode generado si fallara el update
+        }
+      }
+
+      // URL oficial de seguimiento para proveedores
+      const rawFrontend =
+        env.FRONTEND_URL &&
+        env.FRONTEND_URL !== '*' &&
+        !env.FRONTEND_URL.includes('localhost') &&
+        !env.FRONTEND_URL.includes('vercel.app')
+          ? env.FRONTEND_URL.split(',')[0].trim().replace(/\/+$/, '')
+          : 'https://www.lymtextil.com';
+      const frontendBase = rawFrontend || 'https://www.lymtextil.com';
+      const trackingUrl = `${frontendBase}/tracking/${encodeURIComponent(trackingCode)}`;
+
       // Revisar hitos que se hayan cumplido y que aún no han sido notificados
       for (const milestone of targetMilestones) {
         if (currentPercentage >= milestone && !notifiedList.includes(milestone)) {
-          // Construir mensaje amigable y claro
+          // Construir mensaje amigable y claro con código de seguimiento
           const message = [
             `🏭 *TEXTILES L&M - Notificación de Recojo de Rollos*`,
             ``,
             `Estimado(a) *${supplierName}*, le informamos sobre el avance de producción de su lote:`,
             ``,
             `📦 *Lote:* ${batch.batchNumber}`,
+            `🔍 *Código de Seguimiento:* ${trackingCode}`,
             `🎯 *Avance de producción:* ¡Se ha alcanzado el *${milestone}%*! (${accumulatedKg.toFixed(2)} Kg de ${totalFabricKg.toFixed(2)} Kg)`,
             `🧺 *Rollos disponibles para recojo:* ${readyRollsCount} rollo(s) (${readyKg.toFixed(2)} Kg)`,
+            ``,
+            `🌐 *Ver seguimiento en vivo de sus rollos:*`,
+            `${trackingUrl}`,
             ``,
             `Puede coordinar con planta para el recojo de los rollos disponibles.`,
             `📍 *Textiles L&M*`,
@@ -247,7 +287,20 @@ export class WhatsAppService {
             errorDetails = 'El proveedor no tiene número de teléfono / WhatsApp registrado en su ficha.';
             errors.push(`Hito ${milestone}%: Proveedor sin teléfono registrado.`);
           } else {
-            const sendResult = await this.sendTextMessage(supplierPhone, message);
+            let sendResult = await this.sendTextMessage(supplierPhone, message);
+
+            // Si falla porque han pasado más de 24h desde el último mensaje del cliente, Meta exige plantilla:
+            if (
+              !sendResult.success &&
+              sendResult.error &&
+              (sendResult.error.includes('131047') ||
+                sendResult.error.toLowerCase().includes('template') ||
+                sendResult.error.toLowerCase().includes('24 hour'))
+            ) {
+              console.log('[WhatsAppService] Ventana de 24h cerrada. Reintentando con plantilla aprobada...');
+              sendResult = await this.sendTemplateMessage(supplierPhone, '3p_direct_integration_test_template', 'en_US');
+            }
+
             if (sendResult.success) {
               sendStatus = sendResult.simulated ? 'SIMULATED' : 'SENT';
               responseId = sendResult.messageId;

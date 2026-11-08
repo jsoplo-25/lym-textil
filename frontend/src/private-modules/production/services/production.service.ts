@@ -98,6 +98,11 @@ export const productionService = {
     return res.data;
   },
 
+  async deliverAllReadyRolls(batchId: string): Promise<{ success: boolean; message: string; deliveredCount: number; batchCompleted: boolean }> {
+    const res = await axiosInstance.post(`/production/${batchId}/deliver-all-ready-rolls`);
+    return res.data;
+  },
+
   // WhatsApp Notificaciones por Hitos
   async triggerWhatsAppThresholdCheck(batchId: string): Promise<any> {
     const res = await axiosInstance.post(`/production/${batchId}/notify-whatsapp-threshold`);

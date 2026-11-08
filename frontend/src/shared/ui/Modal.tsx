@@ -167,7 +167,7 @@ export const Modal: React.FC<ModalProps> = ({
             {dismissible && (
               <button
                 onClick={onClose}
-                className="p-2.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                className="p-2.5 sm:p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                 aria-label="Cerrar modal"
               >
                 <X className="w-5 h-5" />
@@ -178,7 +178,7 @@ export const Modal: React.FC<ModalProps> = ({
           dismissible && (
             <button
               onClick={onClose}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer z-10"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2.5 sm:p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer z-10"
               aria-label="Cerrar modal"
             >
               <X className="w-4 h-4" />
