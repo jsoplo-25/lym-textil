@@ -1109,15 +1109,6 @@ export const ProductionDetailPage: React.FC = () => {
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
                   Estado General del Lote
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setIsLogModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
-                  title="Ver bitácora de cambios y observaciones"
-                >
-                  <History className="w-3 h-3 text-primary-600 dark:text-primary-400" />
-                  <span>Bitácora ({getBatchLevelLogs(batch.statusLogs).length})</span>
-                </button>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {totalRolls === 0
@@ -1706,7 +1697,12 @@ export const ProductionDetailPage: React.FC = () => {
                   <Td className="font-bold text-slate-800 dark:text-slate-200">{roll.startOperator || '-'}</Td>
 
                   {/* Fecha Inicio */}
-                  <Td className="font-mono text-slate-700 dark:text-slate-300">{formatLocalDate(roll.startDate)}</Td>
+                  <Td className="text-slate-700 dark:text-slate-300">
+                    <div className="flex items-center gap-1.5 font-mono">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{formatLocalDate(roll.startDate)}</span>
+                    </div>
+                  </Td>
 
                   {/* H. Inicio */}
                   <Td className="font-mono text-slate-600 dark:text-slate-400">{roll.startTime || '-'}</Td>
@@ -1715,7 +1711,16 @@ export const ProductionDetailPage: React.FC = () => {
                   <Td className="font-bold text-slate-800 dark:text-slate-200">{roll.endOperator || '-'}</Td>
 
                   {/* Fecha Término */}
-                  <Td className="font-mono text-slate-700 dark:text-slate-300">{formatLocalDate(roll.endDate)}</Td>
+                  <Td className="text-slate-700 dark:text-slate-300">
+                    {roll.endDate ? (
+                      <div className="flex items-center gap-1.5 font-mono">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{formatLocalDate(roll.endDate)}</span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 font-normal italic">-</span>
+                    )}
+                  </Td>
 
                   {/* H. Término */}
                   <Td className="font-mono text-slate-600 dark:text-slate-400">{roll.endTime || '-'}</Td>

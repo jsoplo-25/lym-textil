@@ -44,6 +44,55 @@ function normalizeYarnTypes(val: unknown): string[] {
   return [];
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RUC_PREFIXES = ['10', '15', '17', '20'];
+
+/** Normaliza un celular peruano: quita separadores y prefijo +51. */
+function normalizePhone(raw: string): string {
+  return raw.replace(/[\s\-().]/g, '').replace(/^\+?51(?=9\d{8}$)/, '');
+}
+
+/** Devuelve un mensaje de error si el documento es inválido; null si es válido. */
+function validateDocument(doc: string): string | null {
+  if (!/^\d+$/.test(doc)) return 'El documento solo puede contener números.';
+  if (doc.length !== 8 && doc.length !== 11) return 'El documento debe tener 8 dígitos (DNI) u 11 dígitos (RUC).';
+  if (doc.length === 11 && !RUC_PREFIXES.includes(doc.slice(0, 2))) return 'El RUC debe empezar con 10, 15, 17 o 20.';
+  return null;
+}
+
+function validateName(name: string): string | null {
+  if (name.length < 3) return 'El nombre del proveedor debe tener al menos 3 caracteres.';
+  if (name.length > 100) return 'El nombre no puede superar los 100 caracteres.';
+  return null;
+}
+
+function validatePhone(phone: string): string | null {
+  if (!/^\+?[\d\s\-().]+$/.test(phone) || !/^9\d{8}$/.test(normalizePhone(phone))) {
+    return 'El teléfono debe ser un celular válido de 9 dígitos que empiece con 9.';
+  }
+  return null;
+}
+
+function validateEmail(email: string): string | null {
+  if (email.length > 100) return 'El correo no puede superar los 100 caracteres.';
+  if (!EMAIL_REGEX.test(email)) return 'El formato del correo electrónico es inválido.';
+  return null;
+}
+
+/** Valida largos de campos de texto libre. */
+function validateFreeText(address?: unknown, yarnTypes?: unknown, notes?: unknown): string | null {
+  if (typeof address === 'string' && address.trim().length > 200) return 'La dirección no puede superar los 200 caracteres.';
+  const yarn = Array.isArray(yarnTypes) ? yarnTypes.join(', ') : typeof yarnTypes === 'string' ? yarnTypes : '';
+  if (yarn.trim().length > 200) return 'Los tipos de hilado no pueden superar los 200 caracteres.';
+  if (typeof notes === 'string' && notes.trim().length > 500) return 'Las notas no pueden superar los 500 caracteres.';
+  return null;
+}
+
+function validateStatus(status: unknown): string | null {
+  if (status !== 'ACTIVE' && status !== 'INACTIVE') return 'El estado del proveedor debe ser ACTIVE o INACTIVE.';
+  return null;
+}
+
 export class SuppliersController {
   /**
    * Obtener lista de proveedores con filtros y estadísticas
@@ -154,6 +203,18 @@ export class SuppliersController {
       const cleanDoc = document.trim().toUpperCase();
       const cleanName = name.trim();
 
+      const createError =
+        validateDocument(cleanDoc) ||
+        validateName(cleanName) ||
+        (phone && String(phone).trim() ? validatePhone(String(phone).trim()) : null) ||
+        (email && String(email).trim() ? validateEmail(String(email).trim().toLowerCase()) : null) ||
+        validateFreeText(address, yarnTypes, notes) ||
+        (status !== undefined ? validateStatus(status) : null);
+      if (createError) {
+        res.status(400).json({ success: false, error: createError });
+        return;
+      }
+
       // Verificar unicidad de documento
       const existing = await prisma.supplier.findUnique({
         where: { document: cleanDoc },
@@ -180,19 +241,11 @@ export class SuppliersController {
         return;
       }
 
-      if (email && typeof email === 'string' && email.trim()) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) {
-          res.status(400).json({ success: false, error: 'El formato del correo electrónico es inválido.' });
-          return;
-        }
-      }
-
       const newSupplier = await prisma.supplier.create({
         data: {
           document: cleanDoc,
           name: name.trim(),
-          phone: phone ? String(phone).trim() : null,
+          phone: phone && String(phone).trim() ? normalizePhone(String(phone).trim()) : null,
           email: email ? String(email).trim().toLowerCase() : null,
           address: address ? String(address).trim() : null,
           yarnTypes: normalizeYarnTypes(yarnTypes),
@@ -239,6 +292,11 @@ export class SuppliersController {
           res.status(400).json({ success: false, error: 'El RUC o documento no puede quedar vacío.' });
           return;
         }
+        const docError = validateDocument(cleanDoc);
+        if (docError) {
+          res.status(400).json({ success: false, error: docError });
+          return;
+        }
 
         if (cleanDoc !== existingSupplier.document) {
           const duplicate = await prisma.supplier.findUnique({
@@ -261,6 +319,11 @@ export class SuppliersController {
           res.status(400).json({ success: false, error: 'La Razón Social o nombre no puede quedar vacía.' });
           return;
         }
+        const nameError = validateName(cleanName);
+        if (nameError) {
+          res.status(400).json({ success: false, error: nameError });
+          return;
+        }
 
         if (cleanName.toLowerCase() !== existingSupplier.name.toLowerCase()) {
           const duplicateName = await prisma.supplier.findFirst({
@@ -279,25 +342,33 @@ export class SuppliersController {
         }
 
         dataToUpdate.name = cleanName;
-
-        // Actualizar el nombre desnormalizado en los lotes asociados
-        await prisma.productionBatch.updateMany({
-          where: { supplierId: id },
-          data: { supplierName: cleanName },
-        });
       }
 
-      if (phone !== undefined) dataToUpdate.phone = phone ? String(phone).trim() : null;
-      if (email !== undefined) {
-        const cleanEmail = email ? String(email).trim().toLowerCase() : null;
-        if (cleanEmail) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(cleanEmail)) {
-            res.status(400).json({ success: false, error: 'El formato del correo electrónico es inválido.' });
+      if (phone !== undefined) {
+        const cleanPhone = phone ? String(phone).trim() : '';
+        if (cleanPhone) {
+          const phoneError = validatePhone(cleanPhone);
+          if (phoneError) {
+            res.status(400).json({ success: false, error: phoneError });
             return;
           }
         }
+        dataToUpdate.phone = cleanPhone ? normalizePhone(cleanPhone) : null;
+      }
+      if (email !== undefined) {
+        const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+        const emailError = cleanEmail ? validateEmail(cleanEmail) : null;
+        if (emailError) {
+          res.status(400).json({ success: false, error: emailError });
+          return;
+        }
         dataToUpdate.email = cleanEmail;
+      }
+      const textError =
+        validateFreeText(address, yarnTypes, notes) || (status !== undefined ? validateStatus(status) : null);
+      if (textError) {
+        res.status(400).json({ success: false, error: textError });
+        return;
       }
       if (address !== undefined) dataToUpdate.address = address ? String(address).trim() : null;
       if (yarnTypes !== undefined) dataToUpdate.yarnTypes = normalizeYarnTypes(yarnTypes);
@@ -308,6 +379,14 @@ export class SuppliersController {
         where: { id },
         data: dataToUpdate,
       });
+
+      // Actualizar el nombre desnormalizado en los lotes asociados (tras validar y guardar)
+      if (typeof dataToUpdate.name === 'string') {
+        await prisma.productionBatch.updateMany({
+          where: { supplierId: id },
+          data: { supplierName: dataToUpdate.name },
+        });
+      }
 
       res.status(200).json({
         success: true,

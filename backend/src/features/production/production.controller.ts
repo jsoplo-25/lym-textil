@@ -1813,12 +1813,28 @@ export class ProductionController {
       const registeredCount = batch.rolls.filter((r) => !r.status || r.status === 'REGISTERED').length;
       const inPrepCount = batch.rolls.filter((r) => r.status === 'IN_PREPARATION').length;
       const readyForApprovalCount = batch.rolls.filter((r) => r.status === 'READY_FOR_APPROVAL').length;
-      const readyPickupCount = batch.rolls.filter((r) => r.status === 'READY_FOR_PICKUP').length;
-      const deliveredCount = batch.rolls.filter((r) => r.status === 'DELIVERED').length;
+      const readyPickupRolls = batch.rolls.filter((r) => r.status === 'READY_FOR_PICKUP');
+      const deliveredRolls = batch.rolls.filter((r) => r.status === 'DELIVERED');
+      const readyPickupCount = readyPickupRolls.length;
+      const deliveredCount = deliveredRolls.length;
+      const readyPickupWeight = readyPickupRolls.reduce((sum, r) => sum + (r.weight || 0), 0);
+      const deliveredWeight = deliveredRolls.reduce((sum, r) => sum + (r.weight || 0), 0);
 
-      // Progreso hacia recojo/entrega
-      const progressPercent =
-        totalRolls > 0 ? Math.round(((readyPickupCount + deliveredCount) / totalRolls) * 100) : 0;
+      // Avance de producción: se mide con el kilaje de tela del lote (totalFabricKg)
+      let progressPercent = 0;
+      let remainingKg: number | null = null;
+      let isGoalReached = false;
+      const targetBatchKg = batch.totalFabricKg && batch.totalFabricKg > 0 ? batch.totalFabricKg : null;
+
+      if (targetBatchKg !== null) {
+        progressPercent = Math.min(100, parseFloat(((totalWeight / targetBatchKg) * 100).toFixed(1)));
+        remainingKg = Math.max(0, parseFloat((targetBatchKg - totalWeight).toFixed(2)));
+        isGoalReached = totalWeight >= targetBatchKg;
+      } else if (totalRolls > 0) {
+        // Fallback si no tiene meta de kilaje
+        progressPercent = Math.round(((readyPickupCount + deliveredCount) / totalRolls) * 100);
+        isGoalReached = deliveredCount === totalRolls;
+      }
 
       // Estado efectivo del lote (misma regla que el detalle interno), sin escribir en BD
       // porque esta ruta es pública y de solo lectura.
@@ -1844,6 +1860,10 @@ export class ProductionController {
           startDate: batch.startDate,
           endDate: batch.endDate,
           notes: batch.notes,
+          totalFabricKg: targetBatchKg ? parseFloat(targetBatchKg.toFixed(2)) : null,
+          remainingKg,
+          isGoalReached,
+          progressPercent,
           totalRolls,
           totalWeight: parseFloat(totalWeight.toFixed(2)),
           counts: {
@@ -1853,7 +1873,10 @@ export class ProductionController {
             readyForPickup: readyPickupCount,
             delivered: deliveredCount,
           },
-          progressPercent,
+          weights: {
+            readyForPickup: parseFloat(readyPickupWeight.toFixed(2)),
+            delivered: parseFloat(deliveredWeight.toFixed(2)),
+          },
           hasRollsReadyForPickup: readyPickupCount > 0,
           rolls: batch.rolls,
           updatedAt: batch.updatedAt,

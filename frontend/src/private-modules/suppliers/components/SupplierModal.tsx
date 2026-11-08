@@ -18,6 +18,15 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'INACTIVE', label: 'Inactivo / Suspendido' },
 ];
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RUC_PREFIXES = ['10', '15', '17', '20'];
+
+/** Normaliza un celular peruano: quita separadores y prefijo +51. */
+const normalizePhone = (raw: string): string => {
+  const digits = raw.replace(/[\s\-().]/g, '');
+  return digits.replace(/^\+?51(?=9\d{8}$)/, '');
+};
+
 export const SupplierModal: React.FC<SupplierModalProps> = ({
   isOpen,
   onClose,
@@ -71,13 +80,16 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Documento (RUC/DNI) requerido
+    // 1. Documento (DNI 8 dígitos / RUC 11 dígitos)
     if (!cleanDoc) {
       errors.document = 'El RUC o documento del proveedor es obligatorio.';
-    } else if (cleanDoc.length < 8) {
-      errors.document = 'El documento debe tener al menos 8 dígitos (DNI) u 11 (RUC).';
+    } else if (!/^\d+$/.test(cleanDoc)) {
+      errors.document = 'El documento solo puede contener números.';
+    } else if (cleanDoc.length !== 8 && cleanDoc.length !== 11) {
+      errors.document = 'Debe tener 8 dígitos (DNI) u 11 dígitos (RUC).';
+    } else if (cleanDoc.length === 11 && !RUC_PREFIXES.includes(cleanDoc.slice(0, 2))) {
+      errors.document = 'El RUC debe empezar con 10, 15, 17 o 20.';
     } else {
-      // Duplicados de Documento
       const isDuplicateDoc = existingSuppliers.some(
         (s) => s.document.toUpperCase() === cleanDoc && s.id !== editingSupplier?.id
       );
@@ -86,13 +98,14 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       }
     }
 
-    // 2. Razón Social requerida
+    // 2. Razón Social
     if (!cleanName) {
       errors.name = 'La Razón Social o nombre del proveedor es obligatorio.';
     } else if (cleanName.length < 3) {
       errors.name = 'El nombre del proveedor debe tener al menos 3 caracteres.';
+    } else if (cleanName.length > 100) {
+      errors.name = 'El nombre no puede superar los 100 caracteres.';
     } else {
-      // Duplicados de Razón Social
       const isDuplicateName = existingSuppliers.some(
         (s) => s.name.trim().toLowerCase() === cleanName.toLowerCase() && s.id !== editingSupplier?.id
       );
@@ -101,13 +114,28 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       }
     }
 
-    // 3. Formato de Email si se ingresó
+    // 3. Teléfono (opcional): celular peruano de 9 dígitos
+    if (phone.trim()) {
+      if (!/^\+?[\d\s\-().]+$/.test(phone.trim())) {
+        errors.phone = 'El teléfono solo puede contener números, espacios y el prefijo +51.';
+      } else if (!/^9\d{8}$/.test(normalizePhone(phone))) {
+        errors.phone = 'Ingresa un celular válido de 9 dígitos que empiece con 9 (ej. 987 654 321).';
+      }
+    }
+
+    // 4. Correo (opcional)
     if (cleanEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(cleanEmail)) {
+      if (cleanEmail.length > 100) {
+        errors.email = 'El correo no puede superar los 100 caracteres.';
+      } else if (!EMAIL_REGEX.test(cleanEmail)) {
         errors.email = 'El formato del correo electrónico es inválido.';
       }
     }
+
+    // 5. Largos máximos de campos de texto libre
+    if (address.trim().length > 200) errors.address = 'La dirección no puede superar los 200 caracteres.';
+    if (yarnTypes.trim().length > 200) errors.yarnTypes = 'Los tipos de hilado no pueden superar los 200 caracteres.';
+    if (notes.trim().length > 500) errors.notes = 'Las notas no pueden superar los 500 caracteres.';
 
     setFieldErrors(errors);
 
@@ -119,37 +147,33 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
     return true;
   };
 
+  const clearFieldError = (field: string) => {
+    if (!fieldErrors[field]) return;
+    setFieldErrors((prev) => {
+      const copy = { ...prev };
+      delete copy[field];
+      return copy;
+    });
+  };
+
   const handleDocumentChange = (val: string) => {
-    setDocument(val);
-    if (fieldErrors.document) {
-      setFieldErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.document;
-        return copy;
-      });
-    }
+    setDocument(val.replace(/\D/g, '').slice(0, 11));
+    clearFieldError('document');
   };
 
   const handleNameChange = (val: string) => {
     setName(val);
-    if (fieldErrors.name) {
-      setFieldErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.name;
-        return copy;
-      });
-    }
+    clearFieldError('name');
   };
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
-    if (fieldErrors.email) {
-      setFieldErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.email;
-        return copy;
-      });
-    }
+    clearFieldError('email');
+  };
+
+  const handlePhoneChange = (val: string) => {
+    setPhone(val.replace(/[^\d\s\-+().]/g, '').slice(0, 20));
+    clearFieldError('phone');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -166,7 +190,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
       const payload: CreateSupplierDTO = {
         document: document.trim().toUpperCase(),
         name: name.trim(),
-        phone: phone.trim() || undefined,
+        phone: phone.trim() ? normalizePhone(phone) : undefined,
         email: email.trim() || undefined,
         address: address.trim() || undefined,
         yarnTypes: yarnTypes.trim() || undefined,
@@ -240,6 +264,8 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
               </div>
               <input
                 type="text"
+                inputMode="numeric"
+                maxLength={11}
                 value={document}
                 onChange={(e) => handleDocumentChange(e.target.value)}
                 placeholder="Ej. 20601234567"
@@ -266,6 +292,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
             </label>
             <input
               type="text"
+              maxLength={100}
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Ej. INLOTEX S.A.C., SANDRO TEXTIL"
@@ -292,12 +319,21 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
               Teléfono / WhatsApp
             </label>
             <input
-              type="text"
+              type="tel"
+              inputMode="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Ej. +51 987 654 321"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono"
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              placeholder="Ej. 987 654 321"
+              className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-mono ${
+                fieldErrors.phone ? 'border-rose-500 text-rose-900 dark:text-rose-200' : 'border-slate-200 dark:border-slate-800'
+              }`}
             />
+            {fieldErrors.phone && (
+              <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.phone}</span>
+              </p>
+            )}
           </div>
 
           <div>
@@ -307,6 +343,7 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
             </label>
             <input
               type="email"
+              maxLength={100}
               value={email}
               onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="contacto@inlotex.com"
@@ -333,7 +370,8 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
             <input
               type="text"
               value={yarnTypes}
-              onChange={(e) => setYarnTypes(e.target.value)}
+              maxLength={200}
+              onChange={(e) => { setYarnTypes(e.target.value); clearFieldError('yarnTypes'); }}
               placeholder="Ej. Algodón 30/1, Poliéster, Lycra, Viscosa"
               className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
@@ -360,7 +398,8 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
           <input
             type="text"
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            maxLength={200}
+            onChange={(e) => { setAddress(e.target.value); clearFieldError('address'); }}
             placeholder="Ej. Av. Nicolás de Ayllón 1234, Ate, Lima"
             className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
           />
@@ -375,7 +414,8 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
           <textarea
             rows={2}
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            maxLength={500}
+            onChange={(e) => { setNotes(e.target.value); clearFieldError('notes'); }}
             placeholder="Ej. Cliente frecuente de servicio de tejeduría, despacho prioritario..."
             className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none"
           />

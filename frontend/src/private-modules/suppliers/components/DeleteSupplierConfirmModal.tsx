@@ -32,7 +32,7 @@ export const DeleteSupplierConfirmModal: React.FC<DeleteSupplierConfirmModalProp
         <>
           Estás por eliminar el proveedor{' '}
           <span className="font-semibold text-slate-800 dark:text-slate-200">
-            [{supplier.document}] {supplier.name}
+            {supplier.name}
           </span>
           . Esta acción lo retirará del catálogo de proveedores del sistema.
         </>

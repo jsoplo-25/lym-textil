@@ -32,7 +32,7 @@ export const DeleteBatchConfirmModal: React.FC<DeleteBatchConfirmModalProps> = (
         <>
           Estás por eliminar el lote{' '}
           <span className="font-semibold text-slate-800 dark:text-slate-200">
-            [{batch.batchNumber}]
+            {batch.batchNumber}
           </span>{' '}
           y todos sus rollos registrados ({batch.totalRolls || 0} rollos). Esta acción no se puede deshacer.
         </>
