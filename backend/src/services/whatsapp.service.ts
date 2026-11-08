@@ -219,7 +219,15 @@ export class WhatsAppService {
       const currentPercentage = Math.floor(rawPercentage);
 
       const targetMilestones = [25, 50, 75, 100];
-      const notifiedList = Array.isArray(batch.notifiedMilestones) ? [...batch.notifiedMilestones] : [];
+      const rawNotifiedList = Array.isArray(batch.notifiedMilestones) ? [...batch.notifiedMilestones] : [];
+
+      // Normalizar: si un hito superior ya fue notificado, marcar automáticamente
+      // todos los inferiores como notificados (evita reenvíos de hitos menores)
+      const highestNotified = rawNotifiedList.length > 0 ? Math.max(...rawNotifiedList.map(Number)) : 0;
+      const notifiedList = [...new Set([
+        ...rawNotifiedList,
+        ...targetMilestones.filter((m) => m <= highestNotified),
+      ])];
 
       const newlyNotified: number[] = [];
       const errors: string[] = [];
@@ -257,63 +265,23 @@ export class WhatsAppService {
       const frontendBase = rawFrontend || 'https://www.lymtextil.com';
       const trackingUrl = `${frontendBase}/tracking/${encodeURIComponent(trackingCode)}`;
 
-      // Revisar hitos que se hayan cumplido y que aún no han sido notificados
-      for (const milestone of targetMilestones) {
-        if (currentPercentage >= milestone && !notifiedList.includes(milestone)) {
-          // Construir mensaje amigable y claro con código de seguimiento
-          const message = [
-            `🏭 *TEXTILES L&M - Notificación de Recojo de Rollos*`,
-            ``,
-            `Estimado(a) *${supplierName}*, le informamos sobre el avance de producción de su lote:`,
-            ``,
-            `📦 *Lote:* ${batch.batchNumber}`,
-            `🔍 *Código de Seguimiento:* ${trackingCode}`,
-            `🎯 *Avance de producción:* ¡Se ha alcanzado el *${milestone}%*! (${accumulatedKg.toFixed(2)} Kg de ${totalFabricKg.toFixed(2)} Kg)`,
-            `🧺 *Rollos disponibles para recojo:* ${readyRollsCount} rollo(s) (${readyKg.toFixed(2)} Kg)`,
-            ``,
-            `🌐 *Ver seguimiento en vivo de sus rollos:*`,
-            `${trackingUrl}`,
-            ``,
-            `Puede coordinar con planta para el recojo de los rollos disponibles.`,
-            `📍 *Textiles L&M*`,
-          ].join('\n');
+      // Determinar qué hitos nuevos se han alcanzado (no notificados previamente)
+      const pendingMilestones = targetMilestones.filter(
+        (m) => currentPercentage >= m && !notifiedList.includes(m)
+      );
 
-          let sendStatus = 'SENT';
-          let responseId: string | undefined = undefined;
-          let errorDetails: string | undefined = undefined;
+      if (pendingMilestones.length > 0) {
+        // Solo enviar notificación del hito MÁS ALTO alcanzado
+        // Los hitos anteriores se marcan como notificados silenciosamente
+        const highestMilestone = pendingMilestones[pendingMilestones.length - 1];
+        const skippedMilestones = pendingMilestones.slice(0, -1);
 
-          if (!supplierPhone) {
-            sendStatus = 'FAILED';
-            errorDetails = 'El proveedor no tiene número de teléfono / WhatsApp registrado en su ficha.';
-            errors.push(`Hito ${milestone}%: Proveedor sin teléfono registrado.`);
-          } else {
-            let sendResult = await this.sendTextMessage(supplierPhone, message);
+        // Marcar hitos saltados como notificados sin enviar mensaje
+        for (const skipped of skippedMilestones) {
+          notifiedList.push(skipped);
+          newlyNotified.push(skipped);
 
-            // Si falla porque han pasado más de 24h desde el último mensaje del cliente, Meta exige plantilla:
-            if (
-              !sendResult.success &&
-              sendResult.error &&
-              (sendResult.error.includes('131047') ||
-                sendResult.error.toLowerCase().includes('template') ||
-                sendResult.error.toLowerCase().includes('24 hour'))
-            ) {
-              console.log('[WhatsAppService] Ventana de 24h cerrada. Reintentando con plantilla aprobada...');
-              sendResult = await this.sendTemplateMessage(supplierPhone, '3p_direct_integration_test_template', 'en_US');
-            }
-
-            if (sendResult.success) {
-              sendStatus = sendResult.simulated ? 'SIMULATED' : 'SENT';
-              responseId = sendResult.messageId;
-              newlyNotified.push(milestone);
-              notifiedList.push(milestone);
-            } else {
-              sendStatus = 'FAILED';
-              errorDetails = sendResult.error || 'Error al enviar por WhatsApp';
-              errors.push(`Hito ${milestone}%: ${errorDetails}`);
-            }
-          }
-
-          // Registrar en bitácora de notificaciones de WhatsApp
+          // Registrar en bitácora que se saltó (sin enviar)
           try {
             await prisma.whatsAppNotificationLog.create({
               data: {
@@ -321,19 +289,94 @@ export class WhatsAppService {
                 supplierId: batch.supplierId,
                 supplierName,
                 phoneNumber: supplierPhone || 'SIN_NUMERO',
-                percentage: milestone,
+                percentage: skipped,
                 totalKg: totalFabricKg,
                 readyKg,
                 rollsCount: readyRollsCount,
-                message,
-                status: sendStatus,
-                responseId: responseId || null,
-                errorDetails: errorDetails || null,
+                message: `[SALTADO] Hito ${skipped}% superado directamente. Se notificó el hito ${highestMilestone}% en su lugar.`,
+                status: 'SKIPPED',
+                responseId: null,
+                errorDetails: null,
               },
             });
           } catch (logErr: unknown) {
-            console.error('[WhatsAppService] Error al guardar log de WhatsApp:', logErr);
+            console.error('[WhatsAppService] Error al guardar log de hito saltado:', logErr);
           }
+        }
+
+        // Enviar notificación SOLO del hito más alto
+        const message = [
+          `🏭 *TEXTILES L&M - Notificación de Recojo de Rollos*`,
+          ``,
+          `Estimado(a) *${supplierName}*, le informamos sobre el avance de producción de su lote:`,
+          ``,
+          `📦 *Lote:* ${batch.batchNumber}`,
+          `🔍 *Código de Seguimiento:* ${trackingCode}`,
+          `🎯 *Avance de producción:* ¡Se ha alcanzado el *${highestMilestone}%*! (${accumulatedKg.toFixed(2)} Kg de ${totalFabricKg.toFixed(2)} Kg)`,
+          `🧺 *Rollos disponibles para recojo:* ${readyRollsCount} rollo(s) (${readyKg.toFixed(2)} Kg)`,
+          ``,
+          `🌐 *Ver seguimiento en vivo de sus rollos:*`,
+          `${trackingUrl}`,
+          ``,
+          `Puede coordinar con planta para el recojo de los rollos disponibles.`,
+          `📍 *Textiles L&M*`,
+        ].join('\n');
+
+        let sendStatus = 'SENT';
+        let responseId: string | undefined = undefined;
+        let errorDetails: string | undefined = undefined;
+
+        if (!supplierPhone) {
+          sendStatus = 'FAILED';
+          errorDetails = 'El proveedor no tiene número de teléfono / WhatsApp registrado en su ficha.';
+          errors.push(`Hito ${highestMilestone}%: Proveedor sin teléfono registrado.`);
+        } else {
+          let sendResult = await this.sendTextMessage(supplierPhone, message);
+
+          // Si falla porque han pasado más de 24h desde el último mensaje del cliente, Meta exige plantilla:
+          if (
+            !sendResult.success &&
+            sendResult.error &&
+            (sendResult.error.includes('131047') ||
+              sendResult.error.toLowerCase().includes('template') ||
+              sendResult.error.toLowerCase().includes('24 hour'))
+          ) {
+            console.log('[WhatsAppService] Ventana de 24h cerrada. Reintentando con plantilla aprobada...');
+            sendResult = await this.sendTemplateMessage(supplierPhone, '3p_direct_integration_test_template', 'en_US');
+          }
+
+          if (sendResult.success) {
+            sendStatus = sendResult.simulated ? 'SIMULATED' : 'SENT';
+            responseId = sendResult.messageId;
+            newlyNotified.push(highestMilestone);
+            notifiedList.push(highestMilestone);
+          } else {
+            sendStatus = 'FAILED';
+            errorDetails = sendResult.error || 'Error al enviar por WhatsApp';
+            errors.push(`Hito ${highestMilestone}%: ${errorDetails}`);
+          }
+        }
+
+        // Registrar en bitácora de notificaciones de WhatsApp
+        try {
+          await prisma.whatsAppNotificationLog.create({
+            data: {
+              batchId: batch.id,
+              supplierId: batch.supplierId,
+              supplierName,
+              phoneNumber: supplierPhone || 'SIN_NUMERO',
+              percentage: highestMilestone,
+              totalKg: totalFabricKg,
+              readyKg,
+              rollsCount: readyRollsCount,
+              message,
+              status: sendStatus,
+              responseId: responseId || null,
+              errorDetails: errorDetails || null,
+            },
+          });
+        } catch (logErr: unknown) {
+          console.error('[WhatsAppService] Error al guardar log de WhatsApp:', logErr);
         }
       }
 

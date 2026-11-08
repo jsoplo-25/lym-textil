@@ -156,8 +156,38 @@ export const TimePicker: React.FC<TimePickerProps> = ({
     set(now.getHours(), now.getMinutes());
   };
 
+  // Alineación efectiva: si el popover (320px) no cabe hacia la derecha dentro del
+  // contenedor recortante más cercano (p. ej. un modal), se ancla al borde derecho.
+  const [autoAlign, setAutoAlign] = useState<'left' | 'right' | null>(null);
+
+  const computeAlign = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const POPOVER_W = 320;
+    let limitLeft = 0;
+    let limitRight = window.innerWidth;
+    let node: HTMLElement | null = el.parentElement;
+    while (node && node !== document.body) {
+      const o = getComputedStyle(node);
+      if (/(auto|scroll|hidden|clip)/.test(o.overflowX + o.overflow)) {
+        const r = node.getBoundingClientRect();
+        limitLeft = Math.max(limitLeft, r.left);
+        limitRight = Math.min(limitRight, r.right);
+        break;
+      }
+      node = node.parentElement;
+    }
+    const r = el.getBoundingClientRect();
+    const fitsRight = r.left + POPOVER_W <= limitRight - 8;
+    const fitsLeft = r.right - POPOVER_W >= limitLeft + 8;
+    if (fitsRight) setAutoAlign('left');
+    else if (fitsLeft) setAutoAlign('right');
+    else setAutoAlign(align);
+  };
+
   const toggle = () => {
     if (disabled) return;
+    if (!isOpen) computeAlign();
     // Al abrir sin valor, deja una hora inicial ya elegida para que el campo no quede vacío
     if (!isOpen && !parsed) set(h24, minute);
     setIsOpen((p) => !p);
@@ -221,7 +251,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
         <div
           className={cn(
             'fixed inset-x-4 mx-auto max-w-80 sm:absolute sm:inset-x-auto sm:mx-0 sm:top-full mt-2 z-[110] sm:w-80 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-4 select-none',
-            align === 'right' ? 'sm:right-0' : 'sm:left-0'
+            (autoAlign ?? align) === 'right' ? 'sm:right-0' : 'sm:left-0'
           )}
         >
           <div className="flex items-center justify-center gap-2">

@@ -19,10 +19,13 @@ import {
   RotateCcw,
   Sun,
   Moon,
+  Target,
+  Calendar,
 } from 'lucide-react';
 import { productionService } from '../../../private-modules/production/services/production.service';
 import type { BatchTrackingData, RollStatus } from '../../../private-modules/production/types/production.types';
 import { Logo } from '../../../shared/ui/Logo';
+import { formatLocalDate } from '../../../shared/lib/utils';
 
 const BATCH_STATUS_LABELS: Record<string, string> = {
   REQUESTED: 'Solicitud registrada',
@@ -413,40 +416,75 @@ export const WelcomePortalPage: React.FC = () => {
 
               {/* Banner Destacado de Recojo */}
               {trackingData.hasRollsReadyForPickup && (
-                <div className="p-4 sm:p-5 rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-600/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="p-4 sm:p-5 rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5">
                     <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0">
                       <Bell className="w-6 h-6 animate-bounce" />
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-base font-black">
-                        ¡Tienes {trackingData.counts.readyForPickup} {trackingData.counts.readyForPickup === 1 ? 'rollo listo' : 'rollos listos'} para recoger!
+                        ¡Tienes {trackingData.counts.readyForPickup} {trackingData.counts.readyForPickup === 1 ? 'rollo listo' : 'rollos listos'} para recoger
+                        {trackingData.weights?.readyForPickup ? ` (${trackingData.weights.readyForPickup.toFixed(2)} Kg)` : ''}!
                       </h4>
-                      <p className="text-xs text-primary-100">
-                        Los rollos ya se encuentran preparados en nuestra planta textil. Puedes enviar a tu transporte o coordinar el despacho.
+                      <p className="text-xs text-emerald-100">
+                        Los rollos ya se encuentran preparados y pesados en nuestra planta textil. Puedes enviar a tu transporte o coordinar el despacho.
                       </p>
                     </div>
                   </div>
-                  <span className="px-3.5 py-1.5 rounded-xl bg-white text-primary-800 text-xs font-black shadow-sm self-start sm:self-auto shrink-0">
+                  <span className="px-3.5 py-1.5 rounded-xl bg-white text-emerald-800 text-xs font-black shadow-sm self-start sm:self-auto shrink-0">
                     Listo en Planta
                   </span>
                 </div>
               )}
 
-              {/* Barra de Progreso General */}
+              {/* Barra de Progreso de Producción */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3 text-xs font-bold">
-                  <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Avance de Preparación / Entrega
-                  </span>
-                  <span className="text-primary-600 dark:text-primary-400 font-mono font-black text-sm">
-                    {trackingData.progressPercent}%
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Avance de Producción
+                    </span>
+                    {trackingData.totalFabricKg && trackingData.totalFabricKg > 0 ? (
+                      <span className="font-mono text-slate-700 dark:text-slate-300 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        {trackingData.totalWeight.toFixed(2)} Kg de {trackingData.totalFabricKg.toFixed(2)} Kg
+                      </span>
+                    ) : (
+                      <span className="font-mono text-slate-700 dark:text-slate-300 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        {trackingData.totalWeight.toFixed(2)} Kg producidos
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {trackingData.totalFabricKg && trackingData.totalFabricKg > 0 && (
+                      <span
+                        className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-lg border ${
+                          trackingData.isGoalReached || trackingData.progressPercent >= 100
+                            ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                            : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                        }`}
+                      >
+                        {trackingData.isGoalReached || trackingData.progressPercent >= 100
+                          ? 'Meta Cumplida (100%)'
+                          : `Faltan ${trackingData.remainingKg?.toFixed(2)} Kg`}
+                      </span>
+                    )}
+                    <span
+                      className={`font-mono font-black text-sm ${
+                        trackingData.progressPercent >= 100
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-primary-600 dark:text-primary-400'
+                      }`}
+                    >
+                      {trackingData.progressPercent.toFixed(1)}%
+                    </span>
+                  </div>
                 </div>
-                <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5 border border-slate-200 dark:border-slate-700">
+                <div className="w-full h-3.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5 border border-slate-200 dark:border-slate-700">
                   <div
-                    className="h-full rounded-full bg-primary-500 transition-all duration-700"
-                    style={{ width: `${Math.max(5, Math.min(100, trackingData.progressPercent))}%` }}
+                    className={`h-full rounded-full transition-all duration-700 ${
+                      trackingData.progressPercent >= 100 ? 'bg-emerald-500' : 'bg-primary-500'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(0, trackingData.progressPercent))}%` }}
                   />
                 </div>
               </div>
@@ -480,7 +518,11 @@ export const WelcomePortalPage: React.FC = () => {
                   <p className="text-2xl font-black font-mono text-primary-700 dark:text-primary-300">
                     {trackingData.counts.readyForPickup}
                   </p>
-                  <p className="text-[10px] text-primary-600 dark:text-primary-400/80">Disponibles en planta</p>
+                  <p className="text-[10px] text-primary-600 dark:text-primary-400/80 font-mono font-medium">
+                    {trackingData.weights?.readyForPickup && trackingData.weights.readyForPickup > 0
+                      ? `${trackingData.weights.readyForPickup.toFixed(2)} Kg en planta`
+                      : 'Disponibles en planta'}
+                  </p>
                 </div>
 
                 <div className="p-3 sm:p-4 min-w-0 rounded-2xl bg-purple-500/10 border border-purple-500/20 dark:border-purple-500/30 space-y-1">
@@ -490,22 +532,32 @@ export const WelcomePortalPage: React.FC = () => {
                   <p className="text-2xl font-black font-mono text-purple-800 dark:text-purple-200">
                     {trackingData.counts.delivered}
                   </p>
-                  <p className="text-[10px] text-purple-600 dark:text-purple-400/80">Retirados por proveedor</p>
+                  <p className="text-[10px] text-purple-600 dark:text-purple-400/80 font-mono font-medium">
+                    {trackingData.weights?.delivered && trackingData.weights.delivered > 0
+                      ? `${trackingData.weights.delivered.toFixed(2)} Kg retirados`
+                      : 'Retirados por proveedor'}
+                  </p>
                 </div>
               </div>
 
               {/* Datos de Peso y Lote */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 text-xs border-t border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-slate-400" />
+                  <Layers className="w-4 h-4 text-slate-400 shrink-0" />
                   <span>Total Rollos: <strong className="text-slate-900 dark:text-white font-mono">{trackingData.totalRolls}</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Scale className="w-4 h-4 text-slate-400" />
-                  <span>Total Kilos: <strong className="text-slate-900 dark:text-white font-mono">{trackingData.totalWeight.toFixed(2)} Kg</strong></span>
+                  <Scale className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>Kilos Producidos: <strong className="text-slate-900 dark:text-white font-mono">{trackingData.totalWeight.toFixed(2)} Kg</strong></span>
                 </div>
+                {trackingData.totalFabricKg && trackingData.totalFabricKg > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Target className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Meta del Lote: <strong className="text-slate-900 dark:text-white font-mono">{trackingData.totalFabricKg.toFixed(2)} Kg</strong></span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
                   <span>Estado Lote: <strong className="text-slate-900 dark:text-white">{BATCH_STATUS_LABELS[trackingData.status] || trackingData.status}</strong></span>
                 </div>
               </div>
@@ -569,11 +621,35 @@ export const WelcomePortalPage: React.FC = () => {
                               <span className="text-slate-400 dark:text-slate-500 italic">-</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                            {roll.startDate ? `${roll.startDate} ${roll.startTime || ''}`.trim() : '-'}
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            {roll.startDate ? (
+                              <div className="flex items-center gap-1.5 font-mono">
+                                <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{formatLocalDate(roll.startDate)}</span>
+                                {roll.startTime && (
+                                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-1">
+                                    {roll.startTime}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic text-[11px]">-</span>
+                            )}
                           </td>
-                          <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                            {roll.endDate ? `${roll.endDate} ${roll.endTime || ''}`.trim() : '-'}
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            {roll.endDate ? (
+                              <div className="flex items-center gap-1.5 font-mono">
+                                <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{formatLocalDate(roll.endDate)}</span>
+                                {roll.endTime && (
+                                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-1">
+                                    {roll.endTime}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic text-[11px]">-</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-slate-600 dark:text-slate-400 min-w-40 break-words">
                             {roll.observations || '-'}
@@ -581,6 +657,26 @@ export const WelcomePortalPage: React.FC = () => {
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/60 font-bold text-xs text-slate-700 dark:text-slate-200">
+                        <td className="py-3.5 px-4 uppercase tracking-wider" colSpan={2}>
+                          Total Acumulado ({trackingData.totalRolls} rollos)
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono text-primary-600 dark:text-primary-400 font-black text-sm">
+                          {trackingData.totalWeight.toFixed(2)} Kg
+                        </td>
+                        <td className="py-3.5 px-4" colSpan={3}>
+                          {trackingData.totalFabricKg && trackingData.totalFabricKg > 0 && (
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                              Meta: {trackingData.totalFabricKg.toFixed(2)} Kg ({trackingData.progressPercent.toFixed(1)}%)
+                              {trackingData.remainingKg !== null && trackingData.remainingKg !== undefined && trackingData.remainingKg > 0
+                                ? ` • Faltan: ${trackingData.remainingKg.toFixed(2)} Kg`
+                                : ' • Meta alcanzada'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               )}

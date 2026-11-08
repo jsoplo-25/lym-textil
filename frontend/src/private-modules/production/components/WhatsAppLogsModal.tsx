@@ -83,7 +83,7 @@ export const WhatsAppLogsModal: React.FC<WhatsAppLogsModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Notificaciones WhatsApp - [${batchNumber}]`}
+      title={`Notificaciones WhatsApp - ${batchNumber}`}
       description={`Historial de alertas de recojo para el proveedor ${supplierName || ''}`}
       icon={<MessageSquare className="w-6 h-6 text-emerald-500" />}
       size="xl"
@@ -138,7 +138,7 @@ export const WhatsAppLogsModal: React.FC<WhatsAppLogsModalProps> = ({
           </div>
         ) : (
           <div className="space-y-3">
-            {logs.map((log) => {
+            {logs.filter((l) => l.status !== 'SKIPPED').map((log) => {
               const isSent = log.status === 'SENT';
               const isSimulated = log.status === 'SIMULATED';
               const isFailed = log.status === 'FAILED';

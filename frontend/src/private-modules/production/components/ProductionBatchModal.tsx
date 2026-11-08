@@ -416,9 +416,6 @@ export const ProductionBatchModal: React.FC<ProductionBatchModalProps> = ({
               <Scale className="w-3.5 h-3.5 text-slate-400" />
               Total de kilos de tela proyectados (Kg) <span className="text-rose-500">*</span>
             </span>
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-              Requerido para cálculo de hitos WhatsApp (25%, 50%, 75%, 100%)
-            </span>
           </label>
           <div className="relative">
             <input

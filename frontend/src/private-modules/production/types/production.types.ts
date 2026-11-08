@@ -158,12 +158,19 @@ export interface BatchTrackingData {
   startDate?: string | null;
   endDate?: string | null;
   notes?: string | null;
+  totalFabricKg?: number | null;
+  remainingKg?: number | null;
+  isGoalReached?: boolean;
   totalRolls: number;
   totalWeight: number;
   counts: {
     registered: number;
     inPreparation: number;
     readyForApproval?: number;
+    readyForPickup: number;
+    delivered: number;
+  };
+  weights?: {
     readyForPickup: number;
     delivered: number;
   };
