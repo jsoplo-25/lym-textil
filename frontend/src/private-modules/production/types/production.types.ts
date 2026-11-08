@@ -235,7 +235,7 @@ export interface WhatsAppNotificationLogItem {
   readyKg: number;
   rollsCount: number;
   message: string;
-  status: 'SENT' | 'FAILED' | 'SIMULATED';
+  status: 'SENT' | 'FAILED' | 'SIMULATED' | 'SKIPPED';
   responseId?: string | null;
   errorDetails?: string | null;
   createdAt: string;
